@@ -2,24 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-type PagoRow = {
-  id: string;
-  monto_pagado: number | null;
-  fecha_pago: string | null;
-  referencia: string | null;
-  comprobante_url: string | null;
-  cuotas:
-    | {
-        periodo: string | null;
-        monto_total: number | null;
-      }
-    | {
-        periodo: string | null;
-        monto_total: number | null;
-      }[]
-    | null;
-};
-
 function money(value: number | null | undefined) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", {
     minimumFractionDigits: 2,
@@ -32,11 +14,10 @@ function formatDate(value?: string | null) {
   return new Date(value).toLocaleDateString("es-BO");
 }
 
-function getPeriodo(
-  value: PagoRow["cuotas"]
-) {
+function getPeriodo(value: any) {
   if (!value) return "-";
-  return Array.isArray(value) ? value[0]?.periodo ?? "-" : value.periodo ?? "-";
+  if (Array.isArray(value)) return value[0]?.periodo ?? "-";
+  return value.periodo ?? "-";
 }
 
 export default async function VecinoRecibosPage() {
@@ -74,7 +55,14 @@ export default async function VecinoRecibosPage() {
     .eq("departamento_id", perfil.departamento_id)
     .order("fecha_pago", { ascending: false });
 
-  const rows = (pagos ?? []) as PagoRow[];
+  const rows = (pagos ?? []).map((item: any) => ({
+    id: item.id,
+    monto_pagado: Number(item.monto_pagado || 0),
+    fecha_pago: item.fecha_pago ?? null,
+    referencia: item.referencia ?? null,
+    comprobante_url: item.comprobante_url ?? null,
+    cuotas: item.cuotas ?? null,
+  }));
 
   return (
     <main className="space-y-6">
