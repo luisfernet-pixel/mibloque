@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   title: "Nuevo admin",
 };
 
-export default async function NuevoAdminPage() {
+type Props = {
+  searchParams: Promise<{ bloqueId?: string }>;
+};
+
+export default async function NuevoAdminPage({ searchParams }: Props) {
+  const { bloqueId } = await searchParams;
   const supabase = await createClient();
 
   const { data: bloques } = await supabase
@@ -35,6 +40,7 @@ export default async function NuevoAdminPage() {
           blocks={bloques ?? []}
           departamentos={[]}
           action={createAdminAction}
+          initialValues={{ bloque_id: bloqueId }}
         />
       </section>
     </main>

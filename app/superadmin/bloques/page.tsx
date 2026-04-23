@@ -65,7 +65,7 @@ export default async function BloquesPage() {
                       href={`/superadmin/bloques/${item.id}`}
                       className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
                     >
-                      Editar
+                      Abrir ficha
                     </Link>
                   </td>
                 </tr>

@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   title: "Nuevo vecino",
 };
 
-export default async function NuevoVecinoPage() {
+type Props = {
+  searchParams: Promise<{ bloqueId?: string; departamentoId?: string }>;
+};
+
+export default async function NuevoVecinoPage({ searchParams }: Props) {
+  const { bloqueId, departamentoId } = await searchParams;
   const supabase = await createClient();
 
   const [{ data: bloques }, { data: departamentos }] = await Promise.all([
@@ -41,6 +46,10 @@ export default async function NuevoVecinoPage() {
           blocks={bloques ?? []}
           departamentos={departamentos ?? []}
           action={createVecinoAction}
+          initialValues={{
+            bloque_id: bloqueId,
+            departamento_id: departamentoId,
+          }}
         />
       </section>
     </main>
