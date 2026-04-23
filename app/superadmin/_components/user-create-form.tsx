@@ -28,6 +28,7 @@ type Props = {
     username?: string;
     bloque_id?: string;
     departamento_id?: string;
+    departamento_numero?: string;
     activo?: boolean;
   };
   allowPassword?: boolean;
@@ -61,8 +62,8 @@ export default function UserCreateForm({
   const [selectedBlockId, setSelectedBlockId] = useState(
     () => initialValues?.bloque_id ?? blocks[0]?.id ?? ""
   );
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState(
-    () => initialValues?.departamento_id ?? ""
+  const [departmentNumber, setDepartmentNumber] = useState(
+    () => initialValues?.departamento_numero ?? ""
   );
   const [username, setUsername] = useState(initialValues?.username ?? "");
 
@@ -169,7 +170,7 @@ export default function UserCreateForm({
               value={selectedBlockId}
               onChange={(e) => {
                 setSelectedBlockId(e.target.value);
-                setSelectedDepartmentId("");
+                setDepartmentNumber("");
               }}
               className="theme-input w-full rounded-2xl px-4 py-3"
               required
@@ -190,25 +191,25 @@ export default function UserCreateForm({
               <span className="block text-sm font-semibold text-white/80">
                 Departamento
               </span>
-              <select
-                name="departamento_id"
-                value={selectedDepartmentId}
-                onChange={(e) => setSelectedDepartmentId(e.target.value)}
-                className="theme-input w-full rounded-2xl px-4 py-3"
-                required
-              >
-                <option value="">Selecciona un departamento</option>
-                {departamentosFiltrados.map((depto) => (
-                  <option key={depto.id} value={depto.id}>
-                    {depto.numero}
-                  </option>
-                ))}
-              </select>
+              <Field
+                label="Departamento"
+                name="departamento_numero"
+                placeholder="101 / 3B / 4-A"
+                value={departmentNumber}
+                onChange={(value) => setDepartmentNumber(value)}
+              />
             </label>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
               <span className="font-semibold text-white">Email:</span>{" "}
               {emailPreview || "Se genera automaticamente desde el usuario"}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              <span className="font-semibold text-white">Referencias del bloque:</span>{" "}
+              {departamentosFiltrados.length > 0
+                ? departamentosFiltrados.map((item) => item.numero).join(", ")
+                : "Aún no hay departamentos cargados para este bloque"}
             </div>
           </>
         )}

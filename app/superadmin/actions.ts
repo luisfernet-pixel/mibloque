@@ -40,10 +40,77 @@ function safeString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
 }
 
+function normalizeDepartamentoNumero(value: string) {
+  return String(value || "").trim().toUpperCase();
+}
+
 function adminEmailFromBlockCode(code: string) {
   const digits = String(code || "").match(/\d+/g)?.join("");
   const suffix = digits || String(code || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
   return `admin${suffix || "bloque"}@mibloque.local`;
+}
+
+async function resolveOrCreateDepartamentoId({
+  supabase,
+  bloqueId,
+  departamentoId,
+  departamentoNumero,
+}: {
+  supabase: ReturnType<typeof createAdminClient>;
+  bloqueId: string;
+  departamentoId?: string;
+  departamentoNumero?: string;
+}) {
+  if (departamentoId) {
+    const { data: existente, error } = await supabase
+      .from("departamentos")
+      .select("id, numero")
+      .eq("id", departamentoId)
+      .single();
+
+    if (error || !existente) {
+      throw error ?? new Error("No se encontró el departamento seleccionado.");
+    }
+
+    return existente;
+  }
+
+  const numero = normalizeDepartamentoNumero(departamentoNumero || "");
+  if (!numero) {
+    throw new Error("Escribe el departamento.");
+  }
+
+  const { data: existente, error: searchError } = await supabase
+    .from("departamentos")
+    .select("id, numero")
+    .eq("bloque_id", bloqueId)
+    .eq("numero", numero)
+    .maybeSingle();
+
+  if (searchError) {
+    throw searchError;
+  }
+
+  if (existente) {
+    return existente;
+  }
+
+  const { data: creado, error: insertError } = await supabase
+    .from("departamentos")
+    .insert({
+      bloque_id: bloqueId,
+      numero,
+      activo: true,
+      estado_ocupacion: "ocupado",
+    })
+    .select("id, numero")
+    .single();
+
+  if (insertError || !creado) {
+    throw insertError ?? new Error("No se pudo crear el departamento.");
+  }
+
+  return creado;
 }
 
 async function deleteAuthUserIfNeeded(userId?: string) {
@@ -419,6 +486,7 @@ export async function createVecinoAction(
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
     const departamentoId = safeString(formData.get("departamento_id"));
+    const departamentoNumero = safeString(formData.get("departamento_numero"));
 
     if (!nombre) {
       return { ok: false, message: "Escribe el nombre del vecino." };
@@ -439,12 +507,15 @@ export async function createVecinoAction(
       return { ok: false, message: "Selecciona un bloque." };
     }
 
-    if (!departamentoId) {
-      return { ok: false, message: "Selecciona un departamento." };
-    }
-
     const email = `${username}@mibloque.local`;
     const supabase = createAdminClient();
+    const departamento = await resolveOrCreateDepartamentoId({
+      supabase,
+      bloqueId,
+      departamentoId,
+      departamentoNumero,
+    });
+
     const { data, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -453,7 +524,7 @@ export async function createVecinoAction(
         nombre,
         rol: "vecino",
         bloque_id: bloqueId,
-        departamento_id: departamentoId,
+        departamento_id: departamento.id,
         username,
       },
     });
@@ -471,7 +542,7 @@ export async function createVecinoAction(
       username,
       rol: "vecino",
       bloque_id: bloqueId,
-      departamento_id: departamentoId,
+      departamento_id: departamento.id,
       activo: true,
     });
 
@@ -512,28 +583,36 @@ export async function updateVecinoAction(
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
     const departamentoId = safeString(formData.get("departamento_id"));
+    const departamentoNumero = safeString(formData.get("departamento_numero"));
     const activo = formData.get("activo") === "on";
 
     if (!id) {
       return { ok: false, message: "Falta el vecino a editar." };
     }
 
-    if (!nombre || !username || !bloqueId || !departamentoId) {
+    if (!nombre || !username || !bloqueId) {
       return {
         ok: false,
-        message: "Completa nombre, usuario, bloque y departamento.",
+        message: "Completa nombre, usuario y bloque.",
       };
     }
 
     const email = `${username}@mibloque.local`;
     const supabase = createAdminClient();
+    const departamento = await resolveOrCreateDepartamentoId({
+      supabase,
+      bloqueId,
+      departamentoId,
+      departamentoNumero,
+    });
+
     const { error } = await supabase.from("usuarios").update({
       nombre,
       email,
       username,
       rol: "vecino",
       bloque_id: bloqueId,
-      departamento_id: departamentoId,
+      departamento_id: departamento.id,
       activo,
     }).eq("id", id);
 
@@ -551,7 +630,7 @@ export async function updateVecinoAction(
         nombre,
         rol: "vecino",
         bloque_id: bloqueId,
-        departamento_id: departamentoId,
+        departamento_id: departamento.id,
         username,
       },
     };

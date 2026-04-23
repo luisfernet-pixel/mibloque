@@ -48,7 +48,7 @@ export default async function NuevoVecinoPage({ searchParams }: Props) {
           action={createVecinoAction}
           initialValues={{
             bloque_id: bloqueId,
-            departamento_id: departamentoId,
+            departamento_numero: departamentoId,
           }}
         />
       </section>

@@ -39,6 +39,10 @@ export default async function EditVecinoPage({ params }: Props) {
 
   if (!vecino) notFound();
 
+  const departamentoActual = departamentos?.find(
+    (item) => item.id === vecino.departamento_id
+  );
+
   return (
     <main className="space-y-6">
       <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
@@ -66,6 +70,7 @@ export default async function EditVecinoPage({ params }: Props) {
             username: vecino.username,
             bloque_id: vecino.bloque_id,
             departamento_id: vecino.departamento_id,
+            departamento_numero: departamentoActual?.numero ?? "",
             activo: vecino.activo,
           }}
           showActive
