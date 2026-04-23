@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import type { ActionState } from "@/app/superadmin/actions";
+import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 
 type Block = {
   id: string;
@@ -44,7 +45,7 @@ const initialState: ActionState = {
 function buildEmailFromCode(code: string) {
   const digits = String(code || "").match(/\d+/g)?.join("");
   const suffix = digits || String(code || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-  return `admin${suffix || "bloque"}@mibloque.local`;
+  return `admin${suffix || "bloque"}@${INTERNAL_EMAIL_DOMAIN}`;
 }
 
 export default function UserCreateForm({
@@ -84,7 +85,7 @@ export default function UserCreateForm({
 
   const vecinoEmailPreview =
     mode === "vecino"
-      ? `${(username || initialValues?.username || "").trim().toLowerCase()}@mibloque.local`
+      ? `${(username || initialValues?.username || "").trim().toLowerCase()}@${INTERNAL_EMAIL_DOMAIN}`
       : "";
 
   return (

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -164,7 +165,7 @@ export default function LoginPage() {
 
         emailParaLogin = perfilPorUsername.email;
       } else {
-        emailParaLogin = `${username}@mibloque.local`;
+        emailParaLogin = `${username}@${INTERNAL_EMAIL_DOMAIN}`;
       }
 
       const { error: authError } = await supabase.auth.signInWithPassword({
@@ -296,7 +297,7 @@ export default function LoginPage() {
                       type="email"
                       value={adminEmail}
                       onChange={(e) => setAdminEmail(e.target.value)}
-                      placeholder="admin@mibloque.local"
+                      placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
                       className="w-full px-4 py-3"
                       required
                     />

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 
 export type ActionState = {
   ok: boolean;
@@ -47,7 +48,7 @@ function normalizeDepartamentoNumero(value: string) {
 function adminEmailFromBlockCode(code: string) {
   const digits = String(code || "").match(/\d+/g)?.join("");
   const suffix = digits || String(code || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-  return `admin${suffix || "bloque"}@mibloque.local`;
+  return `admin${suffix || "bloque"}@${INTERNAL_EMAIL_DOMAIN}`;
 }
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -558,7 +559,7 @@ export async function createVecinoAction(
       return { ok: false, message: "Selecciona un bloque." };
     }
 
-    const email = `${username}@mibloque.local`;
+    const email = `${username}@${INTERNAL_EMAIL_DOMAIN}`;
     const supabase = await createClient();
     const departamento = await resolveOrCreateDepartamentoId({
       supabase,
@@ -647,7 +648,7 @@ export async function updateVecinoAction(
       };
     }
 
-    const email = `${username}@mibloque.local`;
+    const email = `${username}@${INTERNAL_EMAIL_DOMAIN}`;
     const supabase = await createClient();
     const departamento = await resolveOrCreateDepartamentoId({
       supabase,
