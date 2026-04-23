@@ -20,6 +20,18 @@ type Props = {
   blocks: Block[];
   departamentos: Departamento[];
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  submitLabel?: string;
+  initialValues?: {
+    id?: string;
+    nombre?: string;
+    email?: string;
+    username?: string;
+    bloque_id?: string;
+    departamento_id?: string;
+    activo?: boolean;
+  };
+  allowPassword?: boolean;
+  showActive?: boolean;
 };
 
 const initialState: ActionState = {
@@ -32,12 +44,19 @@ export default function UserCreateForm({
   blocks,
   departamentos,
   action,
+  submitLabel,
+  initialValues,
+  allowPassword = true,
+  showActive = false,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [selectedBlockId, setSelectedBlockId] = useState(
-    () => blocks[0]?.id ?? ""
+    () => initialValues?.bloque_id ?? blocks[0]?.id ?? ""
   );
-  const [username, setUsername] = useState("");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(
+    () => initialValues?.departamento_id ?? ""
+  );
+  const [username, setUsername] = useState(initialValues?.username ?? "");
 
   const departamentosFiltrados = useMemo(
     () => departamentos.filter((item) => item.bloque_id === selectedBlockId),
@@ -45,7 +64,9 @@ export default function UserCreateForm({
   );
 
   const emailPreview =
-    mode === "vecino" && username ? `${username.trim().toLowerCase()}@mibloque.local` : "";
+    mode === "vecino"
+      ? `${(username || initialValues?.username || "").trim().toLowerCase()}@mibloque.local`
+      : "";
 
   return (
     <div className="space-y-5">
@@ -62,8 +83,17 @@ export default function UserCreateForm({
       )}
 
       <form action={formAction} className="space-y-4">
+        {initialValues?.id ? (
+          <input type="hidden" name="id" value={initialValues.id} />
+        ) : null}
+
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Nombre" name="nombre" placeholder="Ej. Juan Perez" />
+          <Field
+            label="Nombre"
+            name="nombre"
+            placeholder="Ej. Juan Perez"
+            defaultValue={initialValues?.nombre}
+          />
 
           {mode === "admin" ? (
             <Field
@@ -71,6 +101,7 @@ export default function UserCreateForm({
               name="email"
               type="email"
               placeholder="admin@bloque.com"
+              defaultValue={initialValues?.email}
             />
           ) : (
             <Field
@@ -84,12 +115,23 @@ export default function UserCreateForm({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field
-            label="Contraseña"
-            name="password"
-            type="password"
-            placeholder="Minimo 6 caracteres"
-          />
+          {allowPassword ? (
+            <Field
+              label="Contraseña"
+              name="password"
+              type="password"
+              placeholder={
+                initialValues?.id
+                  ? "Dejar en blanco para no cambiar"
+                  : "Mínimo 6 caracteres"
+              }
+              required={!initialValues?.id}
+            />
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              La contraseña no se modifica en esta pantalla.
+            </div>
+          )}
 
           <label className="space-y-2">
             <span className="block text-sm font-semibold text-white/80">
@@ -98,7 +140,10 @@ export default function UserCreateForm({
             <select
               name="bloque_id"
               value={selectedBlockId}
-              onChange={(e) => setSelectedBlockId(e.target.value)}
+              onChange={(e) => {
+                setSelectedBlockId(e.target.value);
+                setSelectedDepartmentId("");
+              }}
               className="theme-input w-full rounded-2xl px-4 py-3"
               required
             >
@@ -120,6 +165,8 @@ export default function UserCreateForm({
               </span>
               <select
                 name="departamento_id"
+                value={selectedDepartmentId}
+                onChange={(e) => setSelectedDepartmentId(e.target.value)}
                 className="theme-input w-full rounded-2xl px-4 py-3"
                 required
               >
@@ -133,10 +180,22 @@ export default function UserCreateForm({
             </label>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-              <span className="font-semibold text-white">Email que se creará:</span>{" "}
+              <span className="font-semibold text-white">Email:</span>{" "}
               {emailPreview || "Se genera automáticamente desde el usuario"}
             </div>
           </>
+        )}
+
+        {showActive && (
+          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+            <input
+              type="checkbox"
+              name="activo"
+              defaultChecked={initialValues?.activo ?? true}
+              className="h-4 w-4 rounded border-white/30 bg-white/10"
+            />
+            <span className="text-sm font-semibold text-white/80">Activo</span>
+          </label>
         )}
 
         <button
@@ -145,10 +204,8 @@ export default function UserCreateForm({
           className="btn-primary inline-flex min-h-[48px] items-center justify-center rounded-2xl px-5 font-bold disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending
-            ? "Creando..."
-            : mode === "admin"
-            ? "Crear admin"
-            : "Crear vecino"}
+            ? "Guardando..."
+            : submitLabel ?? (mode === "admin" ? "Crear admin" : "Crear vecino")}
         </button>
       </form>
     </div>
@@ -162,6 +219,8 @@ function Field({
   type = "text",
   value,
   onChange,
+  defaultValue,
+  required = true,
 }: {
   label: string;
   name: string;
@@ -169,6 +228,8 @@ function Field({
   type?: string;
   value?: string;
   onChange?: (value: string) => void;
+  defaultValue?: string;
+  required?: boolean;
 }) {
   const controlled = typeof value === "string" && onChange;
 
@@ -179,12 +240,11 @@ function Field({
         type={type}
         name={name}
         value={controlled ? value : undefined}
-        onChange={
-          controlled ? (e) => onChange?.(e.target.value) : undefined
-        }
+        defaultValue={!controlled ? defaultValue : undefined}
+        onChange={controlled ? (e) => onChange?.(e.target.value) : undefined}
         placeholder={placeholder}
         className="theme-input w-full rounded-2xl px-4 py-3"
-        required
+        required={required}
       />
     </label>
   );

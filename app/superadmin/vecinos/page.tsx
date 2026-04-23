@@ -3,16 +3,24 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Bloques",
+  title: "Vecinos",
 };
 
-export default async function BloquesPage() {
+export default async function VecinosPage() {
   const supabase = await createClient();
 
-  const { data: bloques } = await supabase
-    .from("bloques")
-    .select("id, nombre, codigo, activo, created_at")
-    .order("created_at", { ascending: false });
+  const [{ data: vecinos }, { data: bloques }] = await Promise.all([
+    supabase
+      .from("usuarios")
+      .select("id, nombre, username, email, bloque_id, departamento_id, activo, created_at")
+      .eq("rol", "vecino")
+      .order("created_at", { ascending: false }),
+    supabase.from("bloques").select("id, nombre"),
+  ]);
+
+  const bloqueMap = new Map(
+    (bloques ?? []).map((item) => [item.id, item.nombre] as const)
+  );
 
   return (
     <main className="space-y-6">
@@ -21,18 +29,17 @@ export default async function BloquesPage() {
           Superadmin
         </p>
         <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
-          Bloques registrados
+          Vecinos
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Revisa los bloques activos y crea nuevos desde el mismo panel.
+          Edita, desactiva o crea cuentas de vecinos.
         </p>
-
         <div className="mt-6">
           <Link
-            href="/superadmin/bloques/nuevo"
+            href="/superadmin/vecinos/nuevo"
             className="btn-primary inline-flex rounded-2xl px-5 py-3 text-sm font-bold"
           >
-            Nuevo bloque
+            Nuevo vecino
           </Link>
         </div>
       </section>
@@ -43,26 +50,26 @@ export default async function BloquesPage() {
             <thead className="bg-white/10 text-left text-slate-200">
               <tr>
                 <th className="px-5 py-4">Nombre</th>
-                <th className="px-5 py-4">Código</th>
+                <th className="px-5 py-4">Usuario</th>
+                <th className="px-5 py-4">Email</th>
+                <th className="px-5 py-4">Bloque</th>
                 <th className="px-5 py-4">Estado</th>
-                <th className="px-5 py-4">Fecha</th>
                 <th className="px-5 py-4">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {bloques?.map((item) => (
+              {vecinos?.map((item) => (
                 <tr key={item.id} className="border-t border-white/10 text-white">
                   <td className="px-5 py-4">{item.nombre}</td>
-                  <td className="px-5 py-4">{item.codigo}</td>
+                  <td className="px-5 py-4">{item.username}</td>
+                  <td className="px-5 py-4">{item.email}</td>
+                  <td className="px-5 py-4">{bloqueMap.get(item.bloque_id) ?? "-"}</td>
                   <td className="px-5 py-4">
-                    {item.activo ? "Activo" : "Pausado"}
-                  </td>
-                  <td className="px-5 py-4">
-                    {new Date(item.created_at).toLocaleDateString("es-BO")}
+                    {item.activo ? "Activo" : "Desactivado"}
                   </td>
                   <td className="px-5 py-4">
                     <Link
-                      href={`/superadmin/bloques/${item.id}`}
+                      href={`/superadmin/vecinos/${item.id}`}
                       className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
                     >
                       Editar
@@ -71,10 +78,10 @@ export default async function BloquesPage() {
                 </tr>
               ))}
 
-              {(!bloques || bloques.length === 0) && (
+              {(!vecinos || vecinos.length === 0) && (
                 <tr className="border-t border-white/10 text-slate-300">
-                  <td colSpan={5} className="px-5 py-6 text-center">
-                    Todavía no hay bloques registrados.
+                  <td colSpan={6} className="px-5 py-6 text-center">
+                    No hay vecinos registrados.
                   </td>
                 </tr>
               )}

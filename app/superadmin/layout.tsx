@@ -7,7 +7,9 @@ const navItems = [
   { href: "/superadmin", label: "Dashboard" },
   { href: "/superadmin/bloques", label: "Bloques" },
   { href: "/superadmin/bloques/nuevo", label: "Nuevo bloque" },
+  { href: "/superadmin/admins", label: "Admins" },
   { href: "/superadmin/admins/nuevo", label: "Nuevo admin" },
+  { href: "/superadmin/vecinos", label: "Vecinos" },
   { href: "/superadmin/vecinos/nuevo", label: "Nuevo vecino" },
 ];
 
