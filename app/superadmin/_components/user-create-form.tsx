@@ -32,12 +32,19 @@ type Props = {
   };
   allowPassword?: boolean;
   showActive?: boolean;
+  autoGenerateAdminEmail?: boolean;
 };
 
 const initialState: ActionState = {
   ok: false,
   message: "",
 };
+
+function buildEmailFromCode(code: string) {
+  const digits = String(code || "").match(/\d+/g)?.join("");
+  const suffix = digits || String(code || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return `admin${suffix || "bloque"}@mibloque.local`;
+}
 
 export default function UserCreateForm({
   mode,
@@ -48,6 +55,7 @@ export default function UserCreateForm({
   initialValues,
   allowPassword = true,
   showActive = false,
+  autoGenerateAdminEmail = false,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [selectedBlockId, setSelectedBlockId] = useState(
@@ -58,6 +66,11 @@ export default function UserCreateForm({
   );
   const [username, setUsername] = useState(initialValues?.username ?? "");
 
+  const selectedBlock = useMemo(
+    () => blocks.find((item) => item.id === selectedBlockId),
+    [blocks, selectedBlockId]
+  );
+
   const departamentosFiltrados = useMemo(
     () => departamentos.filter((item) => item.bloque_id === selectedBlockId),
     [departamentos, selectedBlockId]
@@ -66,7 +79,9 @@ export default function UserCreateForm({
   const emailPreview =
     mode === "vecino"
       ? `${(username || initialValues?.username || "").trim().toLowerCase()}@mibloque.local`
-      : "";
+      : autoGenerateAdminEmail
+        ? buildEmailFromCode(selectedBlock?.codigo || selectedBlock?.nombre || "")
+        : "";
 
   return (
     <div className="space-y-5">
@@ -96,13 +111,25 @@ export default function UserCreateForm({
           />
 
           {mode === "admin" ? (
-            <Field
-              label="Email"
-              name="email"
-              type="email"
-              placeholder="admin@bloque.com"
-              defaultValue={initialValues?.email}
-            />
+            autoGenerateAdminEmail ? (
+              <div className="space-y-2">
+                <span className="block text-sm font-semibold text-white/80">
+                  Email
+                </span>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  {emailPreview || "Selecciona un bloque para generar el correo"}
+                </div>
+                <input type="hidden" name="email" value={emailPreview} />
+              </div>
+            ) : (
+              <Field
+                label="Email"
+                name="email"
+                type="email"
+                placeholder="admin@bloque.com"
+                defaultValue={initialValues?.email}
+              />
+            )
           ) : (
             <Field
               label="Usuario"
@@ -181,7 +208,7 @@ export default function UserCreateForm({
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
               <span className="font-semibold text-white">Email:</span>{" "}
-              {emailPreview || "Se genera automáticamente desde el usuario"}
+              {emailPreview || "Se genera automaticamente desde el usuario"}
             </div>
           </>
         )}

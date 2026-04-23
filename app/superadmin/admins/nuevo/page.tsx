@@ -41,6 +41,7 @@ export default async function NuevoAdminPage({ searchParams }: Props) {
           departamentos={[]}
           action={createAdminAction}
           initialValues={{ bloque_id: bloqueId }}
+          autoGenerateAdminEmail
         />
       </section>
     </main>

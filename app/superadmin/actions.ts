@@ -40,6 +40,12 @@ function safeString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
 }
 
+function adminEmailFromBlockCode(code: string) {
+  const digits = String(code || "").match(/\d+/g)?.join("");
+  const suffix = digits || String(code || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return `admin${suffix || "bloque"}@mibloque.local`;
+}
+
 async function deleteAuthUserIfNeeded(userId?: string) {
   if (!userId) return;
 
@@ -198,16 +204,11 @@ export async function createAdminAction(
     await requireSuperadmin();
 
     const nombre = safeString(formData.get("nombre"));
-    const email = safeString(formData.get("email")).toLowerCase();
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
 
     if (!nombre) {
       return { ok: false, message: "Escribe el nombre del admin." };
-    }
-
-    if (!email) {
-      return { ok: false, message: "Escribe el email del admin." };
     }
 
     if (!password || password.length < 6) {
@@ -222,8 +223,20 @@ export async function createAdminAction(
     }
 
     const supabase = createAdminClient();
+    const { data: bloque, error: bloqueError } = await supabase
+      .from("bloques")
+      .select("codigo")
+      .eq("id", bloqueId)
+      .single();
+
+    if (bloqueError || !bloque) {
+      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
+    }
+
+    const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
+
     const { data, error: authError } = await supabase.auth.admin.createUser({
-      email,
+      email: generatedEmail,
       password,
       email_confirm: true,
       user_metadata: {
@@ -242,7 +255,7 @@ export async function createAdminAction(
     const { error: perfilError } = await supabase.from("usuarios").insert({
       id: data.user.id,
       nombre,
-      email,
+      email: generatedEmail,
       rol: "admin",
       bloque_id: bloqueId,
       departamento_id: null,
