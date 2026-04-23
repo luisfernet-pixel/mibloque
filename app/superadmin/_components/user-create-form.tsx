@@ -77,12 +77,15 @@ export default function UserCreateForm({
     [departamentos, selectedBlockId]
   );
 
-  const emailPreview =
+  const adminEmailPreview =
+    autoGenerateAdminEmail && mode === "admin"
+      ? buildEmailFromCode(selectedBlock?.codigo || selectedBlock?.nombre || "")
+      : "";
+
+  const vecinoEmailPreview =
     mode === "vecino"
       ? `${(username || initialValues?.username || "").trim().toLowerCase()}@mibloque.local`
-      : autoGenerateAdminEmail
-        ? buildEmailFromCode(selectedBlock?.codigo || selectedBlock?.nombre || "")
-        : "";
+      : "";
 
   return (
     <div className="space-y-5">
@@ -104,64 +107,7 @@ export default function UserCreateForm({
         ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Field
-            label="Nombre"
-            name="nombre"
-            placeholder="Ej. Juan Perez"
-            defaultValue={initialValues?.nombre}
-          />
-
-          {mode === "admin" ? (
-            autoGenerateAdminEmail ? (
-              <div className="space-y-2">
-                <span className="block text-sm font-semibold text-white/80">
-                  Email
-                </span>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
-                  {emailPreview || "Selecciona un bloque para generar el correo"}
-                </div>
-                <input type="hidden" name="email" value={emailPreview} />
-              </div>
-            ) : (
-              <Field
-                label="Email"
-                name="email"
-                type="email"
-                placeholder="admin@bloque.com"
-                defaultValue={initialValues?.email}
-              />
-            )
-          ) : (
-            <Field
-              label="Usuario"
-              name="username"
-              placeholder="24-202"
-              value={username}
-              onChange={(value) => setUsername(value)}
-            />
-          )}
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {allowPassword ? (
-            <Field
-              label="Contraseña"
-              name="password"
-              type="password"
-              placeholder={
-                initialValues?.id
-                  ? "Dejar en blanco para no cambiar"
-                  : "Mínimo 6 caracteres"
-              }
-              required={!initialValues?.id}
-            />
-          ) : (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              La contraseña no se modifica en esta pantalla.
-            </div>
-          )}
-
-          <label className="space-y-2">
+          <label className="space-y-2 md:col-span-2">
             <span className="block text-sm font-semibold text-white/80">
               Bloque
             </span>
@@ -183,14 +129,29 @@ export default function UserCreateForm({
               ))}
             </select>
           </label>
-        </div>
 
-        {mode === "vecino" && (
-          <>
-            <label className="space-y-2">
-              <span className="block text-sm font-semibold text-white/80">
-                Departamento
-              </span>
+          {mode === "admin" ? (
+            autoGenerateAdminEmail ? (
+              <div className="space-y-2 md:col-span-2">
+                <span className="block text-sm font-semibold text-white/80">
+                  Email
+                </span>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                  {adminEmailPreview || "Selecciona un bloque para generar el correo"}
+                </div>
+                <input type="hidden" name="email" value={adminEmailPreview} />
+              </div>
+            ) : (
+              <Field
+                label="Email"
+                name="email"
+                type="email"
+                placeholder="admin@bloque.com"
+                defaultValue={initialValues?.email}
+              />
+            )
+          ) : (
+            <>
               <Field
                 label="Departamento"
                 name="departamento_numero"
@@ -198,20 +159,53 @@ export default function UserCreateForm({
                 value={departmentNumber}
                 onChange={(value) => setDepartmentNumber(value)}
               />
-            </label>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-              <span className="font-semibold text-white">Email:</span>{" "}
-              {emailPreview || "Se genera automaticamente desde el usuario"}
-            </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+                <span className="font-semibold text-white">Referencias del bloque:</span>{" "}
+                {departamentosFiltrados.length > 0
+                  ? departamentosFiltrados.map((item) => item.numero).join(", ")
+                  : "Aún no hay departamentos cargados para este bloque"}
+              </div>
+            </>
+          )}
+        </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-              <span className="font-semibold text-white">Referencias del bloque:</span>{" "}
-              {departamentosFiltrados.length > 0
-                ? departamentosFiltrados.map((item) => item.numero).join(", ")
-                : "Aún no hay departamentos cargados para este bloque"}
-            </div>
-          </>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            label="Nombre"
+            name="nombre"
+            placeholder="Ej. Juan Perez"
+            defaultValue={initialValues?.nombre}
+          />
+
+          {mode === "admin" ? (
+            <Field
+              label="Contraseña"
+              name="password"
+              type="password"
+              placeholder={
+                initialValues?.id
+                  ? "Dejar en blanco para no cambiar"
+                  : "Mínimo 6 caracteres"
+              }
+              required={!initialValues?.id}
+            />
+          ) : (
+            <Field
+              label="Usuario"
+              name="username"
+              placeholder="24-202"
+              value={username}
+              onChange={(value) => setUsername(value)}
+            />
+          )}
+        </div>
+
+        {mode === "vecino" && (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+            <span className="font-semibold text-white">Email:</span>{" "}
+            {vecinoEmailPreview || "Se genera automaticamente desde el usuario"}
+          </div>
         )}
 
         {showActive && (
@@ -225,6 +219,20 @@ export default function UserCreateForm({
             <span className="text-sm font-semibold text-white/80">Activo</span>
           </label>
         )}
+
+        {allowPassword && mode === "vecino" ? (
+          <Field
+            label="Contraseña"
+            name="password"
+            type="password"
+            placeholder={
+              initialValues?.id
+                ? "Dejar en blanco para no cambiar"
+                : "Mínimo 6 caracteres"
+            }
+            required={!initialValues?.id}
+          />
+        ) : null}
 
         <button
           type="submit"

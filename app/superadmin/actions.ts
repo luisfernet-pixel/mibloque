@@ -50,13 +50,56 @@ function adminEmailFromBlockCode(code: string) {
   return `admin${suffix || "bloque"}@mibloque.local`;
 }
 
+type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+async function createAuthUser({
+  email,
+  password,
+  userMetadata,
+}: {
+  email: string;
+  password: string;
+  userMetadata: Record<string, unknown>;
+}): Promise<{ userId: string; usedServiceRole: boolean }> {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: userMetadata,
+    });
+
+    if (error || !data.user) {
+      throw error ?? new Error("No se pudo crear el usuario de Auth.");
+    }
+
+    return { userId: data.user.id, usedServiceRole: true };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: userMetadata,
+    },
+  });
+
+  if (error || !data.user) {
+    throw error ?? new Error("No se pudo crear el usuario de Auth.");
+  }
+
+  return { userId: data.user.id, usedServiceRole: false };
+}
+
 async function resolveOrCreateDepartamentoId({
   supabase,
   bloqueId,
   departamentoId,
   departamentoNumero,
 }: {
-  supabase: ReturnType<typeof createAdminClient>;
+  supabase: ServerSupabaseClient;
   bloqueId: string;
   departamentoId?: string;
   departamentoNumero?: string;
@@ -289,7 +332,7 @@ export async function createAdminAction(
       return { ok: false, message: "Selecciona un bloque." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { data: bloque, error: bloqueError } = await supabase
       .from("bloques")
       .select("codigo")
@@ -302,25 +345,24 @@ export async function createAdminAction(
 
     const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
 
-    const { data, error: authError } = await supabase.auth.admin.createUser({
+    const authResult = await createAuthUser({
       email: generatedEmail,
       password,
-      email_confirm: true,
-      user_metadata: {
+      userMetadata: {
         nombre,
         rol: "admin",
         bloque_id: bloqueId,
       },
     });
 
-    if (authError || !data.user) {
-      throw authError ?? new Error("No se pudo crear el usuario de Auth.");
-    }
+    createdUserId = authResult.userId;
 
-    createdUserId = data.user.id;
+    const profileSupabase = authResult.usedServiceRole
+      ? createAdminClient()
+      : await createClient();
 
-    const { error: perfilError } = await supabase.from("usuarios").insert({
-      id: data.user.id,
+    const { error: perfilError } = await profileSupabase.from("usuarios").insert({
+      id: authResult.userId,
       nombre,
       email: generatedEmail,
       rol: "admin",
@@ -371,7 +413,7 @@ export async function updateAdminAction(
       return { ok: false, message: "Completa nombre, email y bloque." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const updatePayload: Record<string, unknown> = {
       nombre,
       email,
@@ -387,32 +429,41 @@ export async function updateAdminAction(
       throw error;
     }
 
-    if (password) {
-      const { error: authError } = await supabase.auth.admin.updateUserById(id, {
-        email,
-        password,
-        user_metadata: {
-          nombre,
-          rol: "admin",
-          bloque_id: bloqueId,
-        },
-      });
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const adminSupabase = createAdminClient();
+      if (password) {
+        const { error: authError } = await adminSupabase.auth.admin.updateUserById(
+          id,
+          {
+            email,
+            password,
+            user_metadata: {
+              nombre,
+              rol: "admin",
+              bloque_id: bloqueId,
+            },
+          }
+        );
 
-      if (authError) {
-        throw authError;
-      }
-    } else {
-      const { error: authError } = await supabase.auth.admin.updateUserById(id, {
-        email,
-        user_metadata: {
-          nombre,
-          rol: "admin",
-          bloque_id: bloqueId,
-        },
-      });
+        if (authError) {
+          throw authError;
+        }
+      } else {
+        const { error: authError } = await adminSupabase.auth.admin.updateUserById(
+          id,
+          {
+            email,
+            user_metadata: {
+              nombre,
+              rol: "admin",
+              bloque_id: bloqueId,
+            },
+          }
+        );
 
-      if (authError) {
-        throw authError;
+        if (authError) {
+          throw authError;
+        }
       }
     }
 
@@ -442,7 +493,7 @@ export async function deleteAdminAction(
       return { ok: false, message: "Falta el admin a eliminar." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { error: perfilError } = await supabase
       .from("usuarios")
       .update({ activo: false })
@@ -508,7 +559,7 @@ export async function createVecinoAction(
     }
 
     const email = `${username}@mibloque.local`;
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const departamento = await resolveOrCreateDepartamentoId({
       supabase,
       bloqueId,
@@ -516,11 +567,10 @@ export async function createVecinoAction(
       departamentoNumero,
     });
 
-    const { data, error: authError } = await supabase.auth.admin.createUser({
+    const authResult = await createAuthUser({
       email,
       password,
-      email_confirm: true,
-      user_metadata: {
+      userMetadata: {
         nombre,
         rol: "vecino",
         bloque_id: bloqueId,
@@ -529,14 +579,14 @@ export async function createVecinoAction(
       },
     });
 
-    if (authError || !data.user) {
-      throw authError ?? new Error("No se pudo crear el usuario de Auth.");
-    }
+    createdUserId = authResult.userId;
 
-    createdUserId = data.user.id;
+    const profileSupabase = authResult.usedServiceRole
+      ? createAdminClient()
+      : await createClient();
 
-    const { error: perfilError } = await supabase.from("usuarios").insert({
-      id: data.user.id,
+    const { error: perfilError } = await profileSupabase.from("usuarios").insert({
+      id: authResult.userId,
       nombre,
       email,
       username,
@@ -598,7 +648,7 @@ export async function updateVecinoAction(
     }
 
     const email = `${username}@mibloque.local`;
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const departamento = await resolveOrCreateDepartamentoId({
       supabase,
       bloqueId,
@@ -639,13 +689,16 @@ export async function updateVecinoAction(
       authPayload.password = password;
     }
 
-    const { error: authError } = await supabase.auth.admin.updateUserById(
-      id,
-      authPayload
-    );
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const adminSupabase = createAdminClient();
+      const { error: authError } = await adminSupabase.auth.admin.updateUserById(
+        id,
+        authPayload
+      );
 
-    if (authError) {
-      throw authError;
+      if (authError) {
+        throw authError;
+      }
     }
 
     revalidatePath("/superadmin/vecinos");
@@ -674,7 +727,7 @@ export async function deleteVecinoAction(
       return { ok: false, message: "Falta el vecino a eliminar." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { error: perfilError } = await supabase
       .from("usuarios")
       .update({ activo: false })
