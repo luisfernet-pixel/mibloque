@@ -96,7 +96,8 @@ export default async function AdminAvisosPage({
     .select("id, titulo, mensaje, created_at")
     .eq("bloque_id", usuario.perfil.bloque_id)
     .order("created_at", { ascending: false });
-    const rows = avisos ?? [];
+
+  const rows = avisos ?? [];
 
   return (
     <main className="space-y-6">
