@@ -96,6 +96,7 @@ export default async function AdminAvisosPage({
     .select("id, titulo, mensaje, created_at")
     .eq("bloque_id", usuario.perfil.bloque_id)
     .order("created_at", { ascending: false });
+    const rows = avisos ?? [];
 
   return (
     <main className="space-y-6">
@@ -205,18 +206,18 @@ export default async function AdminAvisosPage({
           </div>
 
           <div className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
-            {avisos?.length ?? 0} aviso(s)
+            {rows.length} aviso(s)
           </div>
         </div>
 
         <div className="p-4 md:p-5">
-          {avisos?.length === 0 ? (
+          {rows.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] p-6 text-center text-slate-300">
               No hay avisos publicados.
             </div>
           ) : (
             <div className="space-y-4">
-              {avisos.map((item) => {
+              {rows.map((item) => {
                 const enEdicion = editarId === item.id;
 
                 return (
