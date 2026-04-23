@@ -23,7 +23,7 @@ export default async function EditAdminPage({ params }: Props) {
   const [{ data: admin }, { data: bloques }] = await Promise.all([
     supabase
       .from("usuarios")
-      .select("id, nombre, email, bloque_id, activo")
+      .select("id, nombre, telefono, email, bloque_id, activo")
       .eq("id", id)
       .eq("rol", "admin")
       .single(),
@@ -56,6 +56,7 @@ export default async function EditAdminPage({ params }: Props) {
           initialValues={{
             id: admin.id,
             nombre: admin.nombre,
+            telefono: admin.telefono,
             email: admin.email,
             bloque_id: admin.bloque_id,
             activo: admin.activo,

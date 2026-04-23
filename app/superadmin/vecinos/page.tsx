@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Vecinos",
+  title: "Departamentos",
 };
 
 export default async function VecinosPage() {
@@ -12,7 +12,7 @@ export default async function VecinosPage() {
   const [{ data: vecinos }, { data: bloques }] = await Promise.all([
     supabase
       .from("usuarios")
-      .select("id, nombre, username, email, bloque_id, departamento_id, activo, created_at")
+      .select("id, nombre, telefono, username, email, bloque_id, departamento_id, activo, created_at")
       .eq("rol", "vecino")
       .order("created_at", { ascending: false }),
     supabase.from("bloques").select("id, nombre"),
@@ -29,17 +29,17 @@ export default async function VecinosPage() {
           Superadmin
         </p>
         <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
-          Vecinos
+          Departamentos
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Edita, desactiva o crea cuentas de vecinos.
+          Edita, desactiva o crea registros de departamentos.
         </p>
         <div className="mt-6">
           <Link
             href="/superadmin/vecinos/nuevo"
             className="btn-primary inline-flex rounded-2xl px-5 py-3 text-sm font-bold"
           >
-            Nuevo vecino
+            Nuevo departamento
           </Link>
         </div>
       </section>
@@ -50,7 +50,8 @@ export default async function VecinosPage() {
             <thead className="bg-white/10 text-left text-slate-200">
               <tr>
                 <th className="px-5 py-4">Nombre</th>
-                <th className="px-5 py-4">Usuario</th>
+                <th className="px-5 py-4">Código</th>
+                <th className="px-5 py-4">Teléfono</th>
                 <th className="px-5 py-4">Email</th>
                 <th className="px-5 py-4">Bloque</th>
                 <th className="px-5 py-4">Estado</th>
@@ -62,6 +63,7 @@ export default async function VecinosPage() {
                 <tr key={item.id} className="border-t border-white/10 text-white">
                   <td className="px-5 py-4">{item.nombre}</td>
                   <td className="px-5 py-4">{item.username}</td>
+                  <td className="px-5 py-4">{item.telefono ?? "-"}</td>
                   <td className="px-5 py-4">{item.email}</td>
                   <td className="px-5 py-4">{bloqueMap.get(item.bloque_id) ?? "-"}</td>
                   <td className="px-5 py-4">
@@ -80,8 +82,8 @@ export default async function VecinosPage() {
 
               {(!vecinos || vecinos.length === 0) && (
                 <tr className="border-t border-white/10 text-slate-300">
-                  <td colSpan={6} className="px-5 py-6 text-center">
-                    No hay vecinos registrados.
+                  <td colSpan={7} className="px-5 py-6 text-center">
+                    No hay departamentos registrados.
                   </td>
                 </tr>
               )}

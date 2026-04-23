@@ -23,7 +23,7 @@ export default async function BlockDetailPage({ params }: Props) {
   const [
     { data: bloque },
     { data: admins },
-    { data: vecinos },
+    { data: departamentosRegistrados },
     { data: departamentos },
   ] = await Promise.all([
     supabase
@@ -39,7 +39,7 @@ export default async function BlockDetailPage({ params }: Props) {
       .order("created_at", { ascending: false }),
     supabase
       .from("usuarios")
-      .select("id, nombre, username, email, activo, departamento_id, created_at")
+      .select("id, nombre, telefono, username, email, activo, departamento_id, created_at")
       .eq("rol", "vecino")
       .eq("bloque_id", id)
       .order("created_at", { ascending: false }),
@@ -76,7 +76,7 @@ export default async function BlockDetailPage({ params }: Props) {
             href={`/superadmin/vecinos/nuevo?bloqueId=${bloque.id}`}
             className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10"
           >
-            Crear vecino
+            Crear departamento
           </Link>
           <Link
             href="/superadmin/bloques"
@@ -161,21 +161,21 @@ export default async function BlockDetailPage({ params }: Props) {
         <div className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold text-white">Vecinos del bloque</h2>
+              <h2 className="text-2xl font-bold text-white">Departamentos del bloque</h2>
               <p className="mt-1 text-sm text-slate-300">
-                {vecinos?.length ?? 0} vecino(s)
+                {departamentosRegistrados?.length ?? 0} departamento(s)
               </p>
             </div>
             <Link
               href={`/superadmin/vecinos/nuevo?bloqueId=${bloque.id}`}
               className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              Agregar
+              Agregar departamento
             </Link>
           </div>
 
           <div className="mt-4 space-y-3">
-            {vecinos?.map((item) => (
+            {departamentosRegistrados?.map((item) => (
               <div
                 key={item.id}
                 className="rounded-2xl border border-white/10 bg-white/5 p-4"
@@ -184,7 +184,7 @@ export default async function BlockDetailPage({ params }: Props) {
                   <div>
                     <p className="font-semibold text-white">{item.nombre}</p>
                     <p className="text-sm text-slate-300">
-                      {item.username} · {item.email}
+                      {item.username} · {item.telefono ?? "-"} · {item.email}
                     </p>
                   </div>
                   <Link
@@ -197,9 +197,9 @@ export default async function BlockDetailPage({ params }: Props) {
               </div>
             ))}
 
-            {(!vecinos || vecinos.length === 0) && (
+            {(!departamentosRegistrados || departamentosRegistrados.length === 0) && (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-slate-300">
-                No hay vecinos para este bloque.
+                No hay departamentos para este bloque.
               </div>
             )}
           </div>

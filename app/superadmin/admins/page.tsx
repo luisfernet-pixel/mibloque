@@ -12,7 +12,7 @@ export default async function AdminsPage() {
   const [{ data: admins }, { data: bloques }] = await Promise.all([
     supabase
       .from("usuarios")
-      .select("id, nombre, email, bloque_id, activo, created_at")
+      .select("id, nombre, telefono, email, bloque_id, activo, created_at")
       .eq("rol", "admin")
       .order("created_at", { ascending: false }),
     supabase.from("bloques").select("id, nombre"),
@@ -50,6 +50,7 @@ export default async function AdminsPage() {
             <thead className="bg-white/10 text-left text-slate-200">
               <tr>
                 <th className="px-5 py-4">Nombre</th>
+                <th className="px-5 py-4">Teléfono</th>
                 <th className="px-5 py-4">Email</th>
                 <th className="px-5 py-4">Bloque</th>
                 <th className="px-5 py-4">Estado</th>
@@ -60,6 +61,7 @@ export default async function AdminsPage() {
               {admins?.map((item) => (
                 <tr key={item.id} className="border-t border-white/10 text-white">
                   <td className="px-5 py-4">{item.nombre}</td>
+                  <td className="px-5 py-4">{item.telefono ?? "-"}</td>
                   <td className="px-5 py-4">{item.email}</td>
                   <td className="px-5 py-4">{bloqueMap.get(item.bloque_id) ?? "-"}</td>
                   <td className="px-5 py-4">
@@ -78,7 +80,7 @@ export default async function AdminsPage() {
 
               {(!admins || admins.length === 0) && (
                 <tr className="border-t border-white/10 text-slate-300">
-                  <td colSpan={5} className="px-5 py-6 text-center">
+                  <td colSpan={6} className="px-5 py-6 text-center">
                     No hay administradores registrados.
                   </td>
                 </tr>

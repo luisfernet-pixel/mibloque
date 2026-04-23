@@ -4,7 +4,7 @@ import UserCreateForm from "@/app/superadmin/_components/user-create-form";
 import { createVecinoAction } from "@/app/superadmin/actions";
 
 export const metadata: Metadata = {
-  title: "Nuevo vecino",
+  title: "Nuevo departamento",
 };
 
 type Props = {
@@ -33,16 +33,16 @@ export default async function NuevoVecinoPage({ searchParams }: Props) {
           Superadmin
         </p>
         <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
-          Crear nuevo vecino
+          Crear nuevo departamento
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          El usuario se crea con un email interno, su departamento y su acceso.
+          El registro del departamento queda vinculado al bloque y a su código interno.
         </p>
       </section>
 
       <section className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
         <UserCreateForm
-          mode="vecino"
+          mode="departamento"
           blocks={bloques ?? []}
           departamentos={departamentos ?? []}
           action={createVecinoAction}

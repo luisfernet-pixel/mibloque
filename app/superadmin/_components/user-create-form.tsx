@@ -17,7 +17,7 @@ type Departamento = {
 };
 
 type Props = {
-  mode: "admin" | "vecino";
+  mode: "admin" | "departamento";
   blocks: Block[];
   departamentos: Departamento[];
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
@@ -25,6 +25,7 @@ type Props = {
   initialValues?: {
     id?: string;
     nombre?: string;
+    telefono?: string;
     email?: string;
     username?: string;
     bloque_id?: string;
@@ -42,10 +43,23 @@ const initialState: ActionState = {
   message: "",
 };
 
-function buildEmailFromCode(code: string) {
-  const digits = String(code || "").match(/\d+/g)?.join("");
-  const suffix = digits || String(code || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-  return `admin${suffix || "bloque"}@${INTERNAL_EMAIL_DOMAIN}`;
+function extractCode(value: string) {
+  const digits = String(value || "").match(/\d+/g)?.join("");
+  return digits || String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function buildAdminEmail(code: string) {
+  return `admin${extractCode(code) || "bloque"}@${INTERNAL_EMAIL_DOMAIN}`;
+}
+
+function buildDepartmentCode(blockCode: string, departmentNumber: string) {
+  const block = extractCode(blockCode);
+  const number = String(departmentNumber || "").trim().replace(/\s+/g, "").toUpperCase();
+  return `${block || "bloque"}-${number || "000"}`;
+}
+
+function buildDepartmentEmail(blockCode: string, departmentNumber: string) {
+  return `${buildDepartmentCode(blockCode, departmentNumber).toLowerCase()}@${INTERNAL_EMAIL_DOMAIN}`;
 }
 
 export default function UserCreateForm({
@@ -68,6 +82,8 @@ export default function UserCreateForm({
   );
   const [username, setUsername] = useState(initialValues?.username ?? "");
 
+  const [telefono, setTelefono] = useState(initialValues?.telefono ?? "");
+
   const selectedBlock = useMemo(
     () => blocks.find((item) => item.id === selectedBlockId),
     [blocks, selectedBlockId]
@@ -79,13 +95,24 @@ export default function UserCreateForm({
   );
 
   const adminEmailPreview =
-    autoGenerateAdminEmail && mode === "admin"
-      ? buildEmailFromCode(selectedBlock?.codigo || selectedBlock?.nombre || "")
+    mode === "admin" && autoGenerateAdminEmail
+      ? buildAdminEmail(selectedBlock?.codigo || selectedBlock?.nombre || "")
       : "";
 
-  const vecinoEmailPreview =
-    mode === "vecino"
-      ? `${(username || initialValues?.username || "").trim().toLowerCase()}@${INTERNAL_EMAIL_DOMAIN}`
+  const departmentCodePreview =
+    mode === "departamento"
+      ? buildDepartmentCode(
+          selectedBlock?.codigo || selectedBlock?.nombre || "",
+          departmentNumber
+        )
+      : "";
+
+  const departmentEmailPreview =
+    mode === "departamento"
+      ? buildDepartmentEmail(
+          selectedBlock?.codigo || selectedBlock?.nombre || "",
+          departmentNumber
+        )
       : "";
 
   return (
@@ -147,7 +174,7 @@ export default function UserCreateForm({
                 label="Email"
                 name="email"
                 type="email"
-                placeholder="admin@bloque.com"
+                placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
                 defaultValue={initialValues?.email}
               />
             )
@@ -162,10 +189,8 @@ export default function UserCreateForm({
               />
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                <span className="font-semibold text-white">Referencias del bloque:</span>{" "}
-                {departamentosFiltrados.length > 0
-                  ? departamentosFiltrados.map((item) => item.numero).join(", ")
-                  : "Aún no hay departamentos cargados para este bloque"}
+                <span className="font-semibold text-white">Código:</span>{" "}
+                {departmentCodePreview || "Selecciona bloque y número"}
               </div>
             </>
           )}
@@ -173,13 +198,46 @@ export default function UserCreateForm({
 
         <div className="grid gap-4 md:grid-cols-2">
           <Field
-            label="Nombre"
+            label={mode === "admin" ? "Nombre del admin" : "Nombre del residente"}
             name="nombre"
-            placeholder="Ej. Juan Perez"
+            placeholder={mode === "admin" ? "Ej. Juan Perez" : "Ej. Ana Pérez"}
             defaultValue={initialValues?.nombre}
           />
 
-          {mode === "admin" ? (
+          <Field
+            label="Teléfono"
+            name="telefono"
+            placeholder="Ej. 76543210"
+            defaultValue={initialValues?.telefono}
+          />
+        </div>
+
+        {mode === "departamento" && (
+          <>
+            <Field
+              label="Usuario del departamento"
+              name="username"
+              placeholder="Se usa el código del depto"
+              value={username}
+              onChange={(value) => setUsername(value)}
+            />
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              <span className="font-semibold text-white">Email:</span>{" "}
+              {departmentEmailPreview || "Se genera automáticamente desde el código"}
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              <span className="font-semibold text-white">Referencias del bloque:</span>{" "}
+              {departamentosFiltrados.length > 0
+                ? departamentosFiltrados.map((item) => item.numero).join(", ")
+                : "Aún no hay departamentos cargados para este bloque"}
+            </div>
+          </>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {allowPassword ? (
             <Field
               label="Contraseña"
               name="password"
@@ -192,22 +250,23 @@ export default function UserCreateForm({
               required={!initialValues?.id}
             />
           ) : (
-            <Field
-              label="Usuario"
-              name="username"
-              placeholder="24-202"
-              value={username}
-              onChange={(value) => setUsername(value)}
-            />
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+              La contraseña no se modifica en esta pantalla.
+            </div>
+          )}
+
+          {mode === "admin" ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              <span className="font-semibold text-white">Correo del admin:</span>{" "}
+              {adminEmailPreview || "Selecciona un bloque"}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              <span className="font-semibold text-white">Correo del departamento:</span>{" "}
+              {departmentEmailPreview || "Se genera automáticamente desde el código"}
+            </div>
           )}
         </div>
-
-        {mode === "vecino" && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-            <span className="font-semibold text-white">Email:</span>{" "}
-            {vecinoEmailPreview || "Se genera automaticamente desde el usuario"}
-          </div>
-        )}
 
         {showActive && (
           <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
@@ -221,20 +280,6 @@ export default function UserCreateForm({
           </label>
         )}
 
-        {allowPassword && mode === "vecino" ? (
-          <Field
-            label="Contraseña"
-            name="password"
-            type="password"
-            placeholder={
-              initialValues?.id
-                ? "Dejar en blanco para no cambiar"
-                : "Mínimo 6 caracteres"
-            }
-            required={!initialValues?.id}
-          />
-        ) : null}
-
         <button
           type="submit"
           disabled={pending}
@@ -242,7 +287,7 @@ export default function UserCreateForm({
         >
           {pending
             ? "Guardando..."
-            : submitLabel ?? (mode === "admin" ? "Crear admin" : "Crear vecino")}
+            : submitLabel ?? (mode === "admin" ? "Crear admin" : "Crear departamento")}
         </button>
       </form>
     </div>

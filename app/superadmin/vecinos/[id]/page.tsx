@@ -13,7 +13,7 @@ type Props = {
 };
 
 export const metadata: Metadata = {
-  title: "Editar vecino",
+  title: "Editar departamento",
 };
 
 export default async function EditVecinoPage({ params }: Props) {
@@ -25,7 +25,7 @@ export default async function EditVecinoPage({ params }: Props) {
       supabase
         .from("usuarios")
         .select(
-          "id, nombre, username, email, bloque_id, departamento_id, activo"
+          "id, nombre, telefono, username, email, bloque_id, departamento_id, activo"
         )
         .eq("id", id)
         .eq("rol", "vecino")
@@ -50,16 +50,16 @@ export default async function EditVecinoPage({ params }: Props) {
           Superadmin
         </p>
         <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
-          Editar vecino
+          Editar departamento
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Cambia usuario, departamento, contraseña o estado.
+          Cambia el código, el departamento, la contraseña o el estado.
         </p>
       </section>
 
       <section className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
         <UserCreateForm
-          mode="vecino"
+          mode="departamento"
           blocks={bloques ?? []}
           departamentos={departamentos ?? []}
           action={updateVecinoAction}
@@ -67,6 +67,7 @@ export default async function EditVecinoPage({ params }: Props) {
           initialValues={{
             id: vecino.id,
             nombre: vecino.nombre,
+            telefono: vecino.telefono,
             username: vecino.username,
             bloque_id: vecino.bloque_id,
             departamento_id: vecino.departamento_id,
@@ -90,7 +91,7 @@ export default async function EditVecinoPage({ params }: Props) {
               type="submit"
               className="rounded-2xl bg-[#ff5a3d] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110"
             >
-              Desactivar vecino
+              Desactivar departamento
             </button>
           </form>
         </div>
