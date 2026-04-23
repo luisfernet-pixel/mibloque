@@ -8,10 +8,16 @@ type PagoRow = {
   fecha_pago: string | null;
   referencia: string | null;
   comprobante_url: string | null;
-  cuotas: {
-    periodo: string | null;
-    monto_total: number | null;
-  } | null;
+  cuotas:
+    | {
+        periodo: string | null;
+        monto_total: number | null;
+      }
+    | {
+        periodo: string | null;
+        monto_total: number | null;
+      }[]
+    | null;
 };
 
 function money(value: number | null | undefined) {
@@ -24,6 +30,13 @@ function money(value: number | null | undefined) {
 function formatDate(value?: string | null) {
   if (!value) return "Sin fecha";
   return new Date(value).toLocaleDateString("es-BO");
+}
+
+function getPeriodo(
+  value: PagoRow["cuotas"]
+) {
+  if (!value) return "-";
+  return Array.isArray(value) ? value[0]?.periodo ?? "-" : value.periodo ?? "-";
 }
 
 export default async function VecinoRecibosPage() {
@@ -116,7 +129,7 @@ export default async function VecinoRecibosPage() {
               />
               <InfoBox
                 label="Último periodo"
-                value={rows[0]?.cuotas?.periodo || "Sin datos"}
+                value={rows[0] ? getPeriodo(rows[0].cuotas) : "Sin datos"}
               />
               <InfoBox
                 label="Monto último pago"
@@ -169,7 +182,7 @@ export default async function VecinoRecibosPage() {
                         Periodo
                       </p>
                       <p className="mt-2 text-lg font-bold text-white">
-                        {item.cuotas?.periodo || "-"}
+                        {getPeriodo(item.cuotas)}
                       </p>
                     </div>
 
