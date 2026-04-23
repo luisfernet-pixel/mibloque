@@ -9,7 +9,7 @@ function money(value: number | null | undefined) {
   })}`;
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value?: any) {
   if (!value) return "Sin fecha";
   return new Date(value).toLocaleDateString("es-BO");
 }
@@ -55,7 +55,7 @@ export default async function VecinoRecibosPage() {
     .eq("departamento_id", perfil.departamento_id)
     .order("fecha_pago", { ascending: false });
 
-  const rows = (pagos ?? []).map((item: any) => ({
+  const rows: any[] = (pagos ?? []).map((item: any) => ({
     id: item.id,
     monto_pagado: Number(item.monto_pagado || 0),
     fecha_pago: item.fecha_pago ?? null,
