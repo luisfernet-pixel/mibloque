@@ -36,8 +36,8 @@ export default async function SuperadminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#324359] text-slate-100">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#324359]/95 backdrop-blur">
+    <div className="theme-shell min-h-screen text-slate-100">
+      <header className="theme-shell sticky top-0 z-40 border-b border-white/10 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-5 lg:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
@@ -51,7 +51,7 @@ export default async function SuperadminLayout({
 
             <div className="flex shrink-0 items-center gap-2">
               <div className="rounded-full border border-sky-400/20 bg-sky-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
-                Panel maestro
+                Control total
               </div>
               <LogoutButton />
             </div>

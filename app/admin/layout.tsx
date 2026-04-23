@@ -23,15 +23,15 @@ export default async function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[#173454] text-white">
-      <header className="border-b border-white/10 bg-gradient-to-r from-[#0b1f39] via-[#132b49] to-[#1c3554]">
+    <div className="theme-shell min-h-screen">
+      <header className="theme-hero-alt border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h1 className="text-2xl font-bold">MiBloque Admin</h1>
 
             <div className="flex items-center gap-3">
               <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold tracking-[0.25em] text-cyan-100">
-                BLOQUE 121
+                Acceso privado
               </span>
               <LogoutButton />
             </div>

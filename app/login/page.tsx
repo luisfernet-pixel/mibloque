@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,7 +15,67 @@ export default function LoginPage() {
 
   const [loadingAdmin, setLoadingAdmin] = useState(false);
   const [loadingVecino, setLoadingVecino] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkExistingSession() {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user || cancelled) {
+        if (!cancelled) {
+          setCheckingSession(false);
+        }
+        return;
+      }
+
+      const { data: perfil } = await supabase
+        .from("usuarios")
+        .select("rol")
+        .eq("id", user.id)
+        .single();
+
+      if (cancelled) return;
+
+      if (perfil?.rol === "superadmin") {
+        router.replace("/superadmin");
+        return;
+      }
+
+      if (perfil?.rol === "admin") {
+        router.replace("/admin");
+        return;
+      }
+
+      if (perfil?.rol === "vecino") {
+        router.replace("/vecino");
+        return;
+      }
+
+      setCheckingSession(false);
+    }
+
+    void checkExistingSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  if (checkingSession) {
+    return (
+      <main className="theme-shell flex min-h-screen items-center justify-center px-4">
+        <div className="theme-hero rounded-3xl border border-white/10 px-6 py-5 text-sm font-semibold text-white shadow-2xl">
+          Verificando acceso...
+        </div>
+      </main>
+    );
+  }
 
   async function loginAdmin(e: React.FormEvent) {
     e.preventDefault();
@@ -61,8 +121,8 @@ export default function LoginPage() {
       }
 
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
     } finally {
       setLoadingAdmin(false);
     }
@@ -147,18 +207,18 @@ export default function LoginPage() {
 
       router.push("/vecino");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
     } finally {
       setLoadingVecino(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#324359] px-4 py-8">
+    <main className="theme-shell min-h-screen px-4 py-8">
       <div className="mx-auto max-w-6xl">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-3xl bg-[#071426] p-8 text-white shadow-2xl">
+          <section className="theme-hero rounded-3xl p-8 text-white shadow-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               MiBloque
             </p>
@@ -191,12 +251,12 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl bg-white p-6 shadow-2xl">
+          <section className="theme-panel rounded-3xl p-6 shadow-2xl">
             <div className="mb-6 text-center">
-              <h2 className="text-3xl font-bold text-slate-900">
+              <h2 className="text-3xl font-bold text-white">
                 Iniciar sesión
               </h2>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-sm text-slate-300">
                 Elige tu tipo de acceso
               </p>
             </div>
@@ -210,28 +270,28 @@ export default function LoginPage() {
             <div className="space-y-5">
               <form
                 onSubmit={loginAdmin}
-                className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
+                className="theme-panel-soft rounded-3xl border border-white/10 p-5"
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-slate-900">
-                      Acceso administrador
-                    </p>
-                    <p className="text-sm text-slate-600">
+                      <p className="font-semibold text-white">
+                        Acceso administrador
+                      </p>
+                    <p className="text-sm text-slate-300">
                       Superadmin o administrador del bloque
                     </p>
                   </div>
 
-                  <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
                     Admin
                   </span>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Email
-                    </label>
+                      <label className="mb-2 block text-sm font-medium text-white/80">
+                        Email
+                      </label>
                     <input
                       type="email"
                       value={adminEmail}
@@ -243,9 +303,9 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Contraseña
-                    </label>
+                      <label className="mb-2 block text-sm font-medium text-white/80">
+                        Contraseña
+                      </label>
                     <input
                       type="password"
                       value={adminPassword}
@@ -268,28 +328,28 @@ export default function LoginPage() {
 
               <form
                 onSubmit={loginVecino}
-                className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
+                className="theme-panel-soft rounded-3xl border border-white/10 p-5"
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-slate-900">
-                      Acceso vecino
-                    </p>
-                    <p className="text-sm text-slate-600">
+                      <p className="font-semibold text-white">
+                        Acceso vecino
+                      </p>
+                    <p className="text-sm text-slate-300">
                       Usuario simple y código de acceso
                     </p>
                   </div>
 
-                  <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-700">
+                  <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
                     Vecino
                   </span>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Usuario
-                    </label>
+                      <label className="mb-2 block text-sm font-medium text-white/80">
+                        Usuario
+                      </label>
                     <input
                       type="text"
                       value={vecinoUser}
@@ -301,9 +361,9 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Código
-                    </label>
+                      <label className="mb-2 block text-sm font-medium text-white/80">
+                        Código
+                      </label>
                     <input
                       type="password"
                       value={vecinoCode}
