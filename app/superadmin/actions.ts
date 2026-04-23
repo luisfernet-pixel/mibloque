@@ -71,7 +71,7 @@ export async function createBlockAction(
       return { ok: false, message: "Escribe el código del bloque." };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { error } = await supabase.from("bloques").insert({
       nombre,
       codigo,
