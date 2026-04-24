@@ -4,6 +4,14 @@ import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LogoutButton from "@/app/logout-button";
 
+function normalizarNombreAdmin(value: string | null | undefined) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Administrador";
+
+  const sinSufijoBloque = raw.replace(/\s+bloque\s+.+$/i, "").trim();
+  return sinSufijoBloque || raw;
+}
+
 export default async function AdminLayout({
   children,
 }: {
@@ -28,14 +36,14 @@ export default async function AdminLayout({
   ]);
 
   const comprobantesPendientes = pendientesRes.data?.length ?? 0;
-  const nombreAdmin = usuario.perfil.nombre || "Administrador";
+  const nombreAdmin = normalizarNombreAdmin(usuario.perfil.nombre);
   const bloqueNombre = bloqueRes.data?.nombre || null;
   const bloqueCodigo = bloqueRes.data?.codigo || null;
-  const bloqueLabel = bloqueNombre
-    ? `Bloque ${bloqueNombre}`
+  const bloqueDisplay = bloqueNombre
+    ? String(bloqueNombre)
     : bloqueCodigo
-      ? `Bloque ${bloqueCodigo}`
-      : "Bloque sin asignar";
+      ? String(bloqueCodigo)
+      : "sin asignar";
 
   const menu = [
     { href: "/admin", label: "Inicio" },
@@ -56,7 +64,7 @@ export default async function AdminLayout({
               <h1 className="text-2xl font-bold">MiBloque Admin</h1>
               <p className="mt-1 text-sm text-slate-200">
                 Administrador: <span className="font-semibold text-white">{nombreAdmin}</span> ·{" "}
-                <span className="font-semibold text-white">{bloqueLabel}</span>
+                Bloque <span className="font-semibold text-white">{bloqueDisplay}</span>
               </p>
             </div>
 

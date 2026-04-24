@@ -32,11 +32,11 @@ export default async function VecinoLayout({
   const numeroDepto = deptoRes.data?.numero ? String(deptoRes.data.numero) : "-";
   const bloqueNombre = bloqueRes.data?.nombre || null;
   const bloqueCodigo = bloqueRes.data?.codigo || null;
-  const bloqueLabel = bloqueNombre
-    ? `Bloque ${bloqueNombre}`
+  const bloqueDisplay = bloqueNombre
+    ? String(bloqueNombre)
     : bloqueCodigo
-      ? `Bloque ${bloqueCodigo}`
-      : "Bloque sin asignar";
+      ? String(bloqueCodigo)
+      : "sin asignar";
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
@@ -51,9 +51,9 @@ export default async function VecinoLayout({
             <div>
               <h1 className="text-2xl font-bold">MiBloque Vecino</h1>
               <p className="mt-1 text-sm text-slate-200">
-                <span className="font-semibold text-white">{nombreVecino}</span> · Depto{" "}
+                Vecino: <span className="font-semibold text-white">{nombreVecino}</span> · Depto{" "}
                 <span className="font-semibold text-white">{numeroDepto}</span> ·{" "}
-                <span className="font-semibold text-white">{bloqueLabel}</span>
+                Bloque <span className="font-semibold text-white">{bloqueDisplay}</span>
               </p>
             </div>
 
