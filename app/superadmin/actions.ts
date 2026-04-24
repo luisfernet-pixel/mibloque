@@ -23,7 +23,7 @@ async function requireSuperadmin() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Debes iniciar sesiÃ³n.");
+    throw new Error("Debes iniciar sesión.");
   }
 
   const { data: perfil } = await supabase
@@ -194,7 +194,7 @@ async function resolveOrCreateDepartamentoId({
       .single();
 
     if (error || !existente) {
-      throw error ?? new Error("No se encontrÃ³ el departamento seleccionado.");
+      throw error ?? new Error("No se encontró el departamento seleccionado.");
     }
 
     return existente;
@@ -249,6 +249,91 @@ async function deleteAuthUserIfNeeded(userId?: string) {
   }
 }
 
+async function ensureUniqueVecinoIdentity({
+  supabase,
+  bloqueId,
+  departamentoId,
+  username,
+  excludeUserId,
+}: {
+  supabase: ServerSupabaseClient;
+  bloqueId: string;
+  departamentoId: string;
+  username: string;
+  excludeUserId?: string;
+}) {
+  const normalizedUsername = String(username || "").trim().toLowerCase();
+
+  const { data: byDepartamento, error: byDepartamentoError } = await supabase
+    .from("usuarios")
+    .select("id")
+    .eq("rol", "vecino")
+    .eq("activo", true)
+    .eq("bloque_id", bloqueId)
+    .eq("departamento_id", departamentoId)
+    .limit(1)
+    .maybeSingle();
+
+  if (byDepartamentoError) {
+    throw byDepartamentoError;
+  }
+
+  if (byDepartamento && byDepartamento.id !== excludeUserId) {
+    throw new Error(
+      "Este departamento ya tiene un vecino activo en este bloque."
+    );
+  }
+
+  const { data: byUsername, error: byUsernameError } = await supabase
+    .from("usuarios")
+    .select("id")
+    .eq("rol", "vecino")
+    .eq("activo", true)
+    .eq("username", normalizedUsername)
+    .limit(1)
+    .maybeSingle();
+
+  if (byUsernameError) {
+    throw byUsernameError;
+  }
+
+  if (byUsername && byUsername.id !== excludeUserId) {
+    throw new Error(
+      "El codigo de departamento ya esta en uso por otro vecino activo."
+    );
+  }
+}
+
+async function findActiveAdminInBlock({
+  supabase,
+  bloqueId,
+  excludeId,
+}: {
+  supabase: ServerSupabaseClient;
+  bloqueId: string;
+  excludeId?: string;
+}) {
+  let query = supabase
+    .from("usuarios")
+    .select("id")
+    .eq("rol", "admin")
+    .eq("bloque_id", bloqueId)
+    .eq("activo", true)
+    .limit(1);
+
+  if (excludeId) {
+    query = query.neq("id", excludeId);
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function createBlockAction(
   state: ActionState = initialState,
   formData: FormData
@@ -266,7 +351,7 @@ export async function createBlockAction(
     }
 
     if (!codigo) {
-      return { ok: false, message: "Escribe el cÃ³digo del bloque." };
+      return { ok: false, message: "Escribe el código del bloque." };
     }
 
     const supabase = await createClient();
@@ -315,7 +400,7 @@ export async function updateBlockAction(
     }
 
     if (!codigo) {
-      return { ok: false, message: "Escribe el cÃ³digo del bloque." };
+      return { ok: false, message: "Escribe el código del bloque." };
     }
 
     const supabase = createAdminClient();
@@ -370,7 +455,7 @@ export async function deleteBlockAction(
 
     revalidatePath("/superadmin/bloques");
     revalidatePath("/superadmin");
-    return { ok: true, message: "Bloque desactivado." };
+    return { ok: true, message: "Bloque borrado." };
   } catch (error) {
     return {
       ok: false,
@@ -406,7 +491,7 @@ export async function createAdminAction(
     if (!password || password.length < 6) {
       return {
         ok: false,
-        message: "La contraseÃ±a debe tener al menos 6 caracteres.",
+        message: "La contraseña debe tener al menos 6 caracteres.",
       };
     }
 
@@ -415,6 +500,18 @@ export async function createAdminAction(
     }
 
     const supabase = await createClient();
+    const activeAdmin = await findActiveAdminInBlock({
+      supabase,
+      bloqueId,
+    });
+
+    if (activeAdmin) {
+      return {
+        ok: false,
+        message: "Este bloque ya tiene un admin activo. Solo puede haber uno por bloque.",
+      };
+    }
+
     const { data: bloque, error: bloqueError } = await supabase
       .from("bloques")
       .select("codigo")
@@ -422,7 +519,7 @@ export async function createAdminAction(
       .single();
 
     if (bloqueError || !bloque) {
-      throw bloqueError ?? new Error("No se encontrÃ³ el bloque seleccionado.");
+      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
     }
 
     const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
@@ -495,6 +592,21 @@ export async function updateAdminAction(
     }
 
     const supabase = await createClient();
+    if (activo) {
+      const activeAdmin = await findActiveAdminInBlock({
+        supabase,
+        bloqueId,
+        excludeId: id,
+      });
+
+      if (activeAdmin) {
+        return {
+          ok: false,
+          message: "Este bloque ya tiene un admin activo. Solo puede haber uno por bloque.",
+        };
+      }
+    }
+
     const updatePayload: Record<string, unknown> = {
       nombre,
       email,
@@ -578,7 +690,7 @@ export async function deleteAdminAction(
 
     revalidatePath("/superadmin/admins");
     revalidatePath("/superadmin");
-    return { ok: true, message: "Admin desactivado y acceso retirado." };
+    return { ok: true, message: "Admin borrado y acceso retirado." };
   } catch (error) {
     return {
       ok: false,
@@ -615,7 +727,7 @@ export async function createVecinoAction(
     if (!password || password.length < 6) {
       return {
         ok: false,
-        message: "La contraseÃ±a debe tener al menos 6 caracteres.",
+        message: "La contraseña debe tener al menos 6 caracteres.",
       };
     }
 
@@ -631,7 +743,7 @@ export async function createVecinoAction(
       .single();
 
     if (bloqueError || !bloque) {
-      throw bloqueError ?? new Error("No se encontrÃ³ el bloque seleccionado.");
+      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
     }
 
     const departamento = await resolveOrCreateDepartamentoId({
@@ -646,6 +758,13 @@ export async function createVecinoAction(
       departamento.numero
     );
     const email = departmentEmailFromCode(departmentCode);
+
+    await ensureUniqueVecinoIdentity({
+      supabase,
+      bloqueId,
+      departamentoId: departamento.id,
+      username: departmentCode,
+    });
 
     const authResult = await createAuthUser({
       email,
@@ -734,7 +853,7 @@ export async function updateVecinoAction(
       .single();
 
     if (bloqueError || !bloque) {
-      throw bloqueError ?? new Error("No se encontrÃ³ el bloque seleccionado.");
+      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
     }
 
     const departamento = await resolveOrCreateDepartamentoId({
@@ -749,6 +868,14 @@ export async function updateVecinoAction(
       departamento.numero
     );
     const email = departmentEmailFromCode(departmentCode);
+
+    await ensureUniqueVecinoIdentity({
+      supabase,
+      bloqueId,
+      departamentoId: departamento.id,
+      username: departmentCode,
+      excludeUserId: id,
+    });
 
     const { error } = await supabase.from("usuarios").update({
       nombre,
@@ -837,7 +964,7 @@ export async function deleteVecinoAction(
 
     revalidatePath("/superadmin/vecinos");
     revalidatePath("/superadmin");
-    return { ok: true, message: "Departamento desactivado y acceso retirado." };
+    return { ok: true, message: "Departamento borrado y acceso retirado." };
   } catch (error) {
     return {
       ok: false,

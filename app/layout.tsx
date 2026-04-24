@@ -1,5 +1,11 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Noto_Sans } from "next/font/google";
+
+const notoSans = Noto_Sans({
+  subsets: ["latin"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -22,7 +28,7 @@ export default function RootLayout({
 
   return (
     <html lang="es" data-theme={theme}>
-      <body className="app-shell">{children}</body>
+      <body className={`${notoSans.className} app-shell`}>{children}</body>
     </html>
   );
 }

@@ -1,6 +1,8 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
+import { deleteVecinoActionForm } from "@/app/superadmin/actions";
 
 export const metadata: Metadata = {
   title: "Departamentos",
@@ -18,22 +20,14 @@ export default async function VecinosPage() {
     supabase.from("bloques").select("id, nombre"),
   ]);
 
-  const bloqueMap = new Map(
-    (bloques ?? []).map((item) => [item.id, item.nombre] as const)
-  );
+  const bloqueMap = new Map((bloques ?? []).map((item) => [item.id, item.nombre] as const));
 
   return (
     <main className="space-y-6">
       <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-          Superadmin
-        </p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
-          Departamentos
-        </h1>
-        <p className="mt-4 max-w-2xl text-slate-200">
-          Edita, desactiva o crea registros de departamentos.
-        </p>
+        <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
+        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Departamentos</h1>
+        <p className="mt-4 max-w-2xl text-slate-200">Edita, borra o crea registros de departamentos.</p>
         <div className="mt-6">
           <Link
             href="/superadmin/vecinos/nuevo"
@@ -50,7 +44,7 @@ export default async function VecinosPage() {
             <thead className="bg-white/10 text-left text-slate-200">
               <tr>
                 <th className="px-5 py-4">Nombre</th>
-                <th className="px-5 py-4">CÃ³digo</th>
+                <th className="px-5 py-4">Codigo</th>
                 <th className="px-5 py-4">Email</th>
                 <th className="px-5 py-4">Bloque</th>
                 <th className="px-5 py-4">Estado</th>
@@ -64,16 +58,28 @@ export default async function VecinosPage() {
                   <td className="px-5 py-4">{item.username}</td>
                   <td className="px-5 py-4">{item.email}</td>
                   <td className="px-5 py-4">{bloqueMap.get(item.bloque_id) ?? "-"}</td>
+                  <td className="px-5 py-4">{item.activo ? "Activo" : "Desactivado"}</td>
                   <td className="px-5 py-4">
-                    {item.activo ? "Activo" : "Desactivado"}
-                  </td>
-                  <td className="px-5 py-4">
-                    <Link
-                      href={`/superadmin/vecinos/${item.id}`}
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                    >
-                      Editar
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={`/superadmin/vecinos/${item.id}`}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+                      >
+                        Editar
+                      </Link>
+
+                      {item.activo ? (
+                        <form action={deleteVecinoActionForm}>
+                          <input type="hidden" name="id" value={item.id} />
+                          <ConfirmActionButton
+                            confirmText="Borrar este departamento? Perdera acceso al sistema."
+                            className="rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+                          >
+                            Borrar
+                          </ConfirmActionButton>
+                        </form>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))}

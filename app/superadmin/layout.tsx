@@ -3,10 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/app/logout-button";
 
-const navItems = [
-  { href: "/superadmin", label: "Dashboard" },
-  { href: "/superadmin/bloques", label: "Bloques" },
-];
+const navItems = [{ href: "/superadmin", label: "Panel" }];
 
 export default async function SuperadminLayout({
   children,
@@ -39,9 +36,7 @@ export default async function SuperadminLayout({
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-5 lg:px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <p className="text-2xl font-bold tracking-tight text-white">
-                MiBloque Superadmin
-              </p>
+              <p className="text-2xl font-bold tracking-tight text-white">MiBloque Superadmin</p>
               <p className="truncate text-sm text-slate-300">
                 {perfil.nombre} · {perfil.rol}
               </p>
@@ -69,9 +64,7 @@ export default async function SuperadminLayout({
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5 lg:px-6">
-        {children}
-      </div>
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-5 sm:py-5 lg:px-6">{children}</div>
     </div>
   );
 }

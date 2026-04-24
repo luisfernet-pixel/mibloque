@@ -1,12 +1,10 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import UserCreateForm from "@/app/superadmin/_components/user-create-form";
-import {
-  deleteAdminActionForm,
-  updateAdminAction,
-} from "@/app/superadmin/actions";
+import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
+import { deleteAdminActionForm, updateAdminAction } from "@/app/superadmin/actions";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -36,12 +34,8 @@ export default async function EditAdminPage({ params }: Props) {
   return (
     <main className="space-y-6">
       <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-          Superadmin
-        </p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
-          Editar admin
-        </h1>
+        <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
+        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Editar admin</h1>
         <p className="mt-4 max-w-2xl text-slate-200">
           Update the account data, assigned block, password or status.
         </p>
@@ -75,12 +69,12 @@ export default async function EditAdminPage({ params }: Props) {
             >
               Volver
             </Link>
-            <button
-              type="submit"
+            <ConfirmActionButton
+              confirmText="Borrar este admin? Perdera acceso al sistema."
               className="rounded-2xl bg-[#ff5a3d] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110"
             >
-              Desactivar admin
-            </button>
+              Borrar admin
+            </ConfirmActionButton>
           </form>
         </div>
       </section>
