@@ -373,19 +373,9 @@ export default async function NuevoPagoPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        {grupo.vencidas > 0 && (
-                          <span className="inline-flex rounded-full border border-[#EF4937]/30 bg-[#EF4937]/10 px-3 py-1 text-xs font-semibold text-[#ffb0a7]">
-                            {grupo.vencidas} vencida(s)
-                          </span>
-                        )}
-
-                        {grupo.pendientes > 0 && (
-                          <span className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                            {grupo.pendientes} pendiente(s)
-                          </span>
-                        )}
-                      </div>
+                      <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-200">
+                        Entrar a pagar
+                      </span>
                     </summary>
 
                     <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
