@@ -343,7 +343,7 @@ export default async function NuevoPagoPage() {
             </div>
 
             <div className="mt-5 space-y-4">
-              {grupos.map((grupo, index) => {
+              {grupos.map((grupo) => {
                 const opciones = construirOpcionesPago(grupo.cuotas);
                 const pagoMinimo = grupo.cuotas[0] ? montoCobrarCuota(grupo.cuotas[0]) : 0;
 
@@ -351,7 +351,6 @@ export default async function NuevoPagoPage() {
                   <details
                     key={grupo.departamentoId}
                     className="rounded-3xl border border-white/10 bg-[#2a425c] p-5"
-                    open={index === 0}
                   >
                     <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-3 rounded-2xl bg-[#1b3148] p-4">
                       <div>
@@ -505,7 +504,7 @@ export default async function NuevoPagoPage() {
                             type="submit"
                             className="rounded-2xl bg-[#EF4937] px-5 py-3 font-bold text-white transition hover:brightness-110"
                           >
-                            Registrar pago
+                            Entrar a pagar
                           </button>
                         </div>
                       </form>
