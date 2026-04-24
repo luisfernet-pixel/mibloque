@@ -15,6 +15,14 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+function deptoNumeroFromUsername(username: string) {
+  const raw = String(username || "").trim();
+  const parte = raw.includes("-") ? raw.split("-").pop() ?? "" : raw;
+  const numero = Number(parte.trim());
+  if (!Number.isFinite(numero)) return null;
+  return numero;
+}
+
 export const metadata: Metadata = {
   title: "Bloque",
 };
@@ -45,6 +53,18 @@ export default async function BlockDetailPage({ params }: Props) {
     ]);
 
   if (!bloque) notFound();
+
+  const deptosOrdenados = [...(departamentosRegistrados ?? [])].sort((a, b) => {
+    const aNum = deptoNumeroFromUsername(a.username);
+    const bNum = deptoNumeroFromUsername(b.username);
+    if (aNum !== null && bNum !== null) return bNum - aNum;
+    if (aNum !== null) return -1;
+    if (bNum !== null) return 1;
+    return String(a.username || "").localeCompare(String(b.username || ""), "es", {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
 
   return (
     <main className="space-y-6">
@@ -173,11 +193,14 @@ export default async function BlockDetailPage({ params }: Props) {
           </div>
 
           <div className="mt-4 space-y-3">
-            {departamentosRegistrados?.map((item) => (
+            {deptosOrdenados.map((item) => (
               <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-white">{item.nombre}</p>
+                    <p className="text-lg font-extrabold text-cyan-200">
+                      Depto {item.username?.includes("-") ? item.username.split("-").pop() : item.username}
+                    </p>
+                    <p className="text-sm text-white/90">{item.nombre}</p>
                     <p className="text-sm text-slate-300">{item.username} - {item.email}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -203,7 +226,7 @@ export default async function BlockDetailPage({ params }: Props) {
               </div>
             ))}
 
-            {(!departamentosRegistrados || departamentosRegistrados.length === 0) && (
+            {deptosOrdenados.length === 0 && (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 p-6 text-center text-slate-300">
                 No hay departamentos para este bloque.
               </div>
