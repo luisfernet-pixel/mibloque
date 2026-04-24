@@ -208,6 +208,13 @@ export default async function AdminPage() {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
+                href="/admin/pagos/nuevo"
+                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-cyan-500 px-6 text-sm font-bold text-white shadow-lg shadow-cyan-950/30 transition hover:brightness-110"
+              >
+                Registrar pago manual
+              </Link>
+
+              <Link
                 href="/admin/confirmaciones"
                 className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#ff5a3d] px-6 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
               >
