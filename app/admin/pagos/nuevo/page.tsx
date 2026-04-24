@@ -343,40 +343,54 @@ export default async function NuevoPagoPage() {
             </div>
 
             <div className="mt-5 space-y-4">
-              {grupos.map((grupo) => {
+              {grupos.map((grupo, index) => {
                 const opciones = construirOpcionesPago(grupo.cuotas);
                 const pagoMinimo = grupo.cuotas[0] ? montoCobrarCuota(grupo.cuotas[0]) : 0;
 
                 return (
-                  <div
+                  <details
                     key={grupo.departamentoId}
                     className="rounded-3xl border border-white/10 bg-[#2a425c] p-5"
+                    open={index === 0}
                   >
-                    <div className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
-                      <div className="space-y-4">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm text-slate-300">Departamento</p>
-                            <p className="text-3xl font-bold text-white">
-                              {grupo.numero}
-                            </p>
-                          </div>
+                    <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-3 rounded-2xl bg-[#1b3148] p-4">
+                      <div>
+                        <p className="text-sm text-slate-300">Departamento</p>
+                        <p className="text-3xl font-bold text-white">{grupo.numero}</p>
+                      </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            {grupo.vencidas > 0 && (
-                              <span className="inline-flex rounded-full border border-[#EF4937]/30 bg-[#EF4937]/10 px-3 py-1 text-xs font-semibold text-[#ffb0a7]">
-                                {grupo.vencidas} vencida(s)
-                              </span>
-                            )}
-
-                            {grupo.pendientes > 0 && (
-                              <span className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                                {grupo.pendientes} pendiente(s)
-                              </span>
-                            )}
-                          </div>
+                      <div className="grid gap-2 text-right sm:grid-cols-3 sm:items-center sm:text-left">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Meses</p>
+                          <p className="text-lg font-bold text-white">{grupo.mesesAdeudados}</p>
                         </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Deuda total</p>
+                          <p className="text-lg font-bold text-white">{money(grupo.totalAdeudado)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Pago minimo</p>
+                          <p className="text-lg font-bold text-white">{money(pagoMinimo)}</p>
+                        </div>
+                      </div>
 
+                      <div className="flex flex-wrap gap-2">
+                        {grupo.vencidas > 0 && (
+                          <span className="inline-flex rounded-full border border-[#EF4937]/30 bg-[#EF4937]/10 px-3 py-1 text-xs font-semibold text-[#ffb0a7]">
+                            {grupo.vencidas} vencida(s)
+                          </span>
+                        )}
+
+                        {grupo.pendientes > 0 && (
+                          <span className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                            {grupo.pendientes} pendiente(s)
+                          </span>
+                        )}
+                      </div>
+                    </summary>
+
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
+                      <div className="space-y-4">
                         <div className="grid gap-3 sm:grid-cols-3">
                           <InfoBox label="Meses adeudados" value={String(grupo.mesesAdeudados)} />
                           <InfoBox label="Total adeudado hoy" value={money(grupo.totalAdeudado)} />
@@ -424,7 +438,7 @@ export default async function NuevoPagoPage() {
                           </label>
 
                           <div className="space-y-3">
-                            {opciones.map((opcion, index) => (
+                            {opciones.map((opcion, opcionIndex) => (
                               <label
                                 key={opcion.cantidad}
                                 className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-[#0f2135] p-4 transition hover:border-[#EF4937]/40"
@@ -433,7 +447,7 @@ export default async function NuevoPagoPage() {
                                   type="radio"
                                   name="cantidad_meses"
                                   value={opcion.cantidad}
-                                  defaultChecked={index === 0}
+                                  defaultChecked={opcionIndex === 0}
                                   className="mt-1 h-4 w-4 accent-[#EF4937]"
                                 />
 
@@ -496,7 +510,7 @@ export default async function NuevoPagoPage() {
                         </div>
                       </form>
                     </div>
-                  </div>
+                  </details>
                 );
               })}
             </div>
