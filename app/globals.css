@@ -904,6 +904,15 @@ tbody tr:hover {
   box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
 }
 
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* RESPONSIVE COMPACT MODE (tablet + mobile) */
 @media (max-width: 1024px) {
   .text-5xl {
