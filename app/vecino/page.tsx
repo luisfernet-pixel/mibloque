@@ -2,32 +2,74 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function money(value: number) {
-  return `Bs ${Number(value || 0).toLocaleString("es-BO")}`;
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "Sin fecha";
-  return new Date(value).toLocaleDateString("es-BO");
-}
-
-type AvisoRow = {
-  id: string;
-  titulo: string;
-  mensaje: string;
-  created_at: string;
+type SearchParams = {
+  sent?: string;
+  error?: string;
+  detalle?: string;
 };
 
 type CuotaRow = {
   id: string;
-  periodo: string;
-  monto_total: number;
-  estado: string;
-  anio: number;
-  mes: number;
+  periodo: string | null;
+  monto_total: number | null;
+  estado: string | null;
+  anio: number | null;
+  mes: number | null;
 };
 
-export default async function VecinoPage() {
+type ConfirmacionRow = {
+  id: string;
+  cuota_id: string | null;
+  estado: string | null;
+  created_at: string | null;
+};
+
+type PagoRow = {
+  id: string;
+  cuota_id: string | null;
+};
+
+type EstadoFila = "pendiente" | "en_revision" | "pagado";
+
+function money(value: number | null | undefined) {
+  return `Bs ${Number(value || 0).toLocaleString("es-BO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function estadoLabel(value: EstadoFila) {
+  if (value === "pagado") return "Pagado";
+  if (value === "en_revision") return "En revision";
+  return "Pendiente";
+}
+
+function estadoClass(value: EstadoFila) {
+  if (value === "pagado") {
+    return "border-cyan-400/30 bg-cyan-500/15 text-cyan-100";
+  }
+  if (value === "en_revision") {
+    return "border-yellow-400/40 bg-yellow-500/10 text-yellow-100";
+  }
+  return "border-orange-400/30 bg-orange-500/10 text-orange-100";
+}
+
+function detailForError(error: string, detalle: string) {
+  if (error === "datos") return "Completa todos los datos del formulario.";
+  if (error === "cuota") return "El mes seleccionado ya no esta pendiente.";
+  if (error === "orden") return "Debes pagar primero el mes mas antiguo pendiente.";
+  if (error === "enrevision") return "Ese mes ya tiene un comprobante en revision.";
+  if (error === "upload") return `No se pudo subir el archivo${detalle ? `: ${detalle}` : "."}`;
+  if (error === "confirmacion") return "No se pudo registrar la confirmacion.";
+  return "No se pudo completar el envio.";
+}
+
+export default async function VecinoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
   const supabase = await createClient();
 
   const {
@@ -38,253 +80,290 @@ export default async function VecinoPage() {
 
   const { data: perfil } = await supabase
     .from("usuarios")
-    .select("id, nombre, rol, bloque_id, departamento_id")
+    .select("id, nombre, rol, departamento_id")
     .eq("id", user.id)
     .single();
 
-  if (!perfil || perfil.rol !== "vecino") {
+  if (!perfil || perfil.rol !== "vecino" || !perfil.departamento_id) {
     redirect("/login");
   }
 
-  const [
-    { data: departamento },
-    { data: cuotas = [] },
-    { data: avisos = [] },
-  ] = await Promise.all([
-    supabase
-      .from("departamentos")
-      .select("id, numero")
-      .eq("id", perfil.departamento_id)
-      .single(),
-
-    supabase
-      .from("cuotas")
-      .select("id, periodo, monto_total, estado, anio, mes")
-      .eq("departamento_id", perfil.departamento_id)
-      .order("anio", { ascending: false })
-      .order("mes", { ascending: false }),
-
-    supabase
-      .from("avisos")
-      .select("id, titulo, mensaje, created_at")
-      .eq("bloque_id", perfil.bloque_id)
-      .eq("publicado", true)
-      .order("created_at", { ascending: false })
-      .limit(4),
-  ]);
+  const [{ data: cuotas }, { data: confirmaciones }, { data: pagos }] =
+    await Promise.all([
+      supabase
+        .from("cuotas")
+        .select("id, periodo, monto_total, estado, anio, mes")
+        .eq("departamento_id", perfil.departamento_id)
+        .order("anio", { ascending: false })
+        .order("mes", { ascending: false }),
+      supabase
+        .from("confirmaciones_pago")
+        .select("id, cuota_id, estado, created_at")
+        .eq("departamento_id", perfil.departamento_id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("pagos")
+        .select("id, cuota_id")
+        .eq("departamento_id", perfil.departamento_id)
+        .order("fecha_pago", { ascending: false }),
+    ]);
 
   const cuotasRows = (cuotas ?? []) as CuotaRow[];
-  const avisosRecientes = (avisos ?? []) as AvisoRow[];
+  const confirmacionesRows = (confirmaciones ?? []) as ConfirmacionRow[];
+  const pagosRows = (pagos ?? []) as PagoRow[];
 
-  const cuotasNoPagadas = cuotasRows.filter((item) => item.estado !== "pagado");
-  const totalPendiente = cuotasNoPagadas.reduce(
-    (acc, item) => acc + Number(item.monto_total || 0),
-    0
-  );
+  const pendingConfirmacionByCuota = new Map<string, ConfirmacionRow>();
+  for (const item of confirmacionesRows) {
+    const cuotaId = item.cuota_id || "";
+    const estado = String(item.estado || "").toLowerCase();
+    if (!cuotaId || estado !== "pendiente") continue;
+    if (!pendingConfirmacionByCuota.has(cuotaId)) {
+      pendingConfirmacionByCuota.set(cuotaId, item);
+    }
+  }
 
-  const cantidadCuotasDebe = cuotasNoPagadas.length;
-  const cuotaActual = cuotasRows[0] ?? null;
-  const valorCuotaActual = cuotaActual ? Number(cuotaActual.monto_total || 0) : 0;
+  const pagoByCuota = new Map<string, string>();
+  for (const item of pagosRows) {
+    const cuotaId = item.cuota_id || "";
+    if (!cuotaId || pagoByCuota.has(cuotaId)) continue;
+    pagoByCuota.set(cuotaId, item.id);
+  }
 
-  const numeroDepto = departamento?.numero || "-";
-  const nombreVecino = perfil.nombre || "Vecino";
+  const filas = cuotasRows.map((item) => {
+    const cuotaEstado = String(item.estado || "").toLowerCase();
+    const hasPendingConfirmacion = pendingConfirmacionByCuota.has(item.id);
+    const status: EstadoFila =
+      cuotaEstado === "pagado"
+        ? "pagado"
+        : hasPendingConfirmacion
+        ? "en_revision"
+        : "pendiente";
+
+    return {
+      ...item,
+      status,
+      reciboPagoId: pagoByCuota.get(item.id) || null,
+    };
+  });
+
+  const filasPendientes = filas.filter((item) => item.status === "pendiente");
+  const filasEnRevision = filas.filter((item) => item.status === "en_revision");
+  const filasPagadas = filas.filter((item) => item.status === "pagado");
+
+  const filasPendientesOrdenadas = [...filasPendientes].sort((a, b) => {
+    const anioA = Number(a.anio || 0);
+    const anioB = Number(b.anio || 0);
+    if (anioA !== anioB) return anioA - anioB;
+    return Number(a.mes || 0) - Number(b.mes || 0);
+  });
+  const cuotaHabilitada = filasPendientesOrdenadas[0] ?? null;
+
+  const sent = params.sent === "1";
+  const error = params.error || "";
+  const detalle = params.detalle || "";
 
   return (
     <main className="space-y-6">
       <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Portal del vecino
+              Pagos del vecino
             </p>
-
             <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Hola, {nombreVecino}
+              Estado de cuotas por mes
             </h1>
-
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
-              Aquí puedes revisar tu estado, ver avisos importantes y enviar tu
-              comprobante de pago a la administración.
+              Revisa que meses estan pendientes, cuales estan en revision y cuales
+              ya fueron aprobados.
             </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/vecino/reportar-pago"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#ff5a3d] px-6 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
-              >
-                Enviar comprobante
-              </Link>
-
-              <Link
-                href="/vecino/recibos"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20"
-              >
-                Ver recibos
-              </Link>
-            </div>
           </div>
 
           <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
-            <div>
-              <p className="text-sm font-semibold text-white">
-                Estado general del departamento
-              </p>
-              <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
-                Resumen principal
-              </p>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <InfoBox label="Departamento" value={String(numeroDepto)} />
-              <InfoBox label="Saldo pendiente" value={money(totalPendiente)} />
-              <InfoBox
-                label="Cuota actual"
-                value={cuotaActual?.periodo || "Sin datos"}
-              />
-              <InfoBox
-                label="Monto cuota"
-                value={cuotaActual ? money(valorCuotaActual) : "Sin datos"}
-              />
-            </div>
-
-            <div className="mt-4 rounded-[24px] bg-[#1d3551] p-4 ring-1 ring-white/10">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Cuotas pendientes
-              </p>
-              <p className="mt-2 text-3xl font-extrabold text-white">
-                {cantidadCuotasDebe}
-              </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <InfoBox label="Pendientes" value={String(filasPendientes.length)} />
+              <InfoBox label="En revision" value={String(filasEnRevision.length)} />
+              <InfoBox label="Pagados" value={String(filasPagadas.length)} />
+              <InfoBox label="Total meses" value={String(filas.length)} />
             </div>
           </div>
         </div>
       </section>
 
+      {sent ? (
+        <section className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-4 text-cyan-100 ring-1 ring-white/10">
+          Comprobante enviado. El admin lo revisara antes de aprobarlo.
+        </section>
+      ) : null}
+
+      {error ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 px-5 py-4 text-red-100 ring-1 ring-white/10">
+          {detailForError(error, detalle)}
+        </section>
+      ) : null}
+
       <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-              Avisos del bloque
+              Tabla unica
             </p>
-            <h2 className="mt-2 text-2xl font-bold text-white">
-              Avisos recientes
-            </h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Lo más importante publicado para vecinos.
-            </p>
-          </div>
-
-          <div className="w-fit rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
-            {avisosRecientes.length} aviso(s)
+            <h2 className="mt-2 text-2xl font-bold text-white">Meses y estado</h2>
           </div>
         </div>
 
-        <div className="p-5 md:p-6">
-          {avisosRecientes.length === 0 ? (
+        <div className="overflow-x-auto p-4 md:p-5">
+          {filas.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
-              <p className="text-lg font-bold text-white">
-                No hay avisos recientes
-              </p>
-              <p className="mt-2 text-sm text-slate-300">
-                Cuando la administración publique algo, aparecerá aquí.
-              </p>
+              <p className="text-lg font-bold text-white">No hay cuotas registradas</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {avisosRecientes.map((item, index) => (
-                <div
-                  key={item.id}
-                  className={`rounded-[24px] border p-5 shadow-lg ${
-                    index === 0
-                      ? "border-orange-300/25 bg-[#36597f]"
-                      : "border-white/10 bg-[#2b4768]"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] ${
-                        index === 0
-                          ? "bg-orange-400/20 text-orange-100"
-                          : "bg-cyan-500/15 text-cyan-200"
-                      }`}
-                    >
-                      {index === 0 ? "Nuevo" : "Aviso"}
-                    </span>
+            <table className="min-w-full overflow-hidden rounded-2xl border border-white/10">
+              <thead className="bg-[#1f3d5f] text-left text-xs uppercase tracking-[0.2em] text-slate-300">
+                <tr>
+                  <th className="px-4 py-3">Mes</th>
+                  <th className="px-4 py-3">Monto</th>
+                  <th className="px-4 py-3">Estado</th>
+                  <th className="px-4 py-3">Accion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filas.map((item) => (
+                  <tr key={item.id} className="border-t border-white/10 bg-[#2d4a6c]">
+                    <td className="px-4 py-4 font-semibold text-white">
+                      {item.periodo || "Sin periodo"}
+                    </td>
+                    <td className="px-4 py-4 text-slate-100">{money(item.monto_total)}</td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-2 text-sm font-bold ${estadoClass(
+                          item.status
+                        )}`}
+                      >
+                        {estadoLabel(item.status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {item.status === "pendiente" ? (
+                        cuotaHabilitada?.id === item.id ? (
+                          <Link
+                            href="#subir-comprobante"
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
+                          >
+                            Subir comprobante
+                          </Link>
+                        ) : (
+                          <span className="text-sm font-semibold text-orange-100">
+                            Debes pagar primero {cuotaHabilitada?.periodo || "mes anterior"}
+                          </span>
+                        )
+                      ) : null}
 
-                    <span className="text-xs font-medium text-slate-300">
-                      {formatDate(item.created_at)}
-                    </span>
-                  </div>
+                      {item.status === "en_revision" ? (
+                        <span className="text-sm font-semibold text-yellow-100">
+                          Esperando validacion admin
+                        </span>
+                      ) : null}
 
-                  <h3 className="mt-4 text-xl font-bold text-white">
-                    {item.titulo}
-                  </h3>
-
-                  <p className="mt-3 whitespace-pre-line text-base leading-7 text-slate-200">
-                    {item.mensaje}
-                  </p>
-                </div>
-              ))}
-            </div>
+                      {item.status === "pagado" ? (
+                        item.reciboPagoId ? (
+                          <Link
+                            href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
+                            target="_blank"
+                            className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-sm font-bold text-white transition hover:bg-cyan-400"
+                          >
+                            Descargar recibo
+                          </Link>
+                        ) : (
+                          <span className="text-sm text-cyan-100">Pago aprobado</span>
+                        )
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-              Historial de cuotas
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-white">
-              Últimas cuotas registradas
-            </h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Resumen simple de tus cuotas más recientes.
-            </p>
-          </div>
-
-          <div className="w-fit rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
-            {cuotasRows.length} cuota(s)
-          </div>
+      <section
+        id="subir-comprobante"
+        className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10"
+      >
+        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
+            Comprobante
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-white">Subir pago</h2>
         </div>
 
-        <div className="p-4 md:p-5">
-          {cuotasRows.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
-              <p className="text-lg font-bold text-white">
-                No hay cuotas registradas todavía
+        <div className="p-5 md:p-6">
+          {filasPendientes.length === 0 ? (
+            <div className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-8 text-center">
+              <p className="text-lg font-bold text-cyan-100">
+                No tienes meses pendientes para pagar
+              </p>
+              <p className="mt-2 text-sm text-cyan-50">
+                Cuando todo este aprobado, no aparece opcion para subir comprobante.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {cuotasRows.slice(0, 8).map((item) => (
-                <div
-                  key={item.id}
-                  className="grid gap-4 rounded-[24px] border border-white/20 bg-[#2d4a6c] p-4 md:grid-cols-[1.2fr_0.8fr_0.7fr] md:items-center md:p-5"
-                >
-                  <div>
-                    <p className="text-sm text-slate-300">Periodo</p>
-                    <p className="mt-1 text-xl font-bold text-white">
-                      {item.periodo}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-300">Monto</p>
-                    <p className="mt-1 text-2xl font-extrabold text-white">
-                      {money(item.monto_total)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-slate-300">Estado</p>
-                    <div className="mt-2">
-                      <EstadoCuota estado={item.estado} />
-                    </div>
-                  </div>
+            <form
+              action="/api/vecino/reportar-pago"
+              method="POST"
+              encType="multipart/form-data"
+              className="grid gap-5 xl:grid-cols-[1fr_1fr]"
+            >
+              <div className="space-y-2 xl:col-span-2">
+                <label className="text-sm font-semibold text-white">
+                  Mes habilitado para pagar
+                </label>
+                <div className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3">
+                  <p className="text-sm font-bold text-cyan-100">
+                    {cuotaHabilitada?.periodo || "Sin periodo"}
+                  </p>
+                  <p className="mt-1 text-xs text-cyan-50">
+                    Monto: {money(cuotaHabilitada?.monto_total)}
+                  </p>
                 </div>
-              ))}
-            </div>
+                <input type="hidden" name="cuota_id" value={cuotaHabilitada?.id || ""} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-white">
+                  Referencia o detalle
+                </label>
+                <input
+                  type="text"
+                  name="referencia"
+                  placeholder="Ej: transferencia BNB o QR"
+                  required
+                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-4 py-3 text-white outline-none transition placeholder:text-slate-400 focus:border-cyan-400/40"
+                />
+              </div>
+
+              <div className="space-y-2 xl:col-span-2">
+                <label className="text-sm font-semibold text-white">
+                  Archivo del comprobante
+                </label>
+                <input
+                  type="file"
+                  name="archivo"
+                  required
+                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-4 py-3 text-slate-200 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-cyan-400"
+                />
+              </div>
+
+              <div className="xl:col-span-2">
+                <button
+                  type="submit"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#ff5a3d] px-6 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
+                >
+                  Enviar comprobante
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </section>
@@ -301,31 +380,8 @@ function InfoBox({
 }) {
   return (
     <div className="rounded-2xl bg-[#3a5879] p-4 ring-1 ring-white/10">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
-        {label}
-      </p>
-      <p className="mt-2 text-xl font-bold leading-tight text-white">
-        {value}
-      </p>
+      <p className="text-xs uppercase tracking-[0.18em] text-slate-300">{label}</p>
+      <p className="mt-2 text-xl font-bold leading-tight text-white">{value}</p>
     </div>
-  );
-}
-
-function EstadoCuota({ estado }: { estado: string }) {
-  const normalizado = (estado || "").toLowerCase();
-
-  const estilo =
-    normalizado === "pagado"
-      ? "border-cyan-400/30 bg-cyan-500/15 text-cyan-200"
-      : normalizado === "vencido"
-      ? "border-red-400/30 bg-red-500/10 text-red-200"
-      : "border-orange-400/30 bg-orange-500/10 text-orange-200";
-
-  return (
-    <span
-      className={`inline-flex rounded-full border px-3 py-2 text-sm font-bold capitalize ${estilo}`}
-    >
-      {estado || "sin estado"}
-    </span>
   );
 }

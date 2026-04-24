@@ -54,7 +54,7 @@ export default function OpenGraphImage() {
             >
               MiBloque
             </div>
-            <div style={{ fontSize: 18, color: "#cbd5e1" }}>
+            <div style={{ fontSize: 18 }}>
               Software para bloques y condominios
             </div>
           </div>

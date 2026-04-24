@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import LogoutButton from "@/app/logout-button";
 
 export default async function AdminLayout({
@@ -11,6 +12,15 @@ export default async function AdminLayout({
   const usuario = await requireAdmin();
 
   if (!usuario) redirect("/login");
+
+  const supabase = createAdminClient();
+  const { data: pendientesConfirmacion } = await supabase
+    .from("confirmaciones_pago")
+    .select("id")
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("estado", "pendiente");
+
+  const comprobantesPendientes = pendientesConfirmacion?.length ?? 0;
 
   const menu = [
     { href: "/admin", label: "Inicio" },
@@ -44,16 +54,27 @@ export default async function AdminLayout({
                 href={item.href}
                 className="rounded-xl border border-orange-400/70 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500 hover:text-white"
               >
-                {item.label}
+                <span className="inline-flex items-center gap-2">
+                  <span>{item.label}</span>
+                  {item.href === "/admin/confirmaciones" && comprobantesPendientes > 0 ? (
+                    <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                      {comprobantesPendientes}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
             ))}
           </nav>
+
+          {comprobantesPendientes > 0 ? (
+            <div className="mt-4 rounded-2xl border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-sm font-semibold text-orange-100">
+              Tienes {comprobantesPendientes} comprobante(s) pendiente(s) por revisar.
+            </div>
+          ) : null}
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-        {children}
-      </main>
+      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">{children}</main>
     </div>
   );
 }

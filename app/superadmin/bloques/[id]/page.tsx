@@ -39,7 +39,7 @@ export default async function BlockDetailPage({ params }: Props) {
       .order("created_at", { ascending: false }),
     supabase
       .from("usuarios")
-      .select("id, nombre, telefono, username, email, activo, departamento_id, created_at")
+      .select("id, nombre, username, email, activo, departamento_id, created_at")
       .eq("rol", "vecino")
       .eq("bloque_id", id)
       .order("created_at", { ascending: false }),
@@ -62,7 +62,7 @@ export default async function BlockDetailPage({ params }: Props) {
           {bloque.nombre}
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Aquí editas el bloque y administras sus cuentas sin salir de la ficha.
+          Aqui editas el bloque y administras sus cuentas sin salir de la ficha.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -184,7 +184,7 @@ export default async function BlockDetailPage({ params }: Props) {
                   <div>
                     <p className="font-semibold text-white">{item.nombre}</p>
                     <p className="text-sm text-slate-300">
-                      {item.username} · {item.telefono ?? "-"} · {item.email}
+                      {item.username} · {item.email}
                     </p>
                   </div>
                   <Link

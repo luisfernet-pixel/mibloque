@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 type ConfirmacionRow = {
   id: string;
@@ -84,7 +86,13 @@ function EstadoBadge({ estado }: { estado: string | null }) {
 }
 
 export default async function AdminConfirmacionesPage() {
-  const supabase = await createClient();
+  const usuario = await requireAdmin();
+  if (!usuario) {
+    redirect("/login");
+  }
+
+  const supabase = createAdminClient();
+  const bloqueId = usuario.perfil.bloque_id;
 
   const { data } = await supabase
     .from("confirmaciones_pago")
@@ -104,6 +112,7 @@ export default async function AdminConfirmacionesPage() {
         monto_total
       )
     `)
+    .eq("bloque_id", bloqueId)
     .order("created_at", { ascending: false });
 
   const rows = (data ?? []) as ConfirmacionRow[];

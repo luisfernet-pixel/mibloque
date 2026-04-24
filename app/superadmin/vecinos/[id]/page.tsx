@@ -19,14 +19,13 @@ export const metadata: Metadata = {
 export default async function EditVecinoPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
+  const serviceRoleAvailable = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const [{ data: vecino }, { data: bloques }, { data: departamentos }] =
     await Promise.all([
       supabase
         .from("usuarios")
-        .select(
-          "id, nombre, telefono, username, email, bloque_id, departamento_id, activo"
-        )
+        .select("id, nombre, username, email, bloque_id, departamento_id, activo")
         .eq("id", id)
         .eq("rol", "vecino")
         .single(),
@@ -53,7 +52,7 @@ export default async function EditVecinoPage({ params }: Props) {
           Editar departamento
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Cambia el código, el departamento, la contraseña o el estado.
+          Change the code, apartment, password or status.
         </p>
       </section>
 
@@ -67,7 +66,6 @@ export default async function EditVecinoPage({ params }: Props) {
           initialValues={{
             id: vecino.id,
             nombre: vecino.nombre,
-            telefono: vecino.telefono,
             username: vecino.username,
             bloque_id: vecino.bloque_id,
             departamento_id: vecino.departamento_id,
@@ -76,6 +74,7 @@ export default async function EditVecinoPage({ params }: Props) {
           }}
           showActive
           allowPassword
+          serviceRoleAvailable={serviceRoleAvailable}
         />
 
         <div className="mt-6 border-t border-white/10 pt-6">

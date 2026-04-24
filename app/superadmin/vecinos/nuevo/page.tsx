@@ -14,6 +14,7 @@ type Props = {
 export default async function NuevoVecinoPage({ searchParams }: Props) {
   const { bloqueId, departamentoId } = await searchParams;
   const supabase = await createClient();
+  const serviceRoleAvailable = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const [{ data: bloques }, { data: departamentos }] = await Promise.all([
     supabase
@@ -50,6 +51,7 @@ export default async function NuevoVecinoPage({ searchParams }: Props) {
             bloque_id: bloqueId,
             departamento_numero: departamentoId,
           }}
+          serviceRoleAvailable={serviceRoleAvailable}
         />
       </section>
     </main>

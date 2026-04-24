@@ -1,10 +1,53 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth";
+
+type ConfirmacionRow = {
+  id: string;
+  created_at: string | null;
+  monto_reportado: number | null;
+  referencia: string | null;
+  comprobante_url: string | null;
+  estado: string | null;
+  departamentos:
+    | {
+        numero: string | number | null;
+      }
+    | {
+        numero: string | number | null;
+      }[]
+    | null;
+  cuotas:
+    | {
+        periodo: string | null;
+      }
+    | {
+        periodo: string | null;
+      }[]
+    | null;
+};
+
+function getDepto(
+  value: ConfirmacionRow["departamentos"]
+) {
+  if (!value) return "-";
+  return Array.isArray(value) ? value[0]?.numero ?? "-" : value.numero ?? "-";
+}
+
+function getPeriodo(
+  value: ConfirmacionRow["cuotas"]
+) {
+  if (!value) return "-";
+  return Array.isArray(value) ? value[0]?.periodo ?? "-" : value.periodo ?? "-";
+}
 
 async function aprobarPago(formData: FormData) {
   "use server";
 
-  const supabase = await createClient();
+  const usuario = await requireAdmin();
+  if (!usuario) redirect("/login");
+
+  const supabase = createAdminClient();
 
   const id = String(formData.get("id") || "");
 
@@ -37,7 +80,11 @@ async function aprobarPago(formData: FormData) {
 }
 
 export default async function ValidarPagosPage() {
-  const supabase = await createClient();
+  const usuario = await requireAdmin();
+  if (!usuario) redirect("/login");
+
+  const supabase = createAdminClient();
+  const bloqueId = usuario.perfil.bloque_id;
 
   const { data } = await supabase
     .from("confirmaciones_pago")
@@ -51,9 +98,10 @@ export default async function ValidarPagosPage() {
       departamentos:departamento_id(numero),
       cuotas:cuota_id(periodo)
     `)
+    .eq("bloque_id", bloqueId)
     .order("created_at", { ascending: false });
 
-  const items = data || [];
+  const items = (data || []) as ConfirmacionRow[];
 
   return (
     <main className="min-h-screen bg-[#324359] p-6">
@@ -66,7 +114,7 @@ export default async function ValidarPagosPage() {
         </section>
 
         <section className="space-y-4">
-          {items.map((item: any) => (
+          {items.map((item) => (
             <div
               key={item.id}
               className="rounded-3xl bg-white/10 p-5 text-white"
@@ -74,12 +122,12 @@ export default async function ValidarPagosPage() {
               <div className="grid gap-4 lg:grid-cols-4">
                 <div>
                   <p className="text-sm text-slate-300">Depto</p>
-                  <p className="font-bold">{item.departamentos?.numero}</p>
+                  <p className="font-bold">{getDepto(item.departamentos)}</p>
                 </div>
 
                 <div>
                   <p className="text-sm text-slate-300">Periodo</p>
-                  <p className="font-bold">{item.cuotas?.periodo}</p>
+                  <p className="font-bold">{getPeriodo(item.cuotas)}</p>
                 </div>
 
                 <div>
@@ -98,13 +146,15 @@ export default async function ValidarPagosPage() {
               </p>
 
               <div className="mt-4 flex flex-wrap gap-3">
-                <a
-                  href={item.comprobante_url}
-                  target="_blank"
-                  className="rounded-2xl bg-cyan-500 px-4 py-2 font-semibold text-black"
-                >
-                  Ver comprobante
-                </a>
+                {item.comprobante_url ? (
+                  <a
+                    href={item.comprobante_url}
+                    target="_blank"
+                    className="rounded-2xl bg-cyan-500 px-4 py-2 font-semibold text-black"
+                  >
+                    Ver comprobante
+                  </a>
+                ) : null}
 
                 {item.estado === "pendiente" && (
                   <form action={aprobarPago}>

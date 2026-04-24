@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function bs(n: number) {
   return `Bs ${Number(n || 0).toLocaleString("es-BO")}`;
@@ -18,8 +19,53 @@ function esDelMesActual(fecha?: string | null) {
   );
 }
 
+type AdminCuotaRow = {
+  id: string;
+  monto_total: number | null;
+  estado: string | null;
+  created_at: string | null;
+  departamento_id: string | null;
+};
+
+type AdminGastoRow = {
+  monto: number | null;
+  created_at: string | null;
+};
+
+type AdminPagoRow = {
+  id: string;
+  monto_pagado: number | null;
+  fecha_pago: string | null;
+  departamento_id: string | null;
+};
+
+type AdminDepartamentoRow = {
+  id: string;
+  numero: string | number | null;
+};
+
+type AdminConfirmacionRow = {
+  id: string;
+  estado: string | null;
+  created_at: string | null;
+  departamento_id: string | null;
+  departamentos:
+    | {
+        id: string;
+        bloque_id: string | null;
+        numero: string | number | null;
+      }
+    | {
+        id: string;
+        bloque_id: string | null;
+        numero: string | number | null;
+      }[]
+    | null;
+};
+
 export default async function AdminPage() {
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
   const {
     data: { user },
@@ -42,17 +88,17 @@ export default async function AdminPage() {
 
   const [cuotasRes, gastosRes, confirmacionesRes, pagosRes, departamentosRes] =
     await Promise.all([
-      supabase
+      adminSupabase
         .from("cuotas")
         .select("id, monto_total, estado, created_at, departamento_id")
         .eq("bloque_id", bloqueId),
 
-      supabase
+      adminSupabase
         .from("gastos")
         .select("monto, created_at")
         .eq("bloque_id", bloqueId),
 
-      supabase
+      adminSupabase
         .from("confirmaciones_pago")
         .select(`
           id,
@@ -65,74 +111,73 @@ export default async function AdminPage() {
             numero
           )
         `)
+        .eq("bloque_id", bloqueId)
         .eq("estado", "pendiente")
         .order("created_at", { ascending: false }),
 
-      supabase
+      adminSupabase
         .from("pagos")
         .select("id, monto_pagado, fecha_pago, departamento_id")
         .eq("bloque_id", bloqueId),
 
-      supabase
+      adminSupabase
         .from("departamentos")
         .select("id, numero")
         .eq("bloque_id", bloqueId),
     ]);
 
-  const cuotas = cuotasRes.data ?? [];
-  const gastos = gastosRes.data ?? [];
-  const pagos = pagosRes.data ?? [];
-  const departamentos = departamentosRes.data ?? [];
-  const confirmaciones = (confirmacionesRes.data ?? []).filter(
-    (x: any) => x.departamentos?.bloque_id === bloqueId
-  );
+  const cuotas = (cuotasRes.data ?? []) as AdminCuotaRow[];
+  const gastos = (gastosRes.data ?? []) as AdminGastoRow[];
+  const pagos = (pagosRes.data ?? []) as AdminPagoRow[];
+  const departamentos = (departamentosRes.data ?? []) as AdminDepartamentoRow[];
+  const confirmaciones = (confirmacionesRes.data ?? []) as AdminConfirmacionRow[];
 
   const cobradoDelMes = pagos
-    .filter((x: any) => esDelMesActual(x.fecha_pago))
-    .reduce((a: number, x: any) => a + Number(x.monto_pagado || 0), 0);
+    .filter((x) => esDelMesActual(x.fecha_pago))
+    .reduce((a: number, x) => a + Number(x.monto_pagado || 0), 0);
 
   const pendienteActual = cuotas
-    .filter((x: any) => {
+    .filter((x) => {
       const estado = String(x.estado || "").toLowerCase();
       return estado === "pendiente" || estado === "vencido";
     })
-    .reduce((a: number, x: any) => a + Number(x.monto_total || 0), 0);
+    .reduce((a: number, x) => a + Number(x.monto_total || 0), 0);
 
   const gastosDelMes = gastos
-    .filter((x: any) => esDelMesActual(x.created_at))
-    .reduce((a: number, x: any) => a + Number(x.monto || 0), 0);
+    .filter((x) => esDelMesActual(x.created_at))
+    .reduce((a: number, x) => a + Number(x.monto || 0), 0);
 
   const saldoActual = cobradoDelMes - gastosDelMes;
   const comprobantesPorRevisar = confirmaciones.length;
 
   const deptosMoraMes = new Set(
     cuotas
-      .filter((x: any) => {
+      .filter((x) => {
         const estado = String(x.estado || "").toLowerCase();
         return (
           (estado === "pendiente" || estado === "vencido") &&
           esDelMesActual(x.created_at)
         );
       })
-      .map((x: any) => x.departamento_id)
+      .map((x) => x.departamento_id)
       .filter(Boolean)
   ).size;
 
   const deptosMoraAntigua = new Set(
     cuotas
-      .filter((x: any) => {
+      .filter((x) => {
         const estado = String(x.estado || "").toLowerCase();
         return (
           (estado === "pendiente" || estado === "vencido") &&
           !esDelMesActual(x.created_at)
         );
       })
-      .map((x: any) => x.departamento_id)
+      .map((x) => x.departamento_id)
       .filter(Boolean)
   ).size;
 
-  const deptosAlDia = departamentos.filter((depto: any) => {
-    const tieneDeuda = cuotas.some((c: any) => {
+  const deptosAlDia = departamentos.filter((depto) => {
+    const tieneDeuda = cuotas.some((c) => {
       const estado = String(c.estado || "").toLowerCase();
       return (
         c.departamento_id === depto.id &&

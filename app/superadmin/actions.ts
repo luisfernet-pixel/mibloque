@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -23,7 +23,7 @@ async function requireSuperadmin() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Debes iniciar sesión.");
+    throw new Error("Debes iniciar sesiÃ³n.");
   }
 
   const { data: perfil } = await supabase
@@ -39,6 +39,31 @@ async function requireSuperadmin() {
 
 function safeString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
+}
+
+function formatActionError(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error) {
+    const maybeError = error as {
+      message?: unknown;
+      error_description?: unknown;
+      code?: unknown;
+    };
+
+    const message = maybeError.message ?? maybeError.error_description;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+
+    if (typeof maybeError.code === "string" && maybeError.code.trim()) {
+      return `${fallback} (${maybeError.code})`;
+    }
+  }
+
+  return fallback;
 }
 
 function normalizeDepartamentoNumero(value: string) {
@@ -67,6 +92,39 @@ function departmentEmailFromCode(code: string) {
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
+async function findAuthUserIdByEmail(email: string) {
+  const supabase = createAdminClient();
+  const targetEmail = String(email || "").toLowerCase();
+  let page = 1;
+
+  while (page <= 100) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: 100,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const match = data.users.find(
+      (user) => String(user.email || "").toLowerCase() === targetEmail
+    );
+
+    if (match) {
+      return match.id;
+    }
+
+    if (!data.nextPage) {
+      return null;
+    }
+
+    page = data.nextPage;
+  }
+
+  return null;
+}
+
 async function createAuthUser({
   email,
   password,
@@ -78,6 +136,26 @@ async function createAuthUser({
 }): Promise<{ userId: string; usedServiceRole: boolean }> {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const supabase = createAdminClient();
+
+    const existingUserId = await findAuthUserIdByEmail(email);
+    if (existingUserId) {
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        existingUserId,
+        {
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: userMetadata,
+        }
+      );
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      return { userId: existingUserId, usedServiceRole: true };
+    }
+
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -92,20 +170,9 @@ async function createAuthUser({
     return { userId: data.user.id, usedServiceRole: true };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: userMetadata,
-    },
-  });
-
-  if (error || !data.user) {
-    throw error ?? new Error("No se pudo crear el usuario de Auth.");
-  }
-
-  return { userId: data.user.id, usedServiceRole: false };
+  throw new Error(
+    "Falta SUPABASE_SERVICE_ROLE_KEY en el entorno local. Necesaria para crear admins y departamentos sin disparar emails de confirmacion."
+  );
 }
 
 async function resolveOrCreateDepartamentoId({
@@ -127,7 +194,7 @@ async function resolveOrCreateDepartamentoId({
       .single();
 
     if (error || !existente) {
-      throw error ?? new Error("No se encontró el departamento seleccionado.");
+      throw error ?? new Error("No se encontrÃ³ el departamento seleccionado.");
     }
 
     return existente;
@@ -153,13 +220,13 @@ async function resolveOrCreateDepartamentoId({
     return existente;
   }
 
-  const { data: creado, error: insertError } = await supabase
+  const adminSupabase = createAdminClient();
+  const { data: creado, error: insertError } = await adminSupabase
     .from("departamentos")
     .insert({
       bloque_id: bloqueId,
       numero,
       activo: true,
-      estado_ocupacion: "ocupado",
     })
     .select("id, numero")
     .single();
@@ -199,7 +266,7 @@ export async function createBlockAction(
     }
 
     if (!codigo) {
-      return { ok: false, message: "Escribe el código del bloque." };
+      return { ok: false, message: "Escribe el cÃ³digo del bloque." };
     }
 
     const supabase = await createClient();
@@ -248,7 +315,7 @@ export async function updateBlockAction(
     }
 
     if (!codigo) {
-      return { ok: false, message: "Escribe el código del bloque." };
+      return { ok: false, message: "Escribe el cÃ³digo del bloque." };
     }
 
     const supabase = createAdminClient();
@@ -329,7 +396,6 @@ export async function createAdminAction(
     await requireSuperadmin();
 
     const nombre = safeString(formData.get("nombre"));
-    const telefono = safeString(formData.get("telefono"));
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
 
@@ -337,14 +403,10 @@ export async function createAdminAction(
       return { ok: false, message: "Escribe el nombre del admin." };
     }
 
-    if (!telefono) {
-      return { ok: false, message: "Escribe el teléfono del admin." };
-    }
-
     if (!password || password.length < 6) {
       return {
         ok: false,
-        message: "La contraseña debe tener al menos 6 caracteres.",
+        message: "La contraseÃ±a debe tener al menos 6 caracteres.",
       };
     }
 
@@ -360,7 +422,7 @@ export async function createAdminAction(
       .single();
 
     if (bloqueError || !bloque) {
-      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
+      throw bloqueError ?? new Error("No se encontrÃ³ el bloque seleccionado.");
     }
 
     const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
@@ -370,7 +432,6 @@ export async function createAdminAction(
       password,
       userMetadata: {
         nombre,
-        telefono,
         rol: "admin",
         bloque_id: bloqueId,
       },
@@ -382,17 +443,16 @@ export async function createAdminAction(
       ? createAdminClient()
       : await createClient();
 
-    const { error: perfilError } = await profileSupabase.from("usuarios").insert({
+    const { error: perfilError } = await profileSupabase.from("usuarios").upsert({
       id: authResult.userId,
       nombre,
-      telefono,
       email: generatedEmail,
       rol: "admin",
       bloque_id: bloqueId,
       departamento_id: null,
       username: null,
       activo: true,
-    });
+    }, { onConflict: "id" });
 
     if (perfilError) {
       throw perfilError;
@@ -405,8 +465,7 @@ export async function createAdminAction(
     await deleteAuthUserIfNeeded(createdUserId);
     return {
       ok: false,
-      message:
-        error instanceof Error ? error.message : "No se pudo crear el admin.",
+      message: formatActionError(error, "No se pudo crear el admin."),
     };
   }
 }
@@ -422,7 +481,6 @@ export async function updateAdminAction(
 
     const id = safeString(formData.get("id"));
     const nombre = safeString(formData.get("nombre"));
-    const telefono = safeString(formData.get("telefono"));
     const email = safeString(formData.get("email")).toLowerCase();
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
@@ -432,14 +490,13 @@ export async function updateAdminAction(
       return { ok: false, message: "Falta el admin a editar." };
     }
 
-    if (!nombre || !telefono || !email || !bloqueId) {
-      return { ok: false, message: "Completa nombre, teléfono, email y bloque." };
+    if (!nombre || !email || !bloqueId) {
+      return { ok: false, message: "Completa nombre, email y bloque." };
     }
 
     const supabase = await createClient();
     const updatePayload: Record<string, unknown> = {
       nombre,
-      telefono,
       email,
       rol: "admin",
       bloque_id: bloqueId,
@@ -455,41 +512,30 @@ export async function updateAdminAction(
 
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const adminSupabase = createAdminClient();
+      const authPayload: {
+        email: string;
+        user_metadata: Record<string, unknown>;
+        password?: string;
+      } = {
+        email,
+        user_metadata: {
+          nombre,
+          rol: "admin",
+          bloque_id: bloqueId,
+        },
+      };
+
       if (password) {
-        const { error: authError } = await adminSupabase.auth.admin.updateUserById(
-          id,
-          {
-          email,
-          password,
-          user_metadata: {
-            nombre,
-            telefono,
-            rol: "admin",
-            bloque_id: bloqueId,
-          },
-          }
-        );
+        authPayload.password = password;
+      }
 
-        if (authError) {
-          throw authError;
-        }
-      } else {
-        const { error: authError } = await adminSupabase.auth.admin.updateUserById(
-          id,
-          {
-          email,
-          user_metadata: {
-            nombre,
-            telefono,
-            rol: "admin",
-            bloque_id: bloqueId,
-          },
-          }
-        );
+      const { error: authError } = await adminSupabase.auth.admin.updateUserById(
+        id,
+        authPayload
+      );
 
-        if (authError) {
-          throw authError;
-        }
+      if (authError) {
+        throw authError;
       }
     }
 
@@ -499,8 +545,7 @@ export async function updateAdminAction(
   } catch (error) {
     return {
       ok: false,
-      message:
-        error instanceof Error ? error.message : "No se pudo actualizar el admin.",
+      message: formatActionError(error, "No se pudo actualizar el admin."),
     };
   }
 }
@@ -537,8 +582,7 @@ export async function deleteAdminAction(
   } catch (error) {
     return {
       ok: false,
-      message:
-        error instanceof Error ? error.message : "No se pudo eliminar el admin.",
+      message: formatActionError(error, "No se pudo eliminar el admin."),
     };
   }
 }
@@ -559,7 +603,6 @@ export async function createVecinoAction(
     await requireSuperadmin();
 
     const nombre = safeString(formData.get("nombre"));
-    const telefono = safeString(formData.get("telefono"));
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
     const departamentoId = safeString(formData.get("departamento_id"));
@@ -569,14 +612,10 @@ export async function createVecinoAction(
       return { ok: false, message: "Escribe el nombre del departamento." };
     }
 
-    if (!telefono) {
-      return { ok: false, message: "Escribe el teléfono del departamento." };
-    }
-
     if (!password || password.length < 6) {
       return {
         ok: false,
-        message: "La contraseña debe tener al menos 6 caracteres.",
+        message: "La contraseÃ±a debe tener al menos 6 caracteres.",
       };
     }
 
@@ -592,7 +631,7 @@ export async function createVecinoAction(
       .single();
 
     if (bloqueError || !bloque) {
-      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
+      throw bloqueError ?? new Error("No se encontrÃ³ el bloque seleccionado.");
     }
 
     const departamento = await resolveOrCreateDepartamentoId({
@@ -613,7 +652,6 @@ export async function createVecinoAction(
       password,
       userMetadata: {
         nombre,
-        telefono,
         rol: "vecino",
         bloque_id: bloqueId,
         departamento_id: departamento.id,
@@ -627,17 +665,16 @@ export async function createVecinoAction(
       ? createAdminClient()
       : await createClient();
 
-    const { error: perfilError } = await profileSupabase.from("usuarios").insert({
+    const { error: perfilError } = await profileSupabase.from("usuarios").upsert({
       id: authResult.userId,
       nombre,
-      telefono,
       email,
       username: departmentCode,
       rol: "vecino",
       bloque_id: bloqueId,
       departamento_id: departamento.id,
       activo: true,
-    });
+    }, { onConflict: "id" });
 
     if (perfilError) {
       throw perfilError;
@@ -653,8 +690,10 @@ export async function createVecinoAction(
     await deleteAuthUserIfNeeded(createdUserId);
     return {
       ok: false,
-      message:
-        error instanceof Error ? error.message : "No se pudo crear el departamento.",
+      message: formatActionError(
+        error,
+        "No se pudo crear el departamento."
+      ),
     };
   }
 }
@@ -670,7 +709,6 @@ export async function updateVecinoAction(
 
     const id = safeString(formData.get("id"));
     const nombre = safeString(formData.get("nombre"));
-    const telefono = safeString(formData.get("telefono"));
     const password = safeString(formData.get("password"));
     const bloqueId = safeString(formData.get("bloque_id"));
     const departamentoId = safeString(formData.get("departamento_id"));
@@ -688,10 +726,6 @@ export async function updateVecinoAction(
       };
     }
 
-    if (!telefono) {
-      return { ok: false, message: "Escribe el teléfono del departamento." };
-    }
-
     const supabase = await createClient();
     const { data: bloque, error: bloqueError } = await supabase
       .from("bloques")
@@ -700,7 +734,7 @@ export async function updateVecinoAction(
       .single();
 
     if (bloqueError || !bloque) {
-      throw bloqueError ?? new Error("No se encontró el bloque seleccionado.");
+      throw bloqueError ?? new Error("No se encontrÃ³ el bloque seleccionado.");
     }
 
     const departamento = await resolveOrCreateDepartamentoId({
@@ -718,7 +752,6 @@ export async function updateVecinoAction(
 
     const { error } = await supabase.from("usuarios").update({
       nombre,
-      telefono,
       email,
       username: departmentCode,
       rol: "vecino",
@@ -739,7 +772,6 @@ export async function updateVecinoAction(
       email,
       user_metadata: {
         nombre,
-        telefono,
         rol: "vecino",
         bloque_id: bloqueId,
         departamento_id: departamento.id,
@@ -769,8 +801,10 @@ export async function updateVecinoAction(
   } catch (error) {
     return {
       ok: false,
-      message:
-        error instanceof Error ? error.message : "No se pudo actualizar el departamento.",
+      message: formatActionError(
+        error,
+        "No se pudo actualizar el departamento."
+      ),
     };
   }
 }
@@ -807,8 +841,10 @@ export async function deleteVecinoAction(
   } catch (error) {
     return {
       ok: false,
-      message:
-        error instanceof Error ? error.message : "No se pudo eliminar el departamento.",
+      message: formatActionError(
+        error,
+        "No se pudo eliminar el departamento."
+      ),
     };
   }
 }
@@ -816,3 +852,5 @@ export async function deleteVecinoAction(
 export async function deleteVecinoActionForm(formData: FormData) {
   await deleteVecinoAction(initialState, formData);
 }
+
+

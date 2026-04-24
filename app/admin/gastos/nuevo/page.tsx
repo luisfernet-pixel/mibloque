@@ -36,12 +36,6 @@ type CategoriaRow = {
   nombre: string;
 };
 
-const inputStyle = {
-  color: "white",
-  WebkitTextFillColor: "white",
-  opacity: 1,
-} as React.CSSProperties;
-
 export default async function NuevoGastoPage() {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
@@ -131,7 +125,6 @@ export default async function NuevoGastoPage() {
                   name="fecha_gasto"
                   defaultValue={hoy}
                   required
-                  style={inputStyle}
                   className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
                 />
               </div>
@@ -145,7 +138,6 @@ export default async function NuevoGastoPage() {
                   name="categoria"
                   defaultValue=""
                   required
-                  style={inputStyle}
                   className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
                 >
                   <option value="">Selecciona una categoría</option>
@@ -168,7 +160,6 @@ export default async function NuevoGastoPage() {
                 name="concepto"
                 required
                 placeholder="Ejemplo: Pago de agua abril"
-                style={inputStyle}
                 className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-400/40"
               />
             </div>
@@ -179,7 +170,7 @@ export default async function NuevoGastoPage() {
               </label>
 
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
                   Bs
                 </span>
 
@@ -188,7 +179,6 @@ export default async function NuevoGastoPage() {
                   name="monto"
                   step="0.01"
                   required
-                  style={inputStyle}
                   className="w-full rounded-2xl border border-white/10 bg-[#173454] py-3 pl-12 pr-4 text-white outline-none transition focus:border-cyan-400/40"
                 />
               </div>

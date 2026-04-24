@@ -15,8 +15,6 @@ export default async function VecinoLayout({
   const menu = [
     { href: "/vecino", label: "Inicio" },
     { href: "/vecino/transparencia", label: "Transparencia" },
-    { href: "/vecino/recibos", label: "Recibos" },
-    { href: "/vecino/reportar-pago", label: "Enviar comprobante" },
   ];
 
   return (

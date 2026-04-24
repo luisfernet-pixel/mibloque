@@ -1,30 +1,19 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const usuario = await requireAdmin();
+  if (!usuario) {
     return NextResponse.redirect(new URL("/login", req.url), 303);
   }
 
-  const { data: admin } = await supabase
-    .from("usuarios")
-    .select("id, rol")
-    .eq("id", user.id)
-    .single();
-
-  if (!admin || admin.rol !== "admin") {
-    return NextResponse.redirect(new URL("/login", req.url), 303);
-  }
+  const supabase = createAdminClient();
 
   const { data: confirmacion } = await supabase
     .from("confirmaciones_pago")
@@ -39,6 +28,7 @@ export async function POST(
       estado
     `)
     .eq("id", id)
+    .eq("bloque_id", usuario.perfil.bloque_id)
     .single();
 
   if (!confirmacion) {
@@ -56,7 +46,7 @@ export async function POST(
     .update({
       estado: "aprobado",
       revisado_at: ahora,
-      revisado_por: admin.id,
+      revisado_por: usuario.perfil.id,
     })
     .eq("id", id);
 
@@ -81,6 +71,11 @@ export async function POST(
   if (insertPagoError) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
+
+  revalidatePath("/admin/confirmaciones");
+  revalidatePath("/admin");
+  revalidatePath("/vecino");
+  revalidatePath("/vecino/recibos");
 
   const { error: updateCuotaError } = await supabase
     .from("cuotas")

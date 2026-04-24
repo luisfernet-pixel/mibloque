@@ -14,6 +14,7 @@ type Props = {
 export default async function NuevoAdminPage({ searchParams }: Props) {
   const { bloqueId } = await searchParams;
   const supabase = await createClient();
+  const serviceRoleAvailable = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: bloques } = await supabase
     .from("bloques")
@@ -42,6 +43,7 @@ export default async function NuevoAdminPage({ searchParams }: Props) {
           action={createAdminAction}
           initialValues={{ bloque_id: bloqueId }}
           autoGenerateAdminEmail
+          serviceRoleAvailable={serviceRoleAvailable}
         />
       </section>
     </main>

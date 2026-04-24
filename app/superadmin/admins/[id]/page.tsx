@@ -19,11 +19,12 @@ export const metadata: Metadata = {
 export default async function EditAdminPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
+  const serviceRoleAvailable = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const [{ data: admin }, { data: bloques }] = await Promise.all([
     supabase
       .from("usuarios")
-      .select("id, nombre, telefono, email, bloque_id, activo")
+      .select("id, nombre, email, bloque_id, activo")
       .eq("id", id)
       .eq("rol", "admin")
       .single(),
@@ -42,7 +43,7 @@ export default async function EditAdminPage({ params }: Props) {
           Editar admin
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Actualiza datos, bloque asignado, contraseña o estado.
+          Update the account data, assigned block, password or status.
         </p>
       </section>
 
@@ -56,13 +57,13 @@ export default async function EditAdminPage({ params }: Props) {
           initialValues={{
             id: admin.id,
             nombre: admin.nombre,
-            telefono: admin.telefono,
             email: admin.email,
             bloque_id: admin.bloque_id,
             activo: admin.activo,
           }}
           showActive
           allowPassword
+          serviceRoleAvailable={serviceRoleAvailable}
         />
 
         <div className="mt-6 border-t border-white/10 pt-6">

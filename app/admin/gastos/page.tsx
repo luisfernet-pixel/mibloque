@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import ConfirmDeleteButton from "./_components/confirm-delete-button";
 
 type GastoRow = {
   id: string;
@@ -56,12 +57,6 @@ function categoriaClass(value: string) {
 
   return "border border-indigo-400/20 bg-indigo-500/10 text-indigo-300";
 }
-
-const inputStyle = {
-  color: "white",
-  WebkitTextFillColor: "white",
-  opacity: 1,
-} as React.CSSProperties;
 
 async function editarGasto(formData: FormData) {
   "use server";
@@ -310,7 +305,6 @@ export default async function GastosPage({
                             name="fecha_gasto"
                             defaultValue={item.fecha_gasto}
                             required
-                            style={inputStyle}
                             className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
                           />
                         </div>
@@ -322,7 +316,6 @@ export default async function GastosPage({
                           <select
                             name="categoria"
                             defaultValue={item.categoria}
-                            style={inputStyle}
                             className="w-full appearance-none rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
                             required
                           >
@@ -344,7 +337,6 @@ export default async function GastosPage({
                             name="concepto"
                             defaultValue={item.concepto}
                             required
-                            style={inputStyle}
                             className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
                           />
                         </div>
@@ -354,7 +346,7 @@ export default async function GastosPage({
                             Monto
                           </label>
                           <div className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
                               Bs
                             </span>
                             <input
@@ -363,7 +355,6 @@ export default async function GastosPage({
                               step="0.01"
                               defaultValue={item.monto}
                               required
-                              style={inputStyle}
                               className="w-full rounded-2xl border border-white/10 bg-[#173454] py-3 pl-12 pr-4 text-white outline-none transition focus:border-cyan-400/40"
                             />
                           </div>
@@ -432,12 +423,12 @@ export default async function GastosPage({
 
                         <form action={eliminarGasto}>
                           <input type="hidden" name="id" value={item.id} />
-                          <button
-                            type="submit"
+                          <ConfirmDeleteButton
                             className="rounded-2xl border border-white/15 bg-white/5 px-4 py-2 font-semibold text-white transition hover:bg-white/10"
+                            confirmText="¿Seguro que quieres eliminar este gasto? Esta acción no se puede deshacer."
                           >
                             Eliminar
-                          </button>
+                          </ConfirmDeleteButton>
                         </form>
                       </div>
                     </div>

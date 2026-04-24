@@ -1,27 +1,44 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth";
 
 type CuotaRow = {
   id: string;
   periodo: string;
   monto_total: number;
   estado: string;
-  departamentos: { numero: string } | { numero: string }[] | null;
+  anio: number;
+  mes: number;
+  departamento_id: string;
 };
 
 function bs(n: number) {
   return `Bs ${Number(n || 0).toLocaleString("es-BO")}`;
 }
 
-function getDepto(value: CuotaRow["departamentos"]) {
-  if (!value) return "-";
-  return Array.isArray(value) ? value[0]?.numero ?? "-" : value.numero;
+function parseDeptoNumero(value: string) {
+  const cleaned = String(value || "").trim();
+  if (!/^\d+$/.test(cleaned)) return null;
+  const num = Number(cleaned);
+  if (!Number.isFinite(num)) return null;
+  const piso = Math.floor(num / 100);
+  return { num, piso };
 }
 
 export default async function CuotasPage() {
-  const supabase = await createClient();
+  const usuario = await requireAdmin();
+  if (!usuario) redirect("/login");
 
-  const { data } = await supabase
+  const supabase = createAdminClient();
+  const bloqueId = usuario.perfil.bloque_id;
+
+  const [{ data: departamentosData }, { data }] = await Promise.all([
+    supabase
+      .from("departamentos")
+      .select("id, numero")
+      .eq("bloque_id", bloqueId),
+    supabase
     .from("cuotas")
     .select(
       `
@@ -29,14 +46,18 @@ export default async function CuotasPage() {
       periodo,
       monto_total,
       estado,
-      departamentos:departamento_id (
-        numero
-      )
+      anio,
+      mes,
+      departamento_id
     `
     )
-    .order("periodo", { ascending: false });
+    .eq("bloque_id", bloqueId)
+    .order("periodo", { ascending: false }),
+  ]);
 
   const cuotas = (data ?? []) as CuotaRow[];
+  const departamentos =
+    (departamentosData ?? []) as Array<{ id: string; numero: string | null }>;
 
   const pendientes = cuotas.filter((x) => x.estado === "pendiente");
   const vencidas = cuotas.filter((x) => x.estado === "vencido");
@@ -54,6 +75,54 @@ export default async function CuotasPage() {
     (a, x) => a + Number(x.monto_total || 0),
     0
   );
+
+  const cuotasPorDepto = new Map<string, CuotaRow[]>();
+  for (const cuota of cuotas) {
+    const key = String(cuota.departamento_id || "");
+    if (!key) continue;
+    const list = cuotasPorDepto.get(key) ?? [];
+    list.push(cuota);
+    cuotasPorDepto.set(key, list);
+  }
+
+  const grupos = departamentos.map((depto) => {
+    const cuotasDepto = cuotasPorDepto.get(depto.id) ?? [];
+    const totalPendiente = cuotasDepto
+      .filter((item) => item.estado === "pendiente")
+      .reduce((a, x) => a + Number(x.monto_total || 0), 0);
+    const totalVencido = cuotasDepto
+      .filter((item) => item.estado === "vencido")
+      .reduce((a, x) => a + Number(x.monto_total || 0), 0);
+
+    return {
+      departamento: String(depto.numero || "-"),
+      cuotas: cuotasDepto,
+      totalAdeudado: totalPendiente + totalVencido,
+      totalPendiente,
+      totalVencido,
+    };
+  });
+
+  grupos.sort((a, b) => {
+    const aNum = parseDeptoNumero(a.departamento);
+    const bNum = parseDeptoNumero(b.departamento);
+
+    if (aNum && bNum) {
+      if (aNum.piso !== bNum.piso) return bNum.piso - aNum.piso;
+      if (aNum.num !== bNum.num) return aNum.num - bNum.num;
+      return 0;
+    }
+
+    if (aNum) return -1;
+    if (bNum) return 1;
+    return String(a.departamento).localeCompare(String(b.departamento), "es");
+  });
+  for (const grupo of grupos) {
+    grupo.cuotas.sort((a, b) => {
+      if (a.anio !== b.anio) return b.anio - a.anio;
+      return b.mes - a.mes;
+    });
+  }
 
   return (
     <main className="space-y-6">
@@ -126,57 +195,110 @@ export default async function CuotasPage() {
               Estado de cuotas por departamento
             </h2>
             <p className="mt-1 text-sm text-slate-300">
-              Listado general de cuotas registradas.
+              Agrupado por departamento con total adeudado por unidad.
             </p>
           </div>
 
           <div className="w-fit rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
-            {cuotas.length} cuota(s)
+            {departamentos.length} departamento(s)
           </div>
         </div>
 
         <div className="p-4 md:p-5">
-          {cuotas.length === 0 ? (
+          {departamentos.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
               <p className="text-lg font-bold text-white">
-                No hay cuotas registradas
+                No hay departamentos registrados
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {cuotas.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid gap-4 rounded-[24px] border border-white/20 bg-[#2d4a6c] p-4 md:grid-cols-[0.8fr_1fr_0.8fr_0.7fr] md:items-center md:p-5"
+              {grupos.map((grupo) => (
+                <details
+                  key={grupo.departamento}
+                  className="group rounded-[24px] border border-white/20 bg-[#2d4a6c] p-4 md:p-5"
                 >
-                  <div>
-                    <p className="text-sm text-slate-300">Departamento</p>
-                    <p className="mt-1 text-xl font-bold text-white">
-                      {getDepto(item.departamentos)}
-                    </p>
-                  </div>
+                  <summary className="list-none cursor-pointer">
+                    <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:items-end">
+                      <div>
+                        <p className="text-sm text-slate-300">Departamento</p>
+                        <p className="mt-1 text-xl font-bold text-white">
+                          {grupo.departamento}
+                        </p>
+                      </div>
 
-                  <div>
-                    <p className="text-sm text-slate-300">Periodo</p>
-                    <p className="mt-1 text-xl font-bold text-white">
-                      {item.periodo}
-                    </p>
-                  </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                          Total adeudado
+                        </p>
+                        <p className="mt-1 text-xl font-extrabold text-orange-200">
+                          {bs(grupo.totalAdeudado)}
+                        </p>
+                      </div>
 
-                  <div>
-                    <p className="text-sm text-slate-300">Monto</p>
-                    <p className="mt-1 text-2xl font-extrabold text-white">
-                      {bs(item.monto_total)}
-                    </p>
-                  </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                          Pendiente
+                        </p>
+                        <p className="mt-1 text-lg font-bold text-orange-100">
+                          {bs(grupo.totalPendiente)}
+                        </p>
+                      </div>
 
-                  <div>
-                    <p className="text-sm text-slate-300">Estado</p>
-                    <div className="mt-2">
-                      <EstadoCuota estado={item.estado} />
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                          Vencido
+                        </p>
+                        <p className="mt-1 text-lg font-bold text-red-200">
+                          {bs(grupo.totalVencido)}
+                        </p>
+                      </div>
+
+                      <div className="self-center md:justify-self-end">
+                        <span className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-sm font-bold text-cyan-100 transition group-open:hidden">
+                          Ampliar
+                        </span>
+                        <span className="hidden min-h-[40px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-bold text-white transition group-open:inline-flex">
+                          Reducir
+                        </span>
+                      </div>
+                    </div>
+                  </summary>
+
+                  <div className="mt-4 border-t border-white/10 pt-4 group-open:block">
+                    <div>
+                      {grupo.cuotas.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-white/20 bg-[#264465] px-4 py-4 text-sm text-slate-200">
+                          Sin cuotas registradas para este departamento.
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {grupo.cuotas.map((item) => (
+                            <div
+                              key={item.id}
+                              className="grid gap-3 rounded-2xl border border-white/10 bg-[#264465] px-4 py-3 md:grid-cols-[1fr_auto_auto] md:items-center"
+                            >
+                              <div>
+                                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
+                                  Periodo
+                                </p>
+                                <p className="mt-1 text-base font-bold text-white">
+                                  {item.periodo}
+                                </p>
+                              </div>
+
+                              <p className="text-lg font-bold text-white">
+                                {bs(item.monto_total)}
+                              </p>
+
+                              <EstadoCuota estado={item.estado} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
+                </details>
               ))}
             </div>
           )}

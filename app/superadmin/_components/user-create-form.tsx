@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useMemo, useState } from "react";
 import type { ActionState } from "@/app/superadmin/actions";
@@ -36,6 +36,7 @@ type Props = {
   allowPassword?: boolean;
   showActive?: boolean;
   autoGenerateAdminEmail?: boolean;
+  serviceRoleAvailable?: boolean;
 };
 
 const initialState: ActionState = {
@@ -72,6 +73,7 @@ export default function UserCreateForm({
   allowPassword = true,
   showActive = false,
   autoGenerateAdminEmail = false,
+  serviceRoleAvailable = true,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [selectedBlockId, setSelectedBlockId] = useState(
@@ -81,8 +83,6 @@ export default function UserCreateForm({
     () => initialValues?.departamento_numero ?? ""
   );
   const [username, setUsername] = useState(initialValues?.username ?? "");
-
-  const [telefono, setTelefono] = useState(initialValues?.telefono ?? "");
 
   const selectedBlock = useMemo(
     () => blocks.find((item) => item.id === selectedBlockId),
@@ -115,6 +115,9 @@ export default function UserCreateForm({
         )
       : "";
 
+  const authRequiredMode = mode === "admin" || mode === "departamento";
+  const authWarning = authRequiredMode && !serviceRoleAvailable;
+
   return (
     <div className="space-y-5">
       {state.message && (
@@ -126,6 +129,15 @@ export default function UserCreateForm({
           }`}
         >
           {state.message}
+        </div>
+      )}
+
+      {authWarning && (
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-50">
+          Falta <span className="font-bold">SUPABASE_SERVICE_ROLE_KEY</span> en
+          tu <span className="font-bold">.env.local</span>. Sin esa clave no
+          podemos crear admins ni departamentos sin que Supabase intente enviar
+          correos de confirmaciÃ³n.
         </div>
       )}
 
@@ -189,8 +201,8 @@ export default function UserCreateForm({
               />
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
-                <span className="font-semibold text-white">Código:</span>{" "}
-                {departmentCodePreview || "Selecciona bloque y número"}
+                <span className="font-semibold text-white">CÃ³digo:</span>{" "}
+                {departmentCodePreview || "Selecciona bloque y nÃºmero"}
               </div>
             </>
           )}
@@ -200,15 +212,16 @@ export default function UserCreateForm({
           <Field
             label={mode === "admin" ? "Nombre del admin" : "Nombre del residente"}
             name="nombre"
-            placeholder={mode === "admin" ? "Ej. Juan Perez" : "Ej. Ana Pérez"}
+            placeholder={mode === "admin" ? "Ej. Juan Perez" : "Ej. Ana PÃ©rez"}
             defaultValue={initialValues?.nombre}
           />
 
           <Field
-            label="Teléfono"
+            label="Teléfono (opcional)"
             name="telefono"
             placeholder="Ej. 76543210"
             defaultValue={initialValues?.telefono}
+            required={false}
           />
         </div>
 
@@ -217,21 +230,21 @@ export default function UserCreateForm({
             <Field
               label="Usuario del departamento"
               name="username"
-              placeholder="Se usa el código del depto"
+              placeholder="Se usa el cÃ³digo del depto"
               value={username}
               onChange={(value) => setUsername(value)}
             />
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
               <span className="font-semibold text-white">Email:</span>{" "}
-              {departmentEmailPreview || "Se genera automáticamente desde el código"}
+              {departmentEmailPreview || "Se genera automÃ¡ticamente desde el cÃ³digo"}
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
               <span className="font-semibold text-white">Referencias del bloque:</span>{" "}
               {departamentosFiltrados.length > 0
                 ? departamentosFiltrados.map((item) => item.numero).join(", ")
-                : "Aún no hay departamentos cargados para este bloque"}
+                : "AÃºn no hay departamentos cargados para este bloque"}
             </div>
           </>
         )}
@@ -239,19 +252,19 @@ export default function UserCreateForm({
         <div className="grid gap-4 md:grid-cols-2">
           {allowPassword ? (
             <Field
-              label="Contraseña"
+              label="ContraseÃ±a"
               name="password"
               type="password"
               placeholder={
                 initialValues?.id
                   ? "Dejar en blanco para no cambiar"
-                  : "Mínimo 6 caracteres"
+                  : "MÃ­nimo 6 caracteres"
               }
               required={!initialValues?.id}
             />
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-              La contraseña no se modifica en esta pantalla.
+              La contraseÃ±a no se modifica en esta pantalla.
             </div>
           )}
 
@@ -263,7 +276,7 @@ export default function UserCreateForm({
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
               <span className="font-semibold text-white">Correo del departamento:</span>{" "}
-              {departmentEmailPreview || "Se genera automáticamente desde el código"}
+              {departmentEmailPreview || "Se genera automÃ¡ticamente desde el cÃ³digo"}
             </div>
           )}
         </div>
@@ -331,3 +344,4 @@ function Field({
     </label>
   );
 }
+
