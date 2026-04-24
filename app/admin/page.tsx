@@ -190,7 +190,63 @@ export default async function AdminPage() {
 
   return (
     <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
+        <div className="space-y-3 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
+            Administracion
+          </p>
+          <h1 className="text-2xl font-bold leading-tight text-white">Inicio</h1>
+          <p className="text-sm text-slate-200">
+            Saldo {bs(saldoActual)} · Pendientes revisar {comprobantesPorRevisar}
+          </p>
+
+          <details className="group rounded-2xl border border-white/15 bg-white/5 p-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-cyan-100">
+              Ver detalle
+              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:hidden">
+                Abrir
+              </span>
+              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:inline-flex">
+                Cerrar
+              </span>
+            </summary>
+
+            <p className="mt-3 text-sm text-slate-200">
+              Controla cobros, gastos y pagos pendientes desde un solo lugar.
+            </p>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <InfoBox label="Pend. revisar" value={String(comprobantesPorRevisar)} />
+              <InfoBox label="Deptos al dia" value={String(deptosAlDia)} />
+              <InfoBox label="Mora antigua" value={String(deptosMoraAntigua)} />
+              <InfoBox label="Pendiente" value={bs(pendienteActual)} />
+            </div>
+
+            <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+              <Link
+                href="/admin/pagos/nuevo"
+                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-bold text-white transition hover:brightness-110"
+              >
+                Pago manual
+              </Link>
+              <Link
+                href="/admin/confirmaciones"
+                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+              >
+                Comprobantes
+              </Link>
+              <Link
+                href="/admin/cuotas"
+                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
+              >
+                Cobros
+              </Link>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section className="hidden overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
         <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">

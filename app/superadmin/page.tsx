@@ -108,7 +108,45 @@ export default async function SuperadminPage() {
   return (
     <main className="min-h-screen bg-[#324359] p-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-3xl border border-white/10 bg-[#071426] p-8">
+        <section className="rounded-2xl border border-white/10 bg-[#071426] p-4 md:hidden">
+          <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">Panel maestro</p>
+          <h1 className="mt-2 text-2xl font-bold text-white">SuperAdmin MiBloque</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            Bloques {totalBloques} · Departamentos {totalDeptos}
+          </p>
+
+          <details className="group mt-3 rounded-2xl border border-white/15 bg-white/5 p-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-cyan-100">
+              Ver detalle
+              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:hidden">
+                Abrir
+              </span>
+              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:inline-flex">
+                Cerrar
+              </span>
+            </summary>
+
+            <p className="mt-3 text-sm text-slate-200">
+              Control total de bloques, administradores y crecimiento de la plataforma.
+            </p>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Card titulo="Bloques" valor={String(totalBloques)} />
+              <Card titulo="Departamentos" valor={String(totalDeptos)} />
+            </div>
+
+            <div className="mt-3">
+              <Link
+                href="/superadmin/bloques/nuevo"
+                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-semibold text-black"
+              >
+                Nuevo bloque
+              </Link>
+            </div>
+          </details>
+        </section>
+
+        <section className="hidden rounded-3xl border border-white/10 bg-[#071426] p-8 md:block">
           <div className="grid items-center gap-6 lg:grid-cols-2">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">PANEL MAESTRO</p>

@@ -164,7 +164,52 @@ export default async function VecinoPage({
 
   return (
     <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
+        <div className="space-y-3 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
+            Pagos del vecino
+          </p>
+          <h1 className="text-2xl font-bold leading-tight text-white">Estado de cuotas</h1>
+          <p className="text-sm text-slate-200">
+            Pendientes {filasPendientes.length} · En revision {filasEnRevision.length} · Pagados{" "}
+            {filasPagadas.length}
+          </p>
+
+          <details className="group rounded-2xl border border-white/15 bg-white/5 p-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-cyan-100">
+              Ver detalle
+              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:hidden">
+                Abrir
+              </span>
+              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:inline-flex">
+                Cerrar
+              </span>
+            </summary>
+
+            <p className="mt-3 text-sm text-slate-200">
+              Revisa tus meses pendientes y sube el comprobante solo del mes habilitado.
+            </p>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <InfoBox label="Pendientes" value={String(filasPendientes.length)} />
+              <InfoBox label="En revision" value={String(filasEnRevision.length)} />
+              <InfoBox label="Pagados" value={String(filasPagadas.length)} />
+              <InfoBox label="Total meses" value={String(filas.length)} />
+            </div>
+
+            <div className="mt-3">
+              <Link
+                href="#subir-comprobante"
+                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+              >
+                Ir a subir comprobante
+              </Link>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section className="hidden overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
         <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
