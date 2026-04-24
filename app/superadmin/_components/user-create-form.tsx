@@ -121,10 +121,14 @@ export default function UserCreateForm({
 
   const authRequiredMode = mode === "admin" || mode === "departamento";
   const authWarning = authRequiredMode && !serviceRoleAvailable;
+  const isServiceRoleError =
+    authWarning &&
+    typeof state.message === "string" &&
+    state.message.includes("SUPABASE_SERVICE_ROLE_KEY");
 
   return (
     <div className="space-y-5">
-      {state.message && (
+      {state.message && !isServiceRoleError && (
         <div
           className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
             state.ok
@@ -281,11 +285,13 @@ export default function UserCreateForm({
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || authWarning}
           className="btn-primary inline-flex min-h-[48px] items-center justify-center rounded-2xl px-5 font-bold disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending
             ? "Guardando..."
+            : authWarning
+            ? "Falta configuracion"
             : submitLabel ?? (mode === "admin" ? "Crear admin" : "Crear departamento")}
         </button>
       </form>
