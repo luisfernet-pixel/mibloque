@@ -14,13 +14,28 @@ export default async function AdminLayout({
   if (!usuario) redirect("/login");
 
   const supabase = createAdminClient();
-  const { data: pendientesConfirmacion } = await supabase
-    .from("confirmaciones_pago")
-    .select("id")
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("estado", "pendiente");
+  const [pendientesRes, bloqueRes] = await Promise.all([
+    supabase
+      .from("confirmaciones_pago")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("estado", "pendiente"),
+    supabase
+      .from("bloques")
+      .select("nombre, codigo")
+      .eq("id", usuario.perfil.bloque_id)
+      .maybeSingle(),
+  ]);
 
-  const comprobantesPendientes = pendientesConfirmacion?.length ?? 0;
+  const comprobantesPendientes = pendientesRes.data?.length ?? 0;
+  const nombreAdmin = usuario.perfil.nombre || "Administrador";
+  const bloqueNombre = bloqueRes.data?.nombre || null;
+  const bloqueCodigo = bloqueRes.data?.codigo || null;
+  const bloqueLabel = bloqueNombre
+    ? `Bloque ${bloqueNombre}`
+    : bloqueCodigo
+      ? `Bloque ${bloqueCodigo}`
+      : "Bloque sin asignar";
 
   const menu = [
     { href: "/admin", label: "Inicio" },
@@ -37,7 +52,13 @@ export default async function AdminLayout({
       <header className="theme-hero-alt border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h1 className="text-2xl font-bold">MiBloque Admin</h1>
+            <div>
+              <h1 className="text-2xl font-bold">MiBloque Admin</h1>
+              <p className="mt-1 text-sm text-slate-200">
+                Administrador: <span className="font-semibold text-white">{nombreAdmin}</span> ·{" "}
+                <span className="font-semibold text-white">{bloqueLabel}</span>
+              </p>
+            </div>
 
             <div className="flex items-center gap-3">
               <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold tracking-[0.25em] text-cyan-100">

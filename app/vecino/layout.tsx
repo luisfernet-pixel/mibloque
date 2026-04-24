@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireVecino } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import LogoutButton from "@/app/logout-button";
 
 export default async function VecinoLayout({
@@ -11,6 +12,31 @@ export default async function VecinoLayout({
   const usuario = await requireVecino();
 
   if (!usuario) redirect("/login");
+  const supabase = createAdminClient();
+  const [bloqueRes, deptoRes] = await Promise.all([
+    supabase
+      .from("bloques")
+      .select("nombre, codigo")
+      .eq("id", usuario.perfil.bloque_id)
+      .maybeSingle(),
+    usuario.perfil.departamento_id
+      ? supabase
+          .from("departamentos")
+          .select("numero")
+          .eq("id", usuario.perfil.departamento_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+
+  const nombreVecino = usuario.perfil.nombre || "Vecino";
+  const numeroDepto = deptoRes.data?.numero ? String(deptoRes.data.numero) : "-";
+  const bloqueNombre = bloqueRes.data?.nombre || null;
+  const bloqueCodigo = bloqueRes.data?.codigo || null;
+  const bloqueLabel = bloqueNombre
+    ? `Bloque ${bloqueNombre}`
+    : bloqueCodigo
+      ? `Bloque ${bloqueCodigo}`
+      : "Bloque sin asignar";
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
@@ -22,7 +48,14 @@ export default async function VecinoLayout({
       <header className="theme-hero-alt border-b border-white/10">
         <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <h1 className="text-2xl font-bold">MiBloque Vecino</h1>
+            <div>
+              <h1 className="text-2xl font-bold">MiBloque Vecino</h1>
+              <p className="mt-1 text-sm text-slate-200">
+                <span className="font-semibold text-white">{nombreVecino}</span> · Depto{" "}
+                <span className="font-semibold text-white">{numeroDepto}</span> ·{" "}
+                <span className="font-semibold text-white">{bloqueLabel}</span>
+              </p>
+            </div>
 
             <div className="flex items-center gap-3">
               <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold tracking-[0.25em] text-cyan-100">
