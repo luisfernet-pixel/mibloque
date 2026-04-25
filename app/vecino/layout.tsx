@@ -46,10 +46,13 @@ export default async function VecinoLayout({
   return (
     <div className="theme-shell min-h-screen">
       <header className="theme-hero-alt sticky top-0 z-40 border-b border-white/10 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
+        <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6 md:py-4">
+          <div className="flex items-start justify-between gap-3 md:items-center md:gap-4">
             <div>
               <h1 className="text-lg font-bold leading-tight md:text-2xl">MiBloque Vecino</h1>
+              <p className="mt-1 text-xs text-slate-200 md:hidden">
+                {nombreVecino} - Depto {numeroDepto}
+              </p>
               <p className="mt-1 hidden text-xs text-slate-200 sm:block md:text-sm">
                 Vecino: <span className="font-semibold text-white">{nombreVecino}</span> - Depto{" "}
                 <span className="font-semibold text-white">{numeroDepto}</span> - Bloque{" "}
@@ -57,7 +60,7 @@ export default async function VecinoLayout({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <span className="hidden rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold tracking-[0.25em] text-cyan-100 sm:inline-flex">
                 Portal activo
               </span>
@@ -65,7 +68,7 @@ export default async function VecinoLayout({
             </div>
           </div>
 
-          <nav className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+          <nav className="hide-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1 md:mt-3">
             {menu.map((item) => (
               <Link
                 key={item.href}

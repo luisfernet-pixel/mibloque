@@ -300,55 +300,47 @@ export default async function VecinoPage({
           </div>
         </div>
 
-        <div className="overflow-x-auto p-4 md:p-5">
+        <div className="p-4 md:p-5">
           {filas.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
               <p className="text-lg font-bold text-white">No hay cuotas registradas</p>
             </div>
           ) : (
-            <table className="min-w-full overflow-hidden rounded-2xl border border-white/10">
-              <thead className="bg-[#1f3d5f] text-left text-xs uppercase tracking-[0.2em] text-slate-300">
-                <tr>
-                  <th className="px-4 py-3">Mes</th>
-                  <th className="px-4 py-3">Monto</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Accion</th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              <div className="space-y-3 md:hidden">
                 {filas.map((item) => (
-                  <tr key={item.id} className="border-t border-white/10 bg-[#2d4a6c]">
-                    <td className="px-4 py-4 font-semibold text-white">
-                      {item.periodo || "Sin periodo"}
-                    </td>
-                    <td className="px-4 py-4 text-slate-100">{money(item.monto_total)}</td>
-                    <td className="px-4 py-4">
+                  <article key={item.id} className="rounded-2xl border border-white/10 bg-[#2d4a6c] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-base font-bold text-white">{item.periodo || "Sin periodo"}</p>
                       <span
-                        className={`inline-flex rounded-full border px-3 py-2 text-sm font-bold ${estadoClass(
+                        className={`inline-flex shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${estadoClass(
                           item.status
                         )}`}
                       >
                         {estadoLabel(item.status)}
                       </span>
-                    </td>
-                    <td className="px-4 py-4">
+                    </div>
+
+                    <p className="mt-2 text-sm text-slate-200">Monto: {money(item.monto_total)}</p>
+
+                    <div className="mt-3">
                       {item.status === "pendiente" ? (
                         cuotaHabilitada?.id === item.id ? (
                           <Link
                             href="#subir-comprobante"
-                            className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
+                            className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
                           >
                             Subir comprobante
                           </Link>
                         ) : (
-                          <span className="text-sm font-semibold text-orange-100">
+                          <span className="text-xs font-semibold text-orange-100">
                             Debes pagar primero {cuotaHabilitada?.periodo || "mes anterior"}
                           </span>
                         )
                       ) : null}
 
                       {item.status === "en_revision" ? (
-                        <span className="text-sm font-semibold text-yellow-100">
+                        <span className="text-xs font-semibold text-yellow-100">
                           Esperando validacion admin
                         </span>
                       ) : null}
@@ -358,19 +350,87 @@ export default async function VecinoPage({
                           <Link
                             href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
                             target="_blank"
-                            className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-sm font-bold text-white transition hover:bg-cyan-400"
+                            className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-bold text-white transition hover:bg-cyan-400"
                           >
                             Descargar recibo
                           </Link>
                         ) : (
-                          <span className="text-sm text-cyan-100">Pago aprobado</span>
+                          <span className="text-xs text-cyan-100">Pago aprobado</span>
                         )
                       ) : null}
-                    </td>
-                  </tr>
+                    </div>
+                  </article>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-full overflow-hidden rounded-2xl border border-white/10">
+                  <thead className="bg-[#1f3d5f] text-left text-xs uppercase tracking-[0.2em] text-slate-300">
+                    <tr>
+                      <th className="px-4 py-3">Mes</th>
+                      <th className="px-4 py-3">Monto</th>
+                      <th className="px-4 py-3">Estado</th>
+                      <th className="px-4 py-3">Accion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filas.map((item) => (
+                      <tr key={item.id} className="border-t border-white/10 bg-[#2d4a6c]">
+                        <td className="px-4 py-4 font-semibold text-white">
+                          {item.periodo || "Sin periodo"}
+                        </td>
+                        <td className="px-4 py-4 text-slate-100">{money(item.monto_total)}</td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-2 text-sm font-bold ${estadoClass(
+                              item.status
+                            )}`}
+                          >
+                            {estadoLabel(item.status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          {item.status === "pendiente" ? (
+                            cuotaHabilitada?.id === item.id ? (
+                              <Link
+                                href="#subir-comprobante"
+                                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
+                              >
+                                Subir comprobante
+                              </Link>
+                            ) : (
+                              <span className="text-sm font-semibold text-orange-100">
+                                Debes pagar primero {cuotaHabilitada?.periodo || "mes anterior"}
+                              </span>
+                            )
+                          ) : null}
+
+                          {item.status === "en_revision" ? (
+                            <span className="text-sm font-semibold text-yellow-100">
+                              Esperando validacion admin
+                            </span>
+                          ) : null}
+
+                          {item.status === "pagado" ? (
+                            item.reciboPagoId ? (
+                              <Link
+                                href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
+                                target="_blank"
+                                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-sm font-bold text-white transition hover:bg-cyan-400"
+                              >
+                                Descargar recibo
+                              </Link>
+                            ) : (
+                              <span className="text-sm text-cyan-100">Pago aprobado</span>
+                            )
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </section>
