@@ -131,7 +131,7 @@ function construirOpcionesPago(cuotas: CuotaRow[]): OpcionPago[] {
       detalle: subset.map((cuota) => {
         const monto = montoCobrarCuota(cuota);
         const vencida = cuotaEstaVencida(cuota.fecha_vencimiento);
-        return `${cuota.periodo} — ${money(monto)}${vencida ? " (con mora)" : ""}`;
+        return `${cuota.periodo} - ${money(monto)}${vencida ? " (con mora)" : ""}`;
       }),
     });
   }
@@ -282,8 +282,8 @@ export default async function NuevoPagoPage() {
               <h1 className="mt-2 text-3xl font-bold">Registrar pago manual</h1>
 
               <p className="mt-3 text-sm text-slate-300">
-                El pago manual siempre se aplica desde la deuda más antigua hacia adelante.
-                Si una cuota ya venció, el sistema suma la mora automáticamente.
+                El pago manual siempre se aplica desde la deuda mas antigua hacia adelante.
+                Si una cuota ya vencio, el sistema suma la mora automaticamente.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
@@ -337,8 +337,8 @@ export default async function NuevoPagoPage() {
                 Departamentos con pagos pendientes
               </h2>
               <p className="mt-2 text-sm text-slate-300">
-                El administrador elige hasta qué mes pagó el vecino. El sistema
-                siempre cobra primero los meses más antiguos.
+                El administrador elige hasta que mes pago el vecino. El sistema
+                siempre cobra primero los meses mas antiguos.
               </p>
             </div>
 
@@ -383,7 +383,7 @@ export default async function NuevoPagoPage() {
                         <div className="grid gap-3 sm:grid-cols-3">
                           <InfoBox label="Meses adeudados" value={String(grupo.mesesAdeudados)} />
                           <InfoBox label="Total adeudado hoy" value={money(grupo.totalAdeudado)} />
-                          <InfoBox label="Pago mínimo" value={money(pagoMinimo)} />
+                          <InfoBox label="Pago minimo" value={money(pagoMinimo)} />
                         </div>
 
                         <div className="rounded-2xl bg-[#1b3148] p-4">
@@ -403,7 +403,7 @@ export default async function NuevoPagoPage() {
                                       : "border border-cyan-400/20 bg-cyan-500/10 text-cyan-300"
                                   }`}
                                 >
-                                  {cuota.periodo} — {money(montoCobrarCuota(cuota))}
+                                  {cuota.periodo} - {money(montoCobrarCuota(cuota))}
                                 </span>
                               );
                             })}
@@ -423,7 +423,7 @@ export default async function NuevoPagoPage() {
 
                         <div>
                           <label className="mb-3 block text-sm font-medium text-slate-300">
-                            Elige hasta qué mes pagó
+                            Elige hasta que mes pago
                           </label>
 
                           <div className="space-y-3">
@@ -474,20 +474,20 @@ export default async function NuevoPagoPage() {
 
                         <div className="mt-4">
                           <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Aclaración o referencia
+                            Aclaracion o referencia
                           </label>
 
                           <input
                             type="text"
                             name="referencia"
-                            placeholder="Opcional: recibo, nota, observación"
+                            placeholder="Opcional: recibo, nota, observacion"
                             className="w-full rounded-2xl border border-white/10 bg-[#0f2135] px-4 py-3 text-white placeholder:text-slate-400 outline-none transition focus:border-[#EF4937]/50"
                           />
                         </div>
 
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                           <p className="text-xs text-slate-400">
-                            La mora se aplica automáticamente si ya venció la cuota.
+                            La mora se aplica automaticamente si ya vencio la cuota.
                           </p>
 
                           <button
@@ -548,3 +548,4 @@ function InfoBox({
     </div>
   );
 }
+

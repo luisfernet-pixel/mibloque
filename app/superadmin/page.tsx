@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
@@ -112,7 +112,7 @@ export default async function SuperadminPage() {
           <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">Panel maestro</p>
           <h1 className="mt-2 text-2xl font-bold text-white">SuperAdmin MiBloque</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Bloques {totalBloques} · Departamentos {totalDeptos}
+            Bloques {totalBloques} - Departamentos {totalDeptos}
           </p>
 
           <details className="group mt-3 rounded-2xl border border-white/15 bg-white/5 p-3">
@@ -341,3 +341,4 @@ function Card({ titulo, valor }: { titulo: string; valor: string }) {
     </div>
   );
 }
+

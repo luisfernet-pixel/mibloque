@@ -191,7 +191,7 @@ export default async function VecinoPage({
           </p>
           <h1 className="text-2xl font-bold leading-tight text-white">Estado de cuotas</h1>
           <p className="text-sm text-slate-200">
-            Pendientes {filasPendientes.length} · En revision {filasEnRevision.length} · Pagados{" "}
+            Pendientes {filasPendientes.length} - En revision {filasEnRevision.length} - Pagados{" "}
             {filasPagadas.length}
           </p>
 
@@ -473,3 +473,4 @@ function InfoBox({
     </div>
   );
 }
+

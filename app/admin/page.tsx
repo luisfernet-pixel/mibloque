@@ -197,7 +197,7 @@ export default async function AdminPage() {
           </p>
           <h1 className="text-2xl font-bold leading-tight text-white">Inicio</h1>
           <p className="text-sm text-slate-200">
-            Saldo {bs(saldoActual)} · Pendientes revisar {comprobantesPorRevisar}
+            Saldo {bs(saldoActual)} - Pendientes revisar {comprobantesPorRevisar}
           </p>
 
           <details className="group rounded-2xl border border-white/15 bg-white/5 p-3">
@@ -250,7 +250,7 @@ export default async function AdminPage() {
         <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Administración
+              Administracion
             </p>
 
             <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
@@ -309,7 +309,7 @@ export default async function AdminPage() {
                 label="Pendientes revisar"
                 value={String(comprobantesPorRevisar)}
               />
-              <InfoBox label="Deptos al día" value={String(deptosAlDia)} />
+              <InfoBox label="Deptos al dia" value={String(deptosAlDia)} />
               <InfoBox
                 label="Mora antigua"
                 value={String(deptosMoraAntigua)}
@@ -336,7 +336,7 @@ export default async function AdminPage() {
             Estado general
           </p>
           <h2 className="mt-2 text-2xl font-bold text-white">
-            Situación del bloque
+            Situacion del bloque
           </h2>
         </div>
 
@@ -351,7 +351,7 @@ export default async function AdminPage() {
             valor={String(deptosMoraAntigua)}
           />
           <Mini
-            titulo="Departamentos al día"
+            titulo="Departamentos al dia"
             valor={String(deptosAlDia)}
           />
         </div>
@@ -435,3 +435,4 @@ function InfoBox({
     </div>
   );
 }
+
