@@ -311,16 +311,17 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
   addField(ops, "Telefono admin", adminPhoneLabel, margin + 122, metaStartY, 20);
   addField(ops, "Correo admin", adminEmailLabel, margin + 230, metaStartY, 34);
 
-  addField(ops, "Observaciones", observacionesLabel, margin + 2, metaStartY - 30, 64);
+  // Keep notes clearly separated from footer text to avoid overlap.
+  addField(ops, "Observaciones", observacionesLabel, margin + 2, metaStartY - 18, 64);
 
   // Footer
-  const footerY = margin + 8;
+  const footerY = margin + 4;
   ops.push({
     type: "line",
     x1: margin,
-    y1: footerY + 26,
+    y1: footerY + 22,
     x2: PAGE_WIDTH - margin,
-    y2: footerY + 26,
+    y2: footerY + 22,
     width: 1,
     color: SLATE_300,
   });
@@ -329,12 +330,12 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
     ops,
     "Este recibo certifica un pago validado por la administracion del bloque.",
     margin + 2,
-    footerY + 12,
+    footerY + 8,
     7.5,
     false,
     SLATE_600
   );
-  addText(ops, "MiBloque", PAGE_WIDTH - margin - 52, footerY + 12, 8, true, NAVY_700);
+  addText(ops, "MiBloque", PAGE_WIDTH - margin - 52, footerY + 8, 8, true, NAVY_700);
 
   // Accent marks
   ops.push({
