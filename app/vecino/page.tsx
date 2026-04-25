@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type SearchParams = {
   sent?: string;
@@ -27,6 +28,15 @@ type ConfirmacionRow = {
 type PagoRow = {
   id: string;
   cuota_id: string | null;
+};
+
+type NotificacionVecinoRow = {
+  id: string;
+  tipo: string | null;
+  titulo: string | null;
+  mensaje: string | null;
+  created_at: string | null;
+  leida: boolean | null;
 };
 
 type EstadoFila = "pendiente" | "en_revision" | "pagado";
@@ -71,6 +81,7 @@ export default async function VecinoPage({
 }) {
   const params = (await searchParams) ?? {};
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
   const {
     data: { user },
@@ -80,7 +91,7 @@ export default async function VecinoPage({
 
   const { data: perfil } = await supabase
     .from("usuarios")
-    .select("id, nombre, rol, departamento_id")
+    .select("id, nombre, rol, departamento_id, bloque_id")
     .eq("id", user.id)
     .single();
 
@@ -88,7 +99,7 @@ export default async function VecinoPage({
     redirect("/login");
   }
 
-  const [{ data: cuotas }, { data: confirmaciones }, { data: pagos }] =
+  const [{ data: cuotas }, { data: confirmaciones }, { data: pagos }, { data: notificaciones }] =
     await Promise.all([
       supabase
         .from("cuotas")
@@ -106,11 +117,20 @@ export default async function VecinoPage({
         .select("id, cuota_id")
         .eq("departamento_id", perfil.departamento_id)
         .order("fecha_pago", { ascending: false }),
+      adminSupabase
+        .from("notificaciones_vecino")
+        .select("id, tipo, titulo, mensaje, created_at, leida")
+        .eq("bloque_id", perfil.bloque_id)
+        .eq("departamento_id", perfil.departamento_id)
+        .eq("leida", false)
+        .order("created_at", { ascending: false })
+        .limit(3),
     ]);
 
   const cuotasRows = (cuotas ?? []) as CuotaRow[];
   const confirmacionesRows = (confirmaciones ?? []) as ConfirmacionRow[];
   const pagosRows = (pagos ?? []) as PagoRow[];
+  const notificacionesRows = (notificaciones ?? []) as NotificacionVecinoRow[];
 
   const pendingConfirmacionByCuota = new Map<string, ConfirmacionRow>();
   for (const item of confirmacionesRows) {
@@ -244,6 +264,29 @@ export default async function VecinoPage({
       {error ? (
         <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 px-5 py-4 text-red-100 ring-1 ring-white/10">
           {detailForError(error, detalle)}
+        </section>
+      ) : null}
+
+      {notificacionesRows.length > 0 ? (
+        <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 px-5 py-4 text-amber-100 ring-1 ring-white/10">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200">
+            Avisos para ti
+          </p>
+          <div className="mt-3 space-y-3">
+            {notificacionesRows.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
+              >
+                <p className="text-sm font-bold text-amber-50">
+                  {item.titulo || "Aviso importante"}
+                </p>
+                <p className="mt-1 text-sm text-amber-100">
+                  {item.mensaje || ""}
+                </p>
+              </article>
+            ))}
+          </div>
         </section>
       ) : null}
 
