@@ -275,7 +275,7 @@ export default async function VecinoPage({
           <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
             Pagos del vecino
           </p>
-          <h1 className="text-2xl font-bold leading-tight text-white">Estado de cuotas</h1>
+          <h1 className="text-xl font-bold leading-tight text-white">Estado de cuotas</h1>
           <p className="text-sm text-slate-200">
             Pendientes {filasPendientes.length} - En revision {filasEnRevision.length} - Pagados{" "}
             {filasPagadas.length}
@@ -380,7 +380,7 @@ export default async function VecinoPage({
             <div className="mt-3">
               <Link
                 href="/vecino/avisos"
-                className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
               >
                 Ver todos los avisos
               </Link>
@@ -427,7 +427,7 @@ export default async function VecinoPage({
                         cuotaHabilitada?.id === item.id ? (
                           <Link
                             href="#subir-comprobante"
-                            className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+                            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
                           >
                             Subir comprobante
                           </Link>
@@ -449,7 +449,7 @@ export default async function VecinoPage({
                           <Link
                             href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
                             target="_blank"
-                            className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-bold text-white transition hover:bg-cyan-400"
+                            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-bold text-white transition hover:bg-cyan-400"
                           >
                             Descargar recibo
                           </Link>

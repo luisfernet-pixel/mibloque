@@ -78,7 +78,7 @@ export default async function VecinoLayout({
             </div>
           </div>
 
-          <nav className="hide-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1 md:mt-3">
+          <nav className="hide-scrollbar mt-2 hidden gap-2 overflow-x-auto pb-1 md:mt-3 md:flex">
             {menu.map((item) => (
               <Link
                 key={item.href}
@@ -105,7 +105,26 @@ export default async function VecinoLayout({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-4 pb-24 md:px-6 md:py-6">{children}</main>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#0f2740]/95 px-3 py-2 backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
+          {menu.map((item) => (
+            <Link
+              key={`mobile-${item.href}`}
+              href={item.href}
+              className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 text-xs font-semibold text-white"
+            >
+              <span>{item.label}</span>
+              {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                  {avisosPendientes}
+                </span>
+              ) : null}
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
