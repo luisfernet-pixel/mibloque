@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -79,6 +80,8 @@ export default async function VecinoPage({
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
+  const adminQrPath = "/qr-pago-admin.png";
+
   const params = (await searchParams) ?? {};
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
@@ -184,6 +187,56 @@ export default async function VecinoPage({
 
   return (
     <main className="space-y-6">
+      <section className="overflow-hidden rounded-[24px] border border-cyan-400/30 bg-gradient-to-br from-[#0f2d48] via-[#1c4569] to-[#245b84] shadow-xl ring-1 ring-white/10">
+        <div className="grid items-center gap-5 p-4 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-6">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
+              Pago rapido
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">QR de pago del admin</h2>
+            <p className="mt-3 text-sm text-slate-100 md:text-base">
+              Escanea este QR para copiar los datos de pago. Asegurate de transferir el monto del
+              mes habilitado.
+            </p>
+
+            <div className="mt-4 grid gap-2 text-sm text-cyan-50">
+              <p>
+                <span className="font-semibold text-cyan-100">Banco:</span> Union
+              </p>
+              <p>
+                <span className="font-semibold text-cyan-100">Titular:</span> Administracion
+                Edificio Central
+              </p>
+              <p>
+                <span className="font-semibold text-cyan-100">Cuenta:</span> 123-4567890
+              </p>
+            </div>
+          </div>
+
+          <div className="mx-auto w-full max-w-[250px] rounded-3xl bg-white p-3 shadow-2xl shadow-black/25">
+            <Image
+              src={adminQrPath}
+              alt="QR para pago del admin"
+              width={420}
+              height={420}
+              sizes="(max-width: 768px) 220px, 250px"
+              quality={90}
+              preload
+              className="h-auto w-full rounded-2xl"
+            />
+            <a
+              href={adminQrPath}
+              download="qr-pago-admin.png"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
+            >
+              Descargar QR
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
         <div className="space-y-3 p-4">
           <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
