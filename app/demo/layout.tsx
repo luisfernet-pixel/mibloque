@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 const nav = [
-  { href: "/demo/admin", label: "Demo Admin" },
-  { href: "/demo/admin/pagos", label: "Demo Pagos" },
-  { href: "/demo/vecino", label: "Demo Vecino" },
-  { href: "/demo/vecino/transparencia", label: "Demo Transparencia" },
+  { href: "/demo", label: "Roles" },
+  { href: "/demo/admin", label: "Administradores" },
+  { href: "/demo/admin/pagos", label: "Cobros" },
+  { href: "/demo/vecino", label: "Vecino" },
+  { href: "/demo/vecino/transparencia", label: "Transparencia" },
 ];
 
 export default function DemoLayout({
@@ -19,7 +20,7 @@ export default function DemoLayout({
           <div>
             <p className="text-lg font-bold text-white">MiBloque Demo</p>
             <p className="text-sm text-slate-300">
-              Modo solo lectura con datos de ejemplo
+              Modo solo lectura con datos ficticios
             </p>
           </div>
           <div className="rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">

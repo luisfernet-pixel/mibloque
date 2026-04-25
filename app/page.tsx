@@ -96,15 +96,9 @@ export default async function HomePage() {
             </Link>
             <Link
               href="/demo"
-              className="rounded-2xl border border-cyan-300/30 bg-cyan-500/10 px-6 py-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-500/20"
+              className="rounded-2xl border border-orange-300/40 bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
             >
-              Ver demo
-            </Link>
-            <Link
-              href="#modulos"
-              className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              Ver modulos
+              Ver una Demo
             </Link>
           </div>
 
@@ -123,13 +117,6 @@ export default async function HomePage() {
           <p className="mt-3 text-sm leading-7 text-slate-300">
             Si hoy tu gestion depende de Excel y chat, MiBloque te ayuda a ordenar cobros, pagos y comunicacion sin perder seguimiento.
           </p>
-
-          <Link
-            href="/demo"
-            className="mt-6 inline-flex rounded-2xl border border-cyan-300/20 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
-          >
-            Entrar a la demo navegable
-          </Link>
         </div>
       </section>
 

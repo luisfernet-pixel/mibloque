@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const rows = [
   {
     fecha: "24/04/2026",
@@ -28,13 +30,58 @@ const rows = [
 export default function DemoAdminPagosPage() {
   return (
     <main className="space-y-6">
+      <section className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
+        <Link
+          href="/demo/admin"
+          className="shrink-0 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+        >
+          Inicio
+        </Link>
+        <Link
+          href="/demo/admin/pagos"
+          className="shrink-0 rounded-xl border border-orange-400/70 bg-orange-500/20 px-4 py-2 text-sm font-semibold text-white"
+        >
+          Cobros
+        </Link>
+        <button
+          type="button"
+          disabled
+          className="shrink-0 cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-400"
+        >
+          Confirmaciones
+        </button>
+        <button
+          type="button"
+          disabled
+          className="shrink-0 cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-400"
+        >
+          Ajustes
+        </button>
+      </section>
+
       <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="p-6 md:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Pagos</p>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Cobros</p>
           <h1 className="mt-2 text-3xl font-bold text-white">Historial de pagos</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Tabla de ejemplo para mostrar como luce la navegacion de cobros.
+            Pantalla navegable de demostracion. Los botones internos estan desactivados.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded-xl bg-cyan-500/70 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Registrar pago
+            </button>
+            <button
+              type="button"
+              disabled
+              className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300"
+            >
+              Exportar
+            </button>
+          </div>
         </div>
       </section>
 
