@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useMemo, useState } from "react";
 import type { ActionState } from "@/app/superadmin/actions";

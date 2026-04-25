@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import UserCreateForm from "@/app/superadmin/_components/user-create-form";
 import { createAdminAction } from "@/app/superadmin/actions";
