@@ -118,12 +118,12 @@ export default function LoginPage() {
       } else if (perfil.rol === "admin") {
         router.push("/admin");
       } else {
-        throw new Error("Esta cuenta no tiene acceso de administración.");
+        throw new Error("Esta cuenta no tiene acceso de administraciÃƒÂ³n.");
       }
 
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
+      setError(err instanceof Error ? err.message : "Error al iniciar sesiÃƒÂ³n.");
     } finally {
       setLoadingAdmin(false);
     }
@@ -143,7 +143,7 @@ export default function LoginPage() {
       }
 
       if (!vecinoCode) {
-        throw new Error("Escribe tu código.");
+        throw new Error("Escribe tu cÃƒÂ³digo.");
       }
 
       let emailParaLogin = "";
@@ -174,7 +174,7 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        throw new Error("Usuario o código incorrecto.");
+        throw new Error("Usuario o cÃƒÂ³digo incorrecto.");
       }
 
       const {
@@ -209,7 +209,7 @@ export default function LoginPage() {
       router.push("/vecino");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
+      setError(err instanceof Error ? err.message : "Error al iniciar sesiÃƒÂ³n.");
     } finally {
       setLoadingVecino(false);
     }
@@ -217,45 +217,11 @@ export default function LoginPage() {
 
   return (
     <main className="theme-shell min-h-screen px-4 py-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="theme-hero rounded-3xl p-8 text-white shadow-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              MiBloque
-            </p>
-
-            <h1 className="mt-3 text-4xl font-bold leading-tight">
-              Administración simple para bloques y condominios
-            </h1>
-
-            <p className="mt-4 max-w-xl text-slate-300">
-              Cobros, pagos, gastos, avisos y transparencia en un solo lugar.
-            </p>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <InfoCard
-                title="Cobros ordenados"
-                text="Control claro de cuotas, mora y pagos."
-              />
-              <InfoCard
-                title="Transparencia"
-                text="Vecinos pueden revisar cuentas y avisos."
-              />
-              <InfoCard
-                title="Menos WhatsApp"
-                text="Todo más centralizado y fácil."
-              />
-              <InfoCard
-                title="Acceso simple"
-                text="Admin y vecino con ingreso separado."
-              />
-            </div>
-          </section>
-
+      <div className="mx-auto max-w-2xl">
           <section className="theme-panel rounded-3xl p-6 shadow-2xl">
             <div className="mb-6 text-center">
               <h2 className="text-3xl font-bold text-white">
-                Iniciar sesión
+                Iniciar sesiÃƒÂ³n
               </h2>
               <p className="mt-2 text-sm text-slate-300">
                 Elige tu tipo de acceso
@@ -305,13 +271,13 @@ export default function LoginPage() {
 
                   <div>
                       <label className="mb-2 block text-sm font-medium text-white/80">
-                        Contraseña
+                        ContraseÃƒÂ±a
                       </label>
                     <input
                       type="password"
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="Tu contraseña"
+                      placeholder="Tu contraseÃƒÂ±a"
                       className="w-full px-4 py-3"
                       required
                     />
@@ -337,7 +303,7 @@ export default function LoginPage() {
                         Acceso vecino
                       </p>
                     <p className="text-sm text-slate-300">
-                      Usuario simple y código de acceso
+                      Usuario simple y cÃƒÂ³digo de acceso
                     </p>
                   </div>
 
@@ -363,7 +329,7 @@ export default function LoginPage() {
 
                   <div>
                       <label className="mb-2 block text-sm font-medium text-white/80">
-                        Código
+                        CÃƒÂ³digo
                       </label>
                     <input
                       type="password"
@@ -386,23 +352,8 @@ export default function LoginPage() {
               </form>
             </div>
           </section>
-        </div>
       </div>
     </main>
   );
 }
-
-function InfoCard({
-  title,
-  text,
-}: {
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-2xl bg-white/10 p-4">
-      <p className="font-semibold text-white">{title}</p>
-      <p className="mt-2 text-sm text-slate-300">{text}</p>
-    </div>
-  );
-}
+
