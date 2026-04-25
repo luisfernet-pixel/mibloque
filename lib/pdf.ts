@@ -50,15 +50,19 @@ type RectOp = {
 
 type PdfOp = TextOp | LineOp | RectOp;
 
-const PAGE_WIDTH = 595;
-const PAGE_HEIGHT = 842;
+// Same landscape proportion as the provided reference PDF.
+const PAGE_WIDTH = 421;
+const PAGE_HEIGHT = 298;
 
-const NAVY: Rgb = [0.07, 0.19, 0.39];
-const RED: Rgb = [0.78, 0.15, 0.14];
-const TEXT: Rgb = [0.1, 0.1, 0.1];
-const MUTED: Rgb = [0.45, 0.48, 0.52];
-const LIGHT_LINE: Rgb = [0.72, 0.74, 0.78];
-const LIGHT_FILL: Rgb = [0.96, 0.97, 0.99];
+const WHITE: Rgb = [1, 1, 1];
+const NAVY_900: Rgb = [0.04, 0.12, 0.25];
+const NAVY_700: Rgb = [0.11, 0.22, 0.4];
+const SLATE_900: Rgb = [0.12, 0.14, 0.18];
+const SLATE_600: Rgb = [0.39, 0.43, 0.49];
+const SLATE_300: Rgb = [0.79, 0.82, 0.86];
+const SLATE_200: Rgb = [0.89, 0.91, 0.94];
+const CYAN_600: Rgb = [0.05, 0.55, 0.68];
+const ORANGE_500: Rgb = [0.95, 0.44, 0.18];
 
 function stripDiacritics(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -79,7 +83,10 @@ function truncate(value: string, maxLength: number) {
 }
 
 function fmt(num: number) {
-  return Number(num).toFixed(2).replace(/\.00$/, "").replace(/(\.\d)$/, "$10");
+  return Number(num)
+    .toFixed(2)
+    .replace(/\.00$/, "")
+    .replace(/(\.\d)$/, "$10");
 }
 
 function setFillColor([r, g, b]: Rgb) {
@@ -92,7 +99,7 @@ function setStrokeColor([r, g, b]: Rgb) {
 
 function renderOp(op: PdfOp) {
   if (op.type === "text") {
-    const color = setFillColor(op.color || TEXT);
+    const color = setFillColor(op.color || SLATE_900);
     const font = op.bold ? "/F2" : "/F1";
     return [
       "BT",
@@ -106,7 +113,7 @@ function renderOp(op: PdfOp) {
 
   if (op.type === "line") {
     return [
-      setStrokeColor(op.color || LIGHT_LINE),
+      setStrokeColor(op.color || SLATE_300),
       `${fmt(op.width || 1)} w`,
       `${fmt(op.x1)} ${fmt(op.y1)} m`,
       `${fmt(op.x2)} ${fmt(op.y2)} l`,
@@ -132,7 +139,7 @@ function createPdf(content: string) {
 
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
-    `<< /Type /Pages /Count 1 /Kids [3 0 R] >>`,
+    "<< /Type /Pages /Count 1 /Kids [3 0 R] >>",
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
@@ -165,245 +172,187 @@ function addText(
   y: number,
   size: number,
   bold = false,
-  color: Rgb = TEXT
+  color: Rgb = SLATE_900
 ) {
-  ops.push({
-    type: "text",
-    x,
-    y,
-    size,
-    value,
-    bold,
-    color,
-  });
+  ops.push({ type: "text", x, y, size, value, bold, color });
+}
+
+function yTop(topOffset: number) {
+  return PAGE_HEIGHT - topOffset;
+}
+
+function addField(
+  ops: PdfOp[],
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  max: number
+) {
+  addText(ops, `${label}:`, x, y, 7.5, true, SLATE_600);
+  addText(ops, truncate(value, max), x, y - 12, 9.5, false, SLATE_900);
 }
 
 export function buildReceiptPdf(data: ReceiptPdfData) {
   const ops: PdfOp[] = [];
+  const margin = 16;
+  const innerW = PAGE_WIDTH - margin * 2;
 
   const receiptNumber = truncate(data.receiptNumber, 18);
-  const fechaLabel = truncate(data.fechaLabel, 26);
-  const vecinoName = truncate(data.vecinoName, 26);
-  const departamentoLabel = truncate(data.departamentoLabel, 14);
-  const bloqueLabel = truncate(`${data.bloqueName} (${data.bloqueCode})`, 28);
-  const periodoLabel = truncate(data.periodoLabel, 16);
-  const montoLabel = truncate(data.montoLabel, 14);
-  const referenciaLabel = truncate(data.referenciaLabel, 16);
-  const metodoLabel = truncate(data.metodoLabel, 18);
-  const observacionesLabel = truncate(data.observacionesLabel, 32);
-  const aprobadoPorLabel = truncate(data.aprobadoPorLabel, 22);
-  const adminEmailLabel = truncate(data.adminEmailLabel, 22);
-  const adminPhoneLabel = truncate(data.adminPhoneLabel, 16);
+  const fechaLabel = truncate(data.fechaLabel, 28);
+  const vecinoName = truncate(data.vecinoName, 36);
+  const departamentoLabel = truncate(data.departamentoLabel, 16);
+  const bloqueLabel = truncate(`${data.bloqueName} (${data.bloqueCode})`, 34);
+  const periodoLabel = truncate(data.periodoLabel, 18);
+  const montoLabel = truncate(data.montoLabel, 16);
+  const referenciaLabel = truncate(data.referenciaLabel, 28);
+  const metodoLabel = truncate(data.metodoLabel, 20);
+  const observacionesLabel = truncate(data.observacionesLabel, 56);
+  const aprobadoPorLabel = truncate(data.aprobadoPorLabel, 26);
+  const adminEmailLabel = truncate(data.adminEmailLabel, 32);
+  const adminPhoneLabel = truncate(data.adminPhoneLabel, 18);
 
+  // Base surface
   ops.push({
     type: "rect",
-    x: 36,
-    y: 470,
-    w: 523,
-    h: 322,
-    stroke: LIGHT_LINE,
+    x: margin,
+    y: margin,
+    w: innerW,
+    h: PAGE_HEIGHT - margin * 2,
+    stroke: SLATE_300,
     lineWidth: 1,
   });
 
-  addText(ops, "MIBLOQUE", 54, 770, 10, true, NAVY);
-  addText(ops, "ADMINISTRACION", 54, 746, 17, true, NAVY);
-  addText(ops, "DEL EDIFICIO", 54, 724, 17, true, NAVY);
-  addText(ops, "Administramos para tu tranquilidad", 54, 704, 8.5, false, TEXT);
-
+  // Header
+  const headerH = 56;
   ops.push({
-    type: "line",
-    x1: 290,
-    y1: 704,
-    x2: 290,
-    y2: 782,
-    width: 1,
-    color: LIGHT_LINE,
+    type: "rect",
+    x: margin,
+    y: PAGE_HEIGHT - margin - headerH,
+    w: innerW,
+    h: headerH,
+    fill: NAVY_900,
   });
 
-  addText(ops, "RECIBO DE PAGO", 338, 748, 19, true, NAVY);
-  addText(ops, "Nro.", 430, 714, 12, true, NAVY);
-  addText(ops, receiptNumber, 462, 714, 14, true, RED);
-  addText(ops, "Fecha:", 392, 680, 10, true, NAVY);
-  addText(ops, fechaLabel, 430, 680, 10, false, TEXT);
+  addText(ops, "MIBLOQUE", margin + 14, yTop(28), 12, true, WHITE);
+  addText(ops, "Recibo oficial de pago", margin + 14, yTop(43), 8.2, false, SLATE_200);
+  addText(ops, "Nro", PAGE_WIDTH - margin - 132, yTop(26), 8, true, SLATE_200);
+  addText(ops, receiptNumber, PAGE_WIDTH - margin - 106, yTop(26), 12, true, WHITE);
+  addText(ops, "Fecha", PAGE_WIDTH - margin - 132, yTop(42), 8, true, SLATE_200);
+  addText(ops, fechaLabel, PAGE_WIDTH - margin - 106, yTop(42), 8.8, false, WHITE);
+
+  // Identity cards
+  const cardY = PAGE_HEIGHT - margin - headerH - 76;
+  const cardH = 62;
+  const cardGap = 10;
+  const cardW = (innerW - cardGap) / 2;
 
   ops.push({
-    type: "line",
-    x1: 54,
-    y1: 662,
-    x2: 535,
-    y2: 662,
-    width: 1.4,
-    color: NAVY,
+    type: "rect",
+    x: margin,
+    y: cardY,
+    w: cardW,
+    h: cardH,
+    fill: SLATE_200,
+    stroke: SLATE_300,
   });
 
+  ops.push({
+    type: "rect",
+    x: margin + cardW + cardGap,
+    y: cardY,
+    w: cardW,
+    h: cardH,
+    fill: SLATE_200,
+    stroke: SLATE_300,
+  });
+
+  addText(ops, "RECIBIDO DE", margin + 10, cardY + cardH - 14, 7.4, true, SLATE_600);
+  addText(ops, vecinoName, margin + 10, cardY + cardH - 30, 11, true, SLATE_900);
   addText(
     ops,
-    "Por medio del presente, se hace constar que se ha recibido el pago con los siguientes detalles:",
-    54,
-    626,
-    9,
+    `Depto ${departamentoLabel} - ${bloqueLabel}`,
+    margin + 10,
+    cardY + cardH - 45,
+    8.2,
     false,
-    TEXT
+    SLATE_600
   );
 
-  addText(ops, "RECIBIDO DE:", 54, 582, 11, true, NAVY);
-  addText(ops, "CONCEPTO:", 320, 582, 11, true, NAVY);
-
-  addText(ops, vecinoName, 54, 548, 13, true, TEXT);
-  addText(ops, `Apto. ${departamentoLabel}`, 54, 526, 9, false, TEXT);
-  addText(ops, bloqueLabel, 54, 510, 8, false, MUTED);
-
-  addText(ops, "Pago de mensualidad de mantenimiento", 320, 548, 11.5, true, TEXT);
-  addText(ops, "Correspondiente al mes de:", 320, 526, 8.5, false, TEXT);
-  addText(ops, periodoLabel, 456, 526, 9, true, TEXT);
-
-  ops.push({
-    type: "line",
-    x1: 54,
-    y1: 488,
-    x2: 535,
-    y2: 488,
-    width: 1,
-    color: LIGHT_LINE,
-  });
-
-  ops.push({
-    type: "rect",
-    x: 54,
-    y: 442,
-    w: 254,
-    h: 24,
-    fill: NAVY,
-  });
-  addText(ops, "DETALLE", 72, 450, 11, true, [1, 1, 1]);
-  addText(ops, "MONTO", 228, 450, 11, true, [1, 1, 1]);
-
-  ops.push({
-    type: "rect",
-    x: 54,
-    y: 360,
-    w: 254,
-    h: 82,
-    stroke: LIGHT_LINE,
-    lineWidth: 1,
-  });
-  ops.push({
-    type: "line",
-    x1: 224,
-    y1: 360,
-    x2: 224,
-    y2: 442,
-    width: 1,
-    color: LIGHT_LINE,
-  });
-  ops.push({
-    type: "line",
-    x1: 54,
-    y1: 414,
-    x2: 308,
-    y2: 414,
-    width: 1,
-    color: LIGHT_LINE,
-  });
-  ops.push({
-    type: "line",
-    x1: 54,
-    y1: 387,
-    x2: 308,
-    y2: 387,
-    width: 1,
-    color: LIGHT_LINE,
-  });
-  ops.push({
-    type: "rect",
-    x: 54,
-    y: 360,
-    w: 254,
-    h: 27,
-    fill: LIGHT_FILL,
-  });
-  ops.push({
-    type: "line",
-    x1: 54,
-    y1: 387,
-    x2: 308,
-    y2: 387,
-    width: 1,
-    color: LIGHT_LINE,
-  });
-
-  addText(ops, `Cuota de mantenimiento (${periodoLabel})`, 64, 397, 7.5, false, TEXT);
-  addText(ops, montoLabel, 266, 397, 8.5, false, TEXT);
-  addText(ops, "Otros cargos / ajustes", 64, 370, 8, false, TEXT);
-  addText(ops, "Bs 0.00", 265, 370, 8.5, false, TEXT);
-  addText(ops, "TOTAL PAGADO", 72, 343, 10.5, true, NAVY);
-  addText(ops, montoLabel, 258, 343, 10.5, true, NAVY);
-
-  addText(ops, "FORMA DE PAGO:", 320, 442, 11, true, NAVY);
-  addText(ops, metodoLabel, 320, 414, 10, false, TEXT);
-  ops.push({
-    type: "line",
-    x1: 320,
-    y1: 394,
-    x2: 500,
-    y2: 394,
-    width: 1,
-    color: LIGHT_LINE,
-  });
-
-  addText(ops, "RECIBIDO POR:", 320, 362, 11, true, NAVY);
-  addText(ops, aprobadoPorLabel, 320, 334, 10, false, TEXT);
-  addText(ops, "Firma y sello", 405, 286, 9, false, TEXT);
-  ops.push({
-    type: "line",
-    x1: 390,
-    y1: 304,
-    x2: 500,
-    y2: 304,
-    width: 1.1,
-    color: TEXT,
-  });
-
-  addText(ops, "Monto reportado:", 54, 316, 8.5, true, TEXT);
-  addText(ops, montoLabel, 127, 316, 8.5, false, TEXT);
-  addText(ops, "Referencia:", 54, 296, 8.5, true, TEXT);
-  addText(ops, referenciaLabel, 110, 296, 8.5, false, TEXT);
-  addText(ops, "Aprobado:", 54, 276, 8.5, true, TEXT);
-  addText(ops, observacionesLabel, 108, 276, 8.5, false, MUTED);
-
-  ops.push({
-    type: "line",
-    x1: 54,
-    y1: 244,
-    x2: 535,
-    y2: 244,
-    width: 1.4,
-    color: NAVY,
-  });
-
+  const rightCardX = margin + cardW + cardGap;
+  addText(ops, "DETALLE DE PAGO", rightCardX + 10, cardY + cardH - 14, 7.4, true, SLATE_600);
+  addText(ops, `Periodo: ${periodoLabel}`, rightCardX + 10, cardY + cardH - 30, 9.4, true, SLATE_900);
   addText(
     ops,
-    "Gracias por contribuir al bienestar de nuestra comunidad.",
-    54,
-    212,
-    8.5,
+    `Metodo: ${metodoLabel} - Ref: ${referenciaLabel}`,
+    rightCardX + 10,
+    cardY + cardH - 45,
+    8.2,
     false,
-    NAVY
+    SLATE_600
   );
-  addText(ops, "Telefono:", 300, 212, 8.5, true, NAVY);
-  addText(ops, adminPhoneLabel, 352, 212, 8.5, false, TEXT);
-  addText(ops, "Correo:", 300, 194, 8.5, true, NAVY);
-  addText(ops, adminEmailLabel, 345, 194, 8.5, false, TEXT);
+
+  // Amount highlight
+  const amountY = cardY - 50;
+  ops.push({
+    type: "rect",
+    x: margin,
+    y: amountY,
+    w: innerW,
+    h: 40,
+    fill: CYAN_600,
+  });
+  addText(ops, "TOTAL PAGADO", margin + 12, amountY + 25, 9, true, WHITE);
+  addText(ops, montoLabel, PAGE_WIDTH - margin - 92, amountY + 22, 16, true, WHITE);
+
+  // Metadata rows
+  const metaStartY = amountY - 18;
+  addField(ops, "Aprobado por", aprobadoPorLabel, margin + 2, metaStartY, 28);
+  addField(ops, "Telefono admin", adminPhoneLabel, margin + 122, metaStartY, 20);
+  addField(ops, "Correo admin", adminEmailLabel, margin + 230, metaStartY, 34);
+
+  addField(ops, "Observaciones", observacionesLabel, margin + 2, metaStartY - 30, 64);
+
+  // Footer
+  const footerY = margin + 8;
+  ops.push({
+    type: "line",
+    x1: margin,
+    y1: footerY + 26,
+    x2: PAGE_WIDTH - margin,
+    y2: footerY + 26,
+    width: 1,
+    color: SLATE_300,
+  });
 
   addText(
     ops,
-    "Este documento respalda el pago aprobado por la administracion.",
-    54,
-    170,
+    "Este recibo certifica un pago validado por la administracion del bloque.",
+    margin + 2,
+    footerY + 12,
     7.5,
     false,
-    MUTED
+    SLATE_600
   );
+  addText(ops, "MiBloque", PAGE_WIDTH - margin - 52, footerY + 12, 8, true, NAVY_700);
+
+  // Accent marks
+  ops.push({
+    type: "rect",
+    x: margin,
+    y: PAGE_HEIGHT - margin - headerH,
+    w: 6,
+    h: headerH,
+    fill: ORANGE_500,
+  });
+  ops.push({
+    type: "rect",
+    x: PAGE_WIDTH - margin - 6,
+    y: PAGE_HEIGHT - margin - headerH,
+    w: 6,
+    h: headerH,
+    fill: ORANGE_500,
+  });
 
   const stream = ops.map(renderOp).join("\n");
   return createPdf(stream);
