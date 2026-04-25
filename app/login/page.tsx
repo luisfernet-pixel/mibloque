@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -118,12 +118,12 @@ export default function LoginPage() {
       } else if (perfil.rol === "admin") {
         router.push("/admin");
       } else {
-        throw new Error("Esta cuenta no tiene acceso de administraciÃƒÂ³n.");
+        throw new Error("Esta cuenta no tiene acceso de administracion.");
       }
 
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesiÃƒÂ³n.");
+      setError(err instanceof Error ? err.message : "Error al iniciar sesion.");
     } finally {
       setLoadingAdmin(false);
     }
@@ -143,7 +143,7 @@ export default function LoginPage() {
       }
 
       if (!vecinoCode) {
-        throw new Error("Escribe tu cÃƒÂ³digo.");
+        throw new Error("Escribe tu codigo.");
       }
 
       let emailParaLogin = "";
@@ -174,7 +174,7 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        throw new Error("Usuario o cÃƒÂ³digo incorrecto.");
+        throw new Error("Usuario o codigo incorrecto.");
       }
 
       const {
@@ -209,7 +209,7 @@ export default function LoginPage() {
       router.push("/vecino");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesiÃƒÂ³n.");
+      setError(err instanceof Error ? err.message : "Error al iniciar sesion.");
     } finally {
       setLoadingVecino(false);
     }
@@ -218,142 +218,121 @@ export default function LoginPage() {
   return (
     <main className="theme-shell min-h-screen px-4 py-8">
       <div className="mx-auto max-w-2xl">
-          <section className="theme-panel rounded-3xl p-6 shadow-2xl">
-            <div className="mb-6 text-center">
-              <h2 className="text-3xl font-bold text-white">
-                Iniciar sesiÃƒÂ³n
-              </h2>
-              <p className="mt-2 text-sm text-slate-300">
-                Elige tu tipo de acceso
-              </p>
-            </div>
+        <section className="theme-panel rounded-3xl p-6 shadow-2xl">
+          <div className="mb-6 text-center">
+            <h2 className="text-3xl font-bold text-white">Iniciar sesion</h2>
+            <p className="mt-2 text-sm text-slate-300">Elige tu tipo de acceso</p>
+          </div>
 
-            {error && (
-              <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-                {error}
+          {error && (
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-5">
+            <form
+              onSubmit={loginAdmin}
+              className="theme-panel-soft rounded-3xl border border-white/10 p-5"
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-white">Acceso administrador</p>
+                  <p className="text-sm text-slate-300">Superadmin o administrador del bloque</p>
+                </div>
+
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+                  Admin
+                </span>
               </div>
-            )}
 
-            <div className="space-y-5">
-              <form
-                onSubmit={loginAdmin}
-                className="theme-panel-soft rounded-3xl border border-white/10 p-5"
-              >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                      <p className="font-semibold text-white">
-                        Acceso administrador
-                      </p>
-                    <p className="text-sm text-slate-300">
-                      Superadmin o administrador del bloque
-                    </p>
-                  </div>
-
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-                    Admin
-                  </span>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/80">Email</label>
+                  <input
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
+                    className="w-full px-4 py-3"
+                    required
+                  />
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                      <label className="mb-2 block text-sm font-medium text-white/80">
-                        Email
-                      </label>
-                    <input
-                      type="email"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
-                      placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
-                      className="w-full px-4 py-3"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                      <label className="mb-2 block text-sm font-medium text-white/80">
-                        ContraseÃƒÂ±a
-                      </label>
-                    <input
-                      type="password"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="Tu contraseÃƒÂ±a"
-                      className="w-full px-4 py-3"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loadingAdmin}
-                    className="btn-primary w-full rounded-2xl px-4 py-3 font-semibold"
-                  >
-                    {loadingAdmin ? "Ingresando..." : "Entrar como admin"}
-                  </button>
-                </div>
-              </form>
-
-              <form
-                onSubmit={loginVecino}
-                className="theme-panel-soft rounded-3xl border border-white/10 p-5"
-              >
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <div>
-                      <p className="font-semibold text-white">
-                        Acceso vecino
-                      </p>
-                    <p className="text-sm text-slate-300">
-                      Usuario simple y cÃƒÂ³digo de acceso
-                    </p>
-                  </div>
-
-                  <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
-                    Vecino
-                  </span>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/80">Contrasena</label>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="Tu contrasena"
+                    className="w-full px-4 py-3"
+                    required
+                  />
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                      <label className="mb-2 block text-sm font-medium text-white/80">
-                        Usuario
-                      </label>
-                    <input
-                      type="text"
-                      value={vecinoUser}
-                      onChange={(e) => setVecinoUser(e.target.value)}
-                      placeholder="24-202"
-                      className="w-full px-4 py-3"
-                      required
-                    />
-                  </div>
+                <button
+                  type="submit"
+                  disabled={loadingAdmin}
+                  className="btn-primary w-full rounded-2xl px-4 py-3 font-semibold"
+                >
+                  {loadingAdmin ? "Ingresando..." : "Entrar como admin"}
+                </button>
+              </div>
+            </form>
 
-                  <div>
-                      <label className="mb-2 block text-sm font-medium text-white/80">
-                        CÃƒÂ³digo
-                      </label>
-                    <input
-                      type="password"
-                      value={vecinoCode}
-                      onChange={(e) => setVecinoCode(e.target.value)}
-                      placeholder="Tu clave"
-                      className="w-full px-4 py-3"
-                      required
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loadingVecino}
-                    className="btn-primary w-full rounded-2xl px-4 py-3 font-semibold"
-                  >
-                    {loadingVecino ? "Ingresando..." : "Entrar como vecino"}
-                  </button>
+            <form
+              onSubmit={loginVecino}
+              className="theme-panel-soft rounded-3xl border border-white/10 p-5"
+            >
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-white">Acceso vecino</p>
+                  <p className="text-sm text-slate-300">Usuario simple y codigo de acceso</p>
                 </div>
-              </form>
-            </div>
-          </section>
+
+                <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
+                  Vecino
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/80">Usuario</label>
+                  <input
+                    type="text"
+                    value={vecinoUser}
+                    onChange={(e) => setVecinoUser(e.target.value)}
+                    placeholder="24-202"
+                    className="w-full px-4 py-3"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/80">Codigo</label>
+                  <input
+                    type="password"
+                    value={vecinoCode}
+                    onChange={(e) => setVecinoCode(e.target.value)}
+                    placeholder="Tu clave"
+                    className="w-full px-4 py-3"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loadingVecino}
+                  className="btn-primary w-full rounded-2xl px-4 py-3 font-semibold"
+                >
+                  {loadingVecino ? "Ingresando..." : "Entrar como vecino"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
       </div>
     </main>
   );
 }
-
