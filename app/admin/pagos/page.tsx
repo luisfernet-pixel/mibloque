@@ -128,7 +128,7 @@ export default async function PagosPage() {
               </Link>
 
               <Link
-                href="/admin/validar-pagos"
+                href="/admin/confirmaciones"
                 className="rounded-2xl bg-[#EF4937] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110"
               >
                 Revisar comprobantes

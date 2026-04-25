@@ -295,7 +295,7 @@ export default async function NuevoPagoPage() {
                 </Link>
 
                 <Link
-                  href="/admin/validar-pagos"
+                  href="/admin/confirmaciones"
                   className="rounded-2xl bg-cyan-500 px-5 py-3 font-bold text-black transition hover:brightness-110"
                 >
                   Revisar comprobantes

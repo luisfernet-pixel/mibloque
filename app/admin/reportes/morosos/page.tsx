@@ -16,6 +16,23 @@ type MorosoItem = {
   deuda: number;
 };
 
+type DepartamentoRow = {
+  id: string;
+  numero: string | number | null;
+};
+
+type UsuarioVecinoRow = {
+  nombre: string | null;
+  departamento_id: string | null;
+};
+
+type CuotaRow = {
+  id: string;
+  departamento_id: string | null;
+  monto_total: number | null;
+  estado: string | null;
+};
+
 export default async function MorososPage() {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
@@ -43,31 +60,31 @@ export default async function MorososPage() {
       .eq("bloque_id", bloqueId),
   ]);
 
-  const departamentos = departamentosRes.data ?? [];
-  const usuarios = usuariosRes.data ?? [];
-  const cuotas = cuotasRes.data ?? [];
+  const departamentos = (departamentosRes.data ?? []) as DepartamentoRow[];
+  const usuarios = (usuariosRes.data ?? []) as UsuarioVecinoRow[];
+  const cuotas = (cuotasRes.data ?? []) as CuotaRow[];
 
   const estadosDeuda = new Set(["pendiente", "vencido"]);
 
   const lista: MorosoItem[] = departamentos
-    .map((depto: any) => {
+    .map((depto) => {
       const vecino =
-        usuarios.find((u: any) => u.departamento_id === depto.id)?.nombre ||
+        usuarios.find((u) => u.departamento_id === depto.id)?.nombre ||
         "Sin asignar";
 
       const pendientes = cuotas.filter(
-        (c: any) =>
+        (c) =>
           c.departamento_id === depto.id &&
           estadosDeuda.has(String(c.estado || "").toLowerCase())
       );
 
       const deuda = pendientes.reduce(
-        (acc: number, item: any) => acc + Number(item.monto_total || 0),
+        (acc: number, item) => acc + Number(item.monto_total || 0),
         0
       );
 
       return {
-        departamento: depto.numero,
+        departamento: String(depto.numero || "-"),
         vecino,
         pendientes: pendientes.length,
         deuda,

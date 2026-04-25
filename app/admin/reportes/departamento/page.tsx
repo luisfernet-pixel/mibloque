@@ -13,6 +13,42 @@ type SearchParams = Promise<{
   departamento?: string;
 }>;
 
+type DepartamentoRow = {
+  id: string;
+  numero: string | number | null;
+};
+
+type UsuarioVecinoRow = {
+  id: string;
+  nombre: string | null;
+  departamento_id: string | null;
+};
+
+type CuotaRow = {
+  id: string;
+  periodo: string | null;
+  monto_total: number | null;
+  estado: string | null;
+  created_at: string | null;
+  departamento_id: string | null;
+};
+
+type PagoRow = {
+  id: string;
+  monto_pagado: number | null;
+  fecha_pago: string | null;
+  metodo_pago: string | null;
+  departamento_id: string | null;
+};
+
+type Movimiento = {
+  fecha: string | null;
+  detalle: string;
+  tipo: "cuota" | "pago";
+  estado: string;
+  monto: number;
+};
+
 export default async function ReporteDepartamentoPage({
   searchParams,
 }: {
@@ -31,10 +67,11 @@ export default async function ReporteDepartamentoPage({
     .eq("bloque_id", bloqueId)
     .order("numero");
 
+  const departamentosRows = (departamentos ?? []) as DepartamentoRow[];
   const deptoIdActivo = params?.departamento || departamentos?.[0]?.id || "";
 
   const departamentoActual =
-    departamentos?.find((d: any) => d.id === deptoIdActivo) || null;
+    departamentosRows.find((d) => d.id === deptoIdActivo) || null;
 
   const { data: usuarios } = await supabase
     .from("usuarios")
@@ -43,8 +80,9 @@ export default async function ReporteDepartamentoPage({
     .eq("rol", "vecino")
     .eq("activo", true);
 
+  const usuariosRows = (usuarios ?? []) as UsuarioVecinoRow[];
   const vecino =
-    usuarios?.find((u: any) => u.departamento_id === deptoIdActivo) || null;
+    usuariosRows.find((u) => u.departamento_id === deptoIdActivo) || null;
 
   const { data: cuotas } = await supabase
     .from("cuotas")
@@ -52,6 +90,7 @@ export default async function ReporteDepartamentoPage({
     .eq("bloque_id", bloqueId)
     .eq("departamento_id", deptoIdActivo)
     .order("created_at", { ascending: false });
+  const cuotasRows = (cuotas ?? []) as CuotaRow[];
 
   const { data: pagos } = await supabase
     .from("pagos")
@@ -59,34 +98,35 @@ export default async function ReporteDepartamentoPage({
     .eq("bloque_id", bloqueId)
     .eq("departamento_id", deptoIdActivo)
     .order("fecha_pago", { ascending: false });
+  const pagosRows = (pagos ?? []) as PagoRow[];
 
   const estadosDeuda = new Set(["pendiente", "vencido"]);
 
-  const cuotasPendientes = (cuotas || []).filter((c: any) =>
+  const cuotasPendientes = cuotasRows.filter((c) =>
     estadosDeuda.has(String(c.estado || "").toLowerCase())
   );
 
   const deudaTotal = cuotasPendientes.reduce(
-    (acc: number, item: any) => acc + Number(item.monto_total || 0),
+    (acc: number, item) => acc + Number(item.monto_total || 0),
     0
   );
 
-  const movimientos = [
-    ...((cuotas || []).map((c: any) => ({
+  const movimientos: Movimiento[] = [
+    ...cuotasRows.map((c) => ({
       fecha: c.created_at,
       detalle: `Cuota ${c.periodo || ""}`.trim(),
-      tipo: "cuota",
+      tipo: "cuota" as const,
       estado: c.estado || "-",
       monto: Number(c.monto_total || 0),
-    })) || []),
+    })),
 
-    ...((pagos || []).map((p: any) => ({
+    ...pagosRows.map((p) => ({
       fecha: p.fecha_pago,
       detalle: `Pago ${p.metodo_pago || ""}`.trim(),
-      tipo: "pago",
+      tipo: "pago" as const,
       estado: "registrado",
       monto: Number(p.monto_pagado || 0),
-    })) || []),
+    })),
   ].sort((a, b) => {
     const fa = new Date(a.fecha || "").getTime();
     const fb = new Date(b.fecha || "").getTime();
@@ -122,7 +162,7 @@ export default async function ReporteDepartamentoPage({
                 defaultValue={deptoIdActivo}
                 className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none"
               >
-                {(departamentos || []).map((d: any) => (
+                {departamentosRows.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.numero}
                   </option>
@@ -141,7 +181,10 @@ export default async function ReporteDepartamentoPage({
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Departamento" value={departamentoActual?.numero || "-"} />
+        <Card
+          title="Departamento"
+          value={String(departamentoActual?.numero || "-")}
+        />
         <Card title="Vecino" value={vecino?.nombre || "Sin asignar"} />
         <Card
           title="Estado"
@@ -155,7 +198,7 @@ export default async function ReporteDepartamentoPage({
 
       <section className="grid gap-4 md:grid-cols-3">
         <Mini title="Deuda total" value={formatBs(deudaTotal)} />
-        <Mini title="Pagos registrados" value={String((pagos || []).length)} />
+        <Mini title="Pagos registrados" value={String(pagosRows.length)} />
         <Mini title="Movimientos" value={String(movimientos.length)} />
       </section>
 

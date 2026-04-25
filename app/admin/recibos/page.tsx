@@ -1,5 +1,34 @@
 import { createClient } from "@/lib/supabase/server";
 
+type VecinoOption = {
+  id: string;
+  nombre: string | null;
+  departamento: string | number | null;
+};
+
+type ReciboVecino = {
+  nombre: string | null;
+  departamento: string | number | null;
+};
+
+type ReciboRow = {
+  id: string;
+  titulo: string | null;
+  monto: number | null;
+  estado: string | null;
+  fecha: string | null;
+  vecinos: ReciboVecino | ReciboVecino[] | null;
+};
+
+function getReciboVecino(value: ReciboRow["vecinos"]) {
+  if (!value) return { nombre: "-", departamento: "-" };
+  const vecino = Array.isArray(value) ? value[0] : value;
+  return {
+    nombre: vecino?.nombre || "-",
+    departamento: vecino?.departamento ?? "-",
+  };
+}
+
 export default async function AdminRecibosPage() {
   const supabase = await createClient();
 
@@ -20,6 +49,9 @@ export default async function AdminRecibosPage() {
     `)
     .order("fecha", { ascending: false });
 
+  const vecinosRows = (vecinos ?? []) as VecinoOption[];
+  const recibosRows = (recibos ?? []) as ReciboRow[];
+
   return (
     <div className="space-y-6">
       <div className="panel p-6">
@@ -38,7 +70,7 @@ export default async function AdminRecibosPage() {
         <select name="vecino_id" required className="input">
           <option value="">Seleccionar vecino</option>
 
-          {vecinos?.map((v: any) => (
+          {vecinosRows.map((v) => (
             <option key={v.id} value={v.id}>
               {v.nombre} - Depto {v.departamento}
             </option>
@@ -81,19 +113,23 @@ export default async function AdminRecibosPage() {
       </form>
 
       <div className="space-y-3">
-        {recibos?.map((r: any) => (
-          <div key={r.id} className="panel p-4">
+        {recibosRows.map((r) => {
+          const vecino = getReciboVecino(r.vecinos);
+
+          return (
+            <div key={r.id} className="panel p-4">
             <div className="font-semibold">{r.titulo}</div>
 
             <div className="text-sm text-slate-400">
-              {r.vecinos?.nombre} - Depto {r.vecinos?.departamento}
+              {vecino.nombre} - Depto {vecino.departamento}
             </div>
 
             <div className="text-sm text-slate-400">
               Bs {Number(r.monto).toFixed(2)} | {r.estado} | {r.fecha}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
