@@ -3,61 +3,61 @@ import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 
 const highlights = [
-  { value: "Cuotas", label: "Control de cobros y mora" },
-  { value: "Pagos", label: "Registro y comprobantes" },
-  { value: "Gastos", label: "Caja clara y trazable" },
-  { value: "Avisos", label: "Comunicacion centralizada" },
+  { value: "Multi-dispositivo", label: "Mac, Windows, Android y tablet" },
+  { value: "En la nube", label: "Acceso desde cualquier lugar del mundo" },
+  { value: "Por roles", label: "Paneles para superadmin, admin y vecino" },
+  { value: "Operacion clara", label: "Cobros, pagos, gastos y avisos en orden" },
 ];
 
 const features = [
   {
-    title: "Cobros que se entienden",
-    text: "Genera cuotas, revisa pendientes y sigue la morosidad sin depender de hojas sueltas o chats dispersos.",
+    title: "Cobros y mora en un solo panel",
+    text: "Genera cuotas, revisa pendientes y controla la morosidad sin depender de hojas sueltas o chats dispersos.",
   },
   {
     title: "Transparencia para vecinos",
-    text: "Cada residente puede revisar recibos, avisos y su estado sin pedir capturas ni aclaraciones por WhatsApp.",
+    text: "Cada residente puede revisar su estado, recibos y avisos sin pedir capturas ni aclaraciones por WhatsApp.",
   },
   {
-    title: "Flujo de comprobantes",
-    text: "Los pagos suben al sistema y quedan listos para validar, aprobar y cerrar el ciclo administrativo.",
+    title: "Comprobantes con seguimiento",
+    text: "Los pagos suben al sistema y quedan listos para validar, aprobar o rechazar con trazabilidad.",
   },
   {
     title: "Gastos y reportes",
-    text: "Centraliza egresos y reportes operativos para que la junta vea el estado real del bloque.",
+    text: "Centraliza egresos y reportes para que la administracion y la junta vean el estado real del bloque.",
   },
   {
     title: "Accesos por rol",
-    text: "Separacion real entre superadmin, admin y vecino para vender un producto serio y escalable.",
+    text: "Separacion real entre superadmin, admin y vecino para operar con orden y seguridad.",
   },
   {
-    title: "Listo para personalizar",
-    text: "El sistema se adapta a bloques, condominios o conjuntos con una base clara para seguir creciendo.",
+    title: "Listo para crecer",
+    text: "El sistema se adapta a bloques, condominios o conjuntos con una base clara para seguir escalando.",
   },
 ];
 
 const steps = [
   {
     step: "1",
-    title: "La administracion publica",
-    text: "Cuotas, gastos y avisos quedan organizados en un solo panel con vista clara para el equipo interno.",
+    title: "La administracion organiza",
+    text: "Cuotas, gastos y avisos se publican desde un solo panel para mantener orden operativo.",
   },
   {
     step: "2",
-    title: "El vecino responde",
-    text: "El residente revisa su saldo, descarga recibos y envia su comprobante desde el portal propio.",
+    title: "El vecino gestiona su pago",
+    text: "El residente revisa su saldo, envia comprobantes y descarga recibos desde su portal.",
   },
   {
     step: "3",
-    title: "Todo queda trazado",
-    text: "La validacion y el seguimiento quedan registrados para reducir errores, reclamos y tiempos muertos.",
+    title: "Todo queda registrado",
+    text: "La validacion y el seguimiento quedan trazados para reducir errores, reclamos y tiempos muertos.",
   },
 ];
 
 const sellPoints = [
-  "Reduce el caos de Excel, WhatsApp y capturas manuales.",
-  "Se percibe como una plataforma, no como una planilla bonita.",
-  "Ya tiene paneles para admin, vecino y superadmin.",
+  "Usalo desde cualquier dispositivo: Mac, Windows, Android o tablet.",
+  "Gestiona tu bloque desde cualquier lugar del mundo.",
+  "Centraliza la operacion diaria en una sola plataforma.",
 ];
 
 function getPanelHref(rol?: string | null) {
@@ -135,13 +135,14 @@ export default async function HomePage() {
           </div>
 
           <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Administra cuotas, pagos y avisos sin vivir en Excel.
+            El software para administrar bloques sin caos operativo.
           </h1>
 
           <p className="mt-5 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">
-            MiBloque le da a la administracion y a los vecinos un espacio claro
-            para cobros, comprobantes, gastos y transparencia. Es la base
-            ideal para vender un producto serio a bloques y condominios.
+            MiBloque centraliza cobros, comprobantes, gastos, avisos y
+            transparencia en un solo lugar. Se puede usar desde cualquier
+            dispositivo, Mac o Windows o Android, y desde cualquier lugar del
+            mundo.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -187,36 +188,36 @@ export default async function HomePage() {
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-cyan-200/70">
-                  Vista comercial
+                  Vista del sistema
                 </p>
                 <h2 className="mt-2 text-xl font-bold text-white">
                   {nombre}
                 </h2>
               </div>
               <div className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                Operativo
+                En produccion
               </div>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <PreviewCard title="Cobrado del mes" value="Bs 12,480" tone="cyan" />
-              <PreviewCard title="Pendientes" value="18" tone="orange" />
-              <PreviewCard title="Vecinos activos" value="96%" tone="violet" />
-              <PreviewCard title="Avisos publicados" value="24" tone="slate" />
+              <PreviewCard title="Cobros y mora" value="Seguimiento claro" tone="cyan" />
+              <PreviewCard title="Pagos y comprobantes" value="Revision ordenada" tone="orange" />
+              <PreviewCard title="Acceso por roles" value="Admin / Vecino / Superadmin" tone="violet" />
+              <PreviewCard title="Avisos y comunicacion" value="Centralizado" tone="slate" />
             </div>
 
             <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white">
-                    Ciclo de trabajo
+                    Flujo principal
                   </p>
                   <p className="mt-1 text-xs uppercase tracking-[0.22em] text-slate-400">
-                    admin / vecino / validacion
+                    administracion / vecino / validacion
                   </p>
                 </div>
                 <span className="rounded-full border border-orange-300/20 bg-orange-300/10 px-3 py-1 text-xs font-bold text-orange-100">
-                  Sin friccion
+                  Trazable
                 </span>
               </div>
 
@@ -252,12 +253,12 @@ export default async function HomePage() {
               Beneficios
             </p>
             <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">
-              Lo que hace que esta web se vea vendible
+              Beneficios para tu administracion y tus vecinos
             </h2>
           </div>
           <p className="max-w-xl text-sm leading-7 text-slate-400">
-            La clave no es solo mostrar funciones. Es presentar orden, confianza
-            y una experiencia que se entiende en segundos.
+            No se trata solo de mostrar funciones: se trata de operar con orden,
+            dar transparencia y ahorrar tiempo en la gestion diaria.
           </p>
         </div>
 
@@ -291,12 +292,11 @@ export default async function HomePage() {
               Funcionamiento
             </p>
             <h2 className="mt-3 text-3xl font-black text-white">
-              Una historia simple que ayuda a vender
+              Como funciona en el dia a dia
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-300">
-              Cuando el cliente entiende el flujo, entiende el valor. MiBloque
-              muestra claramente lo que hace la administracion, lo que ve el
-              vecino y lo que valida la junta.
+              Un flujo simple para operar mejor: la administracion publica, el
+              vecino responde y todo queda registrado para control y seguimiento.
             </p>
           </div>
 
@@ -332,12 +332,12 @@ export default async function HomePage() {
                 Venta
               </p>
               <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">
-                Listo para presentarlo como producto, no solo como proyecto
+                Listo para ofrecerlo como software de gestion para bloques
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200">
-                Con una portada comercial, branding mas serio y paneles
-                privados, la web deja de sentirse interna y empieza a parecer
-                software que se puede ofrecer, mostrar y cobrar.
+                MiBloque esta pensado para resolver problemas reales de cobro,
+                comunicacion y control administrativo, con una experiencia clara
+                para quienes administran y para quienes viven en el bloque.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -358,10 +358,10 @@ export default async function HomePage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               {[
-                ["Credibilidad", "Una landing con jerarquia y discurso claro."],
-                ["Demo", "Una experiencia lista para mostrar a clientes."],
-                ["Escalabilidad", "Base suficiente para sumar nuevos modulos."],
-                ["Cierre", "Mejor presentacion para vender y cotizar."],
+                ["Accesible", "Disponible desde Mac, Windows, Android y tablet."],
+                ["Remoto", "Funciona desde cualquier lugar del mundo."],
+                ["Orden", "Centraliza cobros, pagos, gastos y avisos."],
+                ["Transparente", "Vecinos y administracion comparten informacion clara."],
               ].map(([title, text]) => (
                 <div
                   key={title}
