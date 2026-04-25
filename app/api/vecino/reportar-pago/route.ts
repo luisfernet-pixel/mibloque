@@ -31,15 +31,45 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL("/login", req.url), 303);
   }
 
-  const { data: cuotaMasAntiguaPendiente } = await adminSupabase
-    .from("cuotas")
-    .select("id, estado, departamento_id, monto_total")
-    .eq("departamento_id", perfil.departamento_id)
-    .in("estado", ["pendiente", "vencido"])
-    .order("anio", { ascending: true })
-    .order("mes", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const [{ data: cuotasPendientes }, { data: confirmacionesPendientes }, { data: pagosExistentes }] =
+    await Promise.all([
+      adminSupabase
+        .from("cuotas")
+        .select("id, estado, departamento_id, monto_total, anio, mes")
+        .eq("departamento_id", perfil.departamento_id)
+        .in("estado", ["pendiente", "vencido"])
+        .order("anio", { ascending: true })
+        .order("mes", { ascending: true }),
+      adminSupabase
+        .from("confirmaciones_pago")
+        .select("cuota_id")
+        .eq("departamento_id", perfil.departamento_id)
+        .eq("estado", "pendiente"),
+      adminSupabase
+        .from("pagos")
+        .select("cuota_id")
+        .eq("departamento_id", perfil.departamento_id),
+    ]);
+
+  const cuotasConConfirmacionPendiente = new Set(
+    (confirmacionesPendientes ?? [])
+      .map((item) => String(item.cuota_id || ""))
+      .filter(Boolean)
+  );
+
+  const cuotasConPago = new Set(
+    (pagosExistentes ?? [])
+      .map((item) => String(item.cuota_id || ""))
+      .filter(Boolean)
+  );
+
+  const cuotaMasAntiguaPendiente = (cuotasPendientes ?? []).find((item) => {
+    const cuotaIdActual = String(item.id || "");
+    if (!cuotaIdActual) return false;
+    if (cuotasConConfirmacionPendiente.has(cuotaIdActual)) return false;
+    if (cuotasConPago.has(cuotaIdActual)) return false;
+    return true;
+  });
 
   if (!cuotaMasAntiguaPendiente) {
     return NextResponse.redirect(new URL("/vecino?error=cuota", req.url), 303);
