@@ -189,8 +189,8 @@ function addField(
   y: number,
   max: number
 ) {
-  addText(ops, `${label}:`, x, y, 7.5, true, SLATE_600);
-  addText(ops, truncate(value, max), x, y - 12, 9.5, false, SLATE_900);
+  addText(ops, `${label}:`, x, y, 6.6, true, SLATE_600);
+  addText(ops, truncate(value, max), x, y - 10, 7.8, false, SLATE_900);
 }
 
 export function buildReceiptPdf(data: ReceiptPdfData) {
@@ -207,7 +207,6 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
   const montoLabel = truncate(data.montoLabel, 16);
   const referenciaLabel = truncate(data.referenciaLabel, 28);
   const metodoLabel = truncate(data.metodoLabel, 20);
-  const observacionesLabel = truncate(data.observacionesLabel, 56);
   const aprobadoPorLabel = truncate(data.aprobadoPorLabel, 26);
   const adminEmailLabel = truncate(data.adminEmailLabel, 32);
   const adminPhoneLabel = truncate(data.adminPhoneLabel, 18);
@@ -224,7 +223,7 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
   });
 
   // Header
-  const headerH = 56;
+  const headerH = 58;
   ops.push({
     type: "rect",
     x: margin,
@@ -234,12 +233,12 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
     fill: NAVY_900,
   });
 
-  addText(ops, "MIBLOQUE", margin + 14, yTop(28), 12, true, WHITE);
-  addText(ops, "Recibo oficial de pago", margin + 14, yTop(43), 8.2, false, SLATE_200);
-  addText(ops, "Nro", PAGE_WIDTH - margin - 132, yTop(26), 8, true, SLATE_200);
-  addText(ops, receiptNumber, PAGE_WIDTH - margin - 106, yTop(26), 12, true, WHITE);
-  addText(ops, "Fecha", PAGE_WIDTH - margin - 132, yTop(42), 8, true, SLATE_200);
-  addText(ops, fechaLabel, PAGE_WIDTH - margin - 106, yTop(42), 8.8, false, WHITE);
+  addText(ops, "MIBLOQUE", margin + 14, yTop(31), 14.5, true, WHITE);
+  addText(ops, "Recibo oficial de pago", margin + 14, yTop(48), 10, false, SLATE_200);
+  addText(ops, "Nro", PAGE_WIDTH - margin - 132, yTop(34), 8.5, true, SLATE_200);
+  addText(ops, receiptNumber, PAGE_WIDTH - margin - 106, yTop(34), 13.5, true, WHITE);
+  addText(ops, "Fecha", PAGE_WIDTH - margin - 132, yTop(51), 8.5, true, SLATE_200);
+  addText(ops, fechaLabel, PAGE_WIDTH - margin - 106, yTop(51), 9.5, false, WHITE);
 
   // Identity cards
   const cardY = PAGE_HEIGHT - margin - headerH - 76;
@@ -302,17 +301,15 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
     h: 40,
     fill: CYAN_600,
   });
-  addText(ops, "TOTAL PAGADO", margin + 12, amountY + 25, 9, true, WHITE);
-  addText(ops, montoLabel, PAGE_WIDTH - margin - 92, amountY + 22, 16, true, WHITE);
+  const centerX = PAGE_WIDTH / 2;
+  addText(ops, "TOTAL PAGADO", centerX - 68, amountY + 25, 10, true, WHITE);
+  addText(ops, montoLabel, centerX + 22, amountY + 22, 16, true, WHITE);
 
   // Metadata rows
   const metaStartY = amountY - 18;
   addField(ops, "Aprobado por", aprobadoPorLabel, margin + 2, metaStartY, 28);
   addField(ops, "Telefono admin", adminPhoneLabel, margin + 122, metaStartY, 20);
   addField(ops, "Correo admin", adminEmailLabel, margin + 230, metaStartY, 34);
-
-  // Keep notes clearly separated from footer text to avoid overlap.
-  addField(ops, "Observaciones", observacionesLabel, margin + 2, metaStartY - 18, 64);
 
   // Footer
   const footerY = margin + 4;
