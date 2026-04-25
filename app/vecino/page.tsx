@@ -40,6 +40,13 @@ type NotificacionVecinoRow = {
   leida: boolean | null;
 };
 
+type AvisoBloqueRow = {
+  id: string;
+  titulo: string | null;
+  mensaje: string | null;
+  created_at: string | null;
+};
+
 type EstadoFila = "pendiente" | "en_revision" | "pagado";
 
 function money(value: number | null | undefined) {
@@ -102,7 +109,13 @@ export default async function VecinoPage({
     redirect("/login");
   }
 
-  const [{ data: cuotas }, { data: confirmaciones }, { data: pagos }, { data: notificaciones }] =
+  const [
+    { data: cuotas },
+    { data: confirmaciones },
+    { data: pagos },
+    { data: notificaciones },
+    { data: avisosBloque },
+  ] =
     await Promise.all([
       supabase
         .from("cuotas")
@@ -128,12 +141,20 @@ export default async function VecinoPage({
         .eq("leida", false)
         .order("created_at", { ascending: false })
         .limit(3),
+      adminSupabase
+        .from("avisos")
+        .select("id, titulo, mensaje, created_at")
+        .eq("bloque_id", perfil.bloque_id)
+        .eq("publicado", true)
+        .order("created_at", { ascending: false })
+        .limit(3),
     ]);
 
   const cuotasRows = (cuotas ?? []) as CuotaRow[];
   const confirmacionesRows = (confirmaciones ?? []) as ConfirmacionRow[];
   const pagosRows = (pagos ?? []) as PagoRow[];
   const notificacionesRows = (notificaciones ?? []) as NotificacionVecinoRow[];
+  const avisosBloqueRows = (avisosBloque ?? []) as AvisoBloqueRow[];
 
   const pendingConfirmacionByCuota = new Map<string, ConfirmacionRow>();
   for (const item of confirmacionesRows) {
@@ -320,25 +341,47 @@ export default async function VecinoPage({
         </section>
       ) : null}
 
-      {notificacionesRows.length > 0 ? (
+      {notificacionesRows.length > 0 || avisosBloqueRows.length > 0 ? (
         <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 px-5 py-4 text-amber-100 ring-1 ring-white/10">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200">
             Avisos para ti
           </p>
           <div className="mt-3 space-y-3">
-            {notificacionesRows.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
-              >
-                <p className="text-sm font-bold text-amber-50">
-                  {item.titulo || "Aviso importante"}
-                </p>
-                <p className="mt-1 text-sm text-amber-100">
-                  {item.mensaje || ""}
-                </p>
-              </article>
-            ))}
+            {notificacionesRows.length > 0
+              ? notificacionesRows.map((item) => (
+                  <article
+                    key={`notif-${item.id}`}
+                    className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
+                  >
+                    <p className="text-sm font-bold text-amber-50">
+                      {item.titulo || "Aviso importante"}
+                    </p>
+                    <p className="mt-1 text-sm text-amber-100">
+                      {item.mensaje || ""}
+                    </p>
+                  </article>
+                ))
+              : avisosBloqueRows.map((item) => (
+                  <article
+                    key={`aviso-${item.id}`}
+                    className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
+                  >
+                    <p className="text-sm font-bold text-amber-50">
+                      {item.titulo || "Aviso del bloque"}
+                    </p>
+                    <p className="mt-1 text-sm text-amber-100">
+                      {item.mensaje || ""}
+                    </p>
+                  </article>
+                ))}
+          </div>
+          <div className="mt-3">
+            <Link
+              href="/vecino/avisos"
+              className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
+            >
+              Ver todos los avisos
+            </Link>
           </div>
         </section>
       ) : null}

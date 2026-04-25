@@ -40,6 +40,7 @@ export default async function VecinoLayout({
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
+    { href: "/vecino/avisos", label: "Avisos" },
     { href: "/vecino/transparencia", label: "Transparencia" },
   ];
 

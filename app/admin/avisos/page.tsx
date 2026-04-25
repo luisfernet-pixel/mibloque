@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 
 async function crearAviso(formData: FormData) {
@@ -16,13 +18,42 @@ async function crearAviso(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
-  await supabase.from("avisos").insert({
+  const { data: avisoCreado } = await supabase
+    .from("avisos")
+    .insert({
+      bloque_id: usuario.perfil.bloque_id,
+      titulo,
+      mensaje,
+      publicado: true,
+    })
+    .select("id")
+    .maybeSingle();
+
+  const { data: departamentos } = await adminSupabase
+    .from("departamentos")
+    .select("id")
+    .eq("bloque_id", usuario.perfil.bloque_id);
+
+  const rows = (departamentos ?? []).map((item) => ({
     bloque_id: usuario.perfil.bloque_id,
+    departamento_id: item.id,
+    tipo: "aviso_admin",
     titulo,
     mensaje,
-    publicado: true,
-  });
+    metadata: {
+      aviso_id: avisoCreado?.id ?? null,
+    },
+  }));
+
+  if (rows.length > 0) {
+    await adminSupabase.from("notificaciones_vecino").insert(rows);
+  }
+
+  revalidatePath("/admin/avisos");
+  revalidatePath("/vecino");
+  revalidatePath("/vecino/avisos");
 
   redirect("/admin/avisos");
 }
@@ -52,6 +83,10 @@ async function editarAviso(formData: FormData) {
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
 
+  revalidatePath("/admin/avisos");
+  revalidatePath("/vecino");
+  revalidatePath("/vecino/avisos");
+
   redirect("/admin/avisos");
 }
 
@@ -71,6 +106,10 @@ async function eliminarAviso(formData: FormData) {
     .delete()
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
+
+  revalidatePath("/admin/avisos");
+  revalidatePath("/vecino");
+  revalidatePath("/vecino/avisos");
 
   redirect("/admin/avisos");
 }
