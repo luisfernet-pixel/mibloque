@@ -52,7 +52,7 @@ export default async function HomePage() {
     <main className="theme-shell-dark relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.26),_transparent_32%),radial-gradient(circle_at_top_right,_rgba(249,115,22,0.16),_transparent_28%),linear-gradient(180deg,_#07111f_0%,_#0b1d33_55%,_#122844_100%)]" />
       <div
-        className="pointer-events-none absolute inset-0 -z-10 bg-center bg-no-repeat opacity-[0.08]"
+        className="pointer-events-none absolute inset-0 -z-10 bg-center bg-no-repeat opacity-[0.14]"
         style={{
           backgroundImage: "url('/landing-building-watermark.png')",
           backgroundSize: "cover",
@@ -98,7 +98,7 @@ export default async function HomePage() {
               href="/demo"
               className="rounded-2xl border border-orange-300/40 bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
             >
-              Ver una Demo
+              Ver Demo
             </Link>
           </div>
 
@@ -117,17 +117,15 @@ export default async function HomePage() {
           <p className="mt-3 text-sm leading-7 text-slate-300">
             Si hoy tu gestion depende de Excel y chat, MiBloque te ayuda a ordenar cobros, pagos y comunicacion sin perder seguimiento.
           </p>
-        </div>
-      </section>
 
-      <section id="modulos" className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
-        <div className="grid gap-4 md:grid-cols-3">
-          {modules.map((item) => (
-            <article key={item.title} className="rounded-[1.6rem] border border-white/10 bg-white/5 p-6 shadow-[0_18px_45px_rgba(2,6,23,0.2)]">
-              <h3 className="text-xl font-bold text-white">{item.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-300">{item.text}</p>
-            </article>
-          ))}
+          <div className="mt-6 grid gap-4">
+            {modules.map((item) => (
+              <article key={item.title} className="rounded-[1.6rem] border border-white/10 bg-white/5 p-5 shadow-[0_18px_45px_rgba(2,6,23,0.2)]">
+                <h3 className="text-xl font-bold text-white">{item.title}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-300">{item.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>
