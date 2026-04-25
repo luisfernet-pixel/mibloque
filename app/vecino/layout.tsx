@@ -32,7 +32,6 @@ export default async function VecinoLayout({
           .select("id")
           .eq("bloque_id", usuario.perfil.bloque_id)
           .eq("departamento_id", usuario.perfil.departamento_id)
-          .eq("tipo", "aviso_admin")
           .eq("leida", false)
       : Promise.resolve({ data: [], error: null }),
   ]);
@@ -89,7 +88,7 @@ export default async function VecinoLayout({
                 <span className="inline-flex items-center gap-2">
                   <span>{item.label}</span>
                   {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
-                    <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
                       {avisosPendientes}
                     </span>
                   ) : null}
@@ -97,6 +96,12 @@ export default async function VecinoLayout({
               </Link>
             ))}
           </nav>
+
+          {avisosPendientes > 0 ? (
+            <div className="mt-3 rounded-2xl border border-orange-400/30 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-100 md:mt-4 md:px-4 md:py-3 md:text-sm">
+              Tienes {avisosPendientes} aviso(s) nuevo(s).
+            </div>
+          ) : null}
         </div>
       </header>
 
