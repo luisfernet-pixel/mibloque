@@ -23,8 +23,16 @@ export default function DemoLayout({
               Modo solo lectura con datos ficticios
             </p>
           </div>
-          <div className="rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
-            Demo
+          <div className="flex items-center gap-2">
+            <div className="rounded-full border border-amber-300/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100">
+              Demo
+            </div>
+            <Link
+              href="/"
+              className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-100 transition hover:bg-cyan-500/20"
+            >
+              Salir demo
+            </Link>
           </div>
         </div>
 

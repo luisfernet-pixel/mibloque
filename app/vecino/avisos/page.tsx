@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { requireVecino } from "@/lib/auth";
 
@@ -25,6 +26,17 @@ export default async function VecinoAvisosPage() {
   }
 
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+
+  if (usuario.perfil.departamento_id) {
+    await adminSupabase
+      .from("notificaciones_vecino")
+      .update({ leida: true })
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("departamento_id", usuario.perfil.departamento_id)
+      .eq("tipo", "aviso_admin")
+      .eq("leida", false);
+  }
 
   const { data } = await supabase
     .from("avisos")

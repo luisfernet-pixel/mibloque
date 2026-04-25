@@ -13,7 +13,7 @@ export default async function VecinoLayout({
 
   if (!usuario) redirect("/login");
   const supabase = createAdminClient();
-  const [bloqueRes, deptoRes] = await Promise.all([
+  const [bloqueRes, deptoRes, avisosPendientesRes] = await Promise.all([
     supabase
       .from("bloques")
       .select("nombre, codigo")
@@ -26,6 +26,15 @@ export default async function VecinoLayout({
           .eq("id", usuario.perfil.departamento_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
+    usuario.perfil.departamento_id
+      ? supabase
+          .from("notificaciones_vecino")
+          .select("id")
+          .eq("bloque_id", usuario.perfil.bloque_id)
+          .eq("departamento_id", usuario.perfil.departamento_id)
+          .eq("tipo", "aviso_admin")
+          .eq("leida", false)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   const nombreVecino = usuario.perfil.nombre || "Vecino";
@@ -37,6 +46,7 @@ export default async function VecinoLayout({
     : bloqueCodigo
       ? String(bloqueCodigo)
       : "sin asignar";
+  const avisosPendientes = avisosPendientesRes.data?.length ?? 0;
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
@@ -76,7 +86,14 @@ export default async function VecinoLayout({
                 href={item.href}
                 className="shrink-0 rounded-lg border border-orange-400/70 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-500 hover:text-white md:rounded-xl md:px-4 md:py-2 md:text-sm"
               >
-                {item.label}
+                <span className="inline-flex items-center gap-2">
+                  <span>{item.label}</span>
+                  {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
+                    <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                      {avisosPendientes}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
             ))}
           </nav>

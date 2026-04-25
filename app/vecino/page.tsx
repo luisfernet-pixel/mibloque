@@ -155,6 +155,18 @@ export default async function VecinoPage({
   const pagosRows = (pagos ?? []) as PagoRow[];
   const notificacionesRows = (notificaciones ?? []) as NotificacionVecinoRow[];
   const avisosBloqueRows = (avisosBloque ?? []) as AvisoBloqueRow[];
+  const avisosInicio =
+    notificacionesRows.length > 0
+      ? notificacionesRows.map((item) => ({
+          id: `notif-${item.id}`,
+          titulo: item.titulo || "Aviso importante",
+          mensaje: item.mensaje || "",
+        }))
+      : avisosBloqueRows.map((item) => ({
+          id: `aviso-${item.id}`,
+          titulo: item.titulo || "Aviso del bloque",
+          mensaje: item.mensaje || "",
+        }));
 
   const pendingConfirmacionByCuota = new Map<string, ConfirmacionRow>();
   for (const item of confirmacionesRows) {
@@ -341,48 +353,39 @@ export default async function VecinoPage({
         </section>
       ) : null}
 
-      {notificacionesRows.length > 0 || avisosBloqueRows.length > 0 ? (
+      {avisosInicio.length > 0 ? (
         <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 px-5 py-4 text-amber-100 ring-1 ring-white/10">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200">
-            Avisos para ti
-          </p>
-          <div className="mt-3 space-y-3">
-            {notificacionesRows.length > 0
-              ? notificacionesRows.map((item) => (
-                  <article
-                    key={`notif-${item.id}`}
-                    className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
-                  >
-                    <p className="text-sm font-bold text-amber-50">
-                      {item.titulo || "Aviso importante"}
-                    </p>
-                    <p className="mt-1 text-sm text-amber-100">
-                      {item.mensaje || ""}
-                    </p>
-                  </article>
-                ))
-              : avisosBloqueRows.map((item) => (
-                  <article
-                    key={`aviso-${item.id}`}
-                    className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
-                  >
-                    <p className="text-sm font-bold text-amber-50">
-                      {item.titulo || "Aviso del bloque"}
-                    </p>
-                    <p className="mt-1 text-sm text-amber-100">
-                      {item.mensaje || ""}
-                    </p>
-                  </article>
-                ))}
-          </div>
-          <div className="mt-3">
-            <Link
-              href="/vecino/avisos"
-              className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
-            >
-              Ver todos los avisos
-            </Link>
-          </div>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200">
+                Avisos para ti
+              </p>
+              <span className="rounded-full border border-amber-200/30 bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-50">
+                {avisosInicio.length} nuevo(s)
+              </span>
+            </summary>
+
+            <div className="mt-3 space-y-3">
+              {avisosInicio.map((item) => (
+                <article
+                  key={item.id}
+                  className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
+                >
+                  <p className="text-sm font-bold text-amber-50">{item.titulo}</p>
+                  <p className="mt-1 text-sm text-amber-100">{item.mensaje}</p>
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-3">
+              <Link
+                href="/vecino/avisos"
+                className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
+              >
+                Ver todos los avisos
+              </Link>
+            </div>
+          </details>
         </section>
       ) : null}
 
