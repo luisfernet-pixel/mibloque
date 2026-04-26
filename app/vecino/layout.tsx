@@ -13,7 +13,7 @@ export default async function VecinoLayout({
 
   if (!usuario) redirect("/login");
   const supabase = createAdminClient();
-  const [bloqueRes, deptoRes, avisosPendientesRes, buzonPendientesRes] = await Promise.all([
+  const [bloqueRes, deptoRes, avisosPendientesRes, buzonPendientesRes, buzonNotifPendientesRes] = await Promise.all([
     supabase
       .from("bloques")
       .select("nombre, codigo")
@@ -43,6 +43,15 @@ export default async function VecinoLayout({
           .eq("estado", "respondido")
           .eq("respuesta_leida", false)
       : Promise.resolve({ data: [], error: null }),
+    usuario.perfil.departamento_id
+      ? supabase
+          .from("notificaciones_vecino")
+          .select("id")
+          .eq("bloque_id", usuario.perfil.bloque_id)
+          .eq("departamento_id", usuario.perfil.departamento_id)
+          .eq("tipo", "respuesta_buzon")
+          .eq("leida", false)
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   const nombreVecino = usuario.perfil.nombre || "Vecino";
@@ -55,7 +64,9 @@ export default async function VecinoLayout({
       ? String(bloqueCodigo)
       : "sin asignar";
   const avisosPendientes = avisosPendientesRes.data?.length ?? 0;
-  const buzonPendientes = buzonPendientesRes.data?.length ?? 0;
+  const buzonPendientes = buzonPendientesRes.error
+    ? (buzonNotifPendientesRes.data?.length ?? 0)
+    : (buzonPendientesRes.data?.length ?? 0);
 
   const menu = [
     { href: "/vecino", label: "Inicio" },

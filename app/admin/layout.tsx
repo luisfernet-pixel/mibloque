@@ -37,11 +37,19 @@ export default async function AdminLayout({
       .from("buzon_sugerencias")
       .select("id")
       .eq("bloque_id", usuario.perfil.bloque_id)
-      .eq("estado", "pendiente"),
+      .eq("visto_admin", false),
   ]);
 
   const comprobantesPendientes = pendientesRes.data?.length ?? 0;
-  const sugerenciasPendientes = sugerenciasRes.data?.length ?? 0;
+  let sugerenciasPendientes = sugerenciasRes.data?.length ?? 0;
+  if (sugerenciasRes.error) {
+    const { data: fallbackData } = await supabase
+      .from("buzon_sugerencias")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("estado", "pendiente");
+    sugerenciasPendientes = fallbackData?.length ?? 0;
+  }
   const nombreAdmin = normalizarNombreAdmin(usuario.perfil.nombre);
   const bloqueNombre = bloqueRes.data?.nombre || null;
   const bloqueCodigo = bloqueRes.data?.codigo || null;

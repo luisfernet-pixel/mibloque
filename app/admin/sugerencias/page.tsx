@@ -120,6 +120,16 @@ export default async function AdminSugerenciasPage({
 
   const params = (await searchParams) ?? {};
   const supabase = createAdminClient();
+
+  const { error: seenError } = await supabase
+    .from("buzon_sugerencias")
+    .update({ visto_admin: true })
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("visto_admin", false);
+  if (!seenError) {
+    revalidatePath("/admin");
+  }
+
   const { data, error: listError } = await supabase
     .from("buzon_sugerencias")
     .select("id, tipo, asunto, mensaje, estado, respuesta, created_at, respondido_at, departamento_id, vecino_id")

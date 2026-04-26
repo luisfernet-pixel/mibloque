@@ -6,8 +6,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 type SearchParams = {
   sent?: string;
   error?: string;
-  read?: string;
-  seen?: string;
 };
 
 type BuzonRow = {
@@ -70,35 +68,6 @@ async function enviarBuzon(formData: FormData) {
   redirect("/vecino/sugerencias?sent=1");
 }
 
-async function marcarRespuestasLeidas() {
-  "use server";
-
-  const usuario = await requireVecino();
-  if (!usuario || !usuario.perfil.departamento_id) {
-    redirect("/login");
-  }
-
-  const supabase = createAdminClient();
-  await supabase
-    .from("notificaciones_vecino")
-    .update({ leida: true })
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", usuario.perfil.departamento_id)
-    .eq("tipo", "respuesta_buzon")
-    .eq("leida", false);
-
-  await supabase
-    .from("buzon_sugerencias")
-    .update({ respuesta_leida: true })
-    .eq("vecino_id", usuario.perfil.id)
-    .eq("estado", "respondido")
-    .eq("respuesta_leida", false);
-
-  revalidatePath("/vecino");
-  revalidatePath("/vecino/sugerencias");
-  redirect("/vecino/sugerencias?read=1");
-}
-
 export default async function VecinoSugerenciasPage({
   searchParams,
 }: {
@@ -111,48 +80,23 @@ export default async function VecinoSugerenciasPage({
 
   const params = (await searchParams) ?? {};
   const supabase = createAdminClient();
-  const shouldAutoSeen = params.seen !== "1";
-
-  if (shouldAutoSeen) {
-    const [{ data: unreadNotif }, { data: unreadRespuestas }] = await Promise.all([
-      supabase
-        .from("notificaciones_vecino")
-        .select("id")
-        .eq("bloque_id", usuario.perfil.bloque_id)
-        .eq("departamento_id", usuario.perfil.departamento_id)
-        .eq("tipo", "respuesta_buzon")
-        .eq("leida", false),
-      supabase
-        .from("buzon_sugerencias")
-        .select("id")
-        .eq("vecino_id", usuario.perfil.id)
-        .eq("estado", "respondido")
-        .eq("respuesta_leida", false),
-    ]);
-
-    const hasUnread = (unreadNotif?.length ?? 0) > 0 || (unreadRespuestas?.length ?? 0) > 0;
-
-    if (hasUnread) {
-      await Promise.all([
-        supabase
-          .from("notificaciones_vecino")
-          .update({ leida: true })
-          .eq("bloque_id", usuario.perfil.bloque_id)
-          .eq("departamento_id", usuario.perfil.departamento_id)
-          .eq("tipo", "respuesta_buzon")
-          .eq("leida", false),
-        supabase
-          .from("buzon_sugerencias")
-          .update({ respuesta_leida: true })
-          .eq("vecino_id", usuario.perfil.id)
-          .eq("estado", "respondido")
-          .eq("respuesta_leida", false),
-      ]);
-
-      revalidatePath("/vecino");
-      revalidatePath("/vecino/sugerencias");
-      redirect("/vecino/sugerencias?seen=1");
-    }
+  const [notifSeenRes, buzonSeenRes] = await Promise.all([
+    supabase
+      .from("notificaciones_vecino")
+      .update({ leida: true })
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("departamento_id", usuario.perfil.departamento_id)
+      .eq("tipo", "respuesta_buzon")
+      .eq("leida", false),
+    supabase
+      .from("buzon_sugerencias")
+      .update({ respuesta_leida: true })
+      .eq("vecino_id", usuario.perfil.id)
+      .eq("estado", "respondido")
+      .eq("respuesta_leida", false),
+  ]);
+  if (!notifSeenRes.error || !buzonSeenRes.error) {
+    revalidatePath("/vecino");
   }
 
   const { data, error: listError } = await supabase
@@ -227,9 +171,6 @@ export default async function VecinoSugerenciasPage({
               {params.sent === "1" ? (
                 <p className="text-xs font-semibold text-cyan-200">Mensaje enviado al admin.</p>
               ) : null}
-              {params.read === "1" ? (
-                <p className="text-xs font-semibold text-cyan-200">Respuestas marcadas como leidas.</p>
-              ) : null}
               {params.error === "datos" ? (
                 <p className="text-xs font-semibold text-red-200">Completa asunto y mensaje.</p>
               ) : null}
@@ -239,14 +180,6 @@ export default async function VecinoSugerenciasPage({
                 </p>
               ) : null}
             </div>
-            <form action={marcarRespuestasLeidas}>
-              <button
-                type="submit"
-                className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20"
-              >
-                Marcar leidas
-              </button>
-            </form>
           </div>
         </div>
       </section>
