@@ -13,7 +13,7 @@ export default async function VecinoLayout({
 
   if (!usuario) redirect("/login");
   const supabase = createAdminClient();
-  const [bloqueRes, deptoRes, avisosPendientesRes] = await Promise.all([
+  const [bloqueRes, deptoRes, avisosPendientesRes, buzonPendientesRes] = await Promise.all([
     supabase
       .from("bloques")
       .select("nombre, codigo")
@@ -32,6 +32,16 @@ export default async function VecinoLayout({
           .select("id")
           .eq("bloque_id", usuario.perfil.bloque_id)
           .eq("departamento_id", usuario.perfil.departamento_id)
+          .in("tipo", ["aviso_admin", "rechazo_pago"])
+          .eq("leida", false)
+      : Promise.resolve({ data: [], error: null }),
+    usuario.perfil.departamento_id
+      ? supabase
+          .from("notificaciones_vecino")
+          .select("id")
+          .eq("bloque_id", usuario.perfil.bloque_id)
+          .eq("departamento_id", usuario.perfil.departamento_id)
+          .eq("tipo", "respuesta_buzon")
           .eq("leida", false)
       : Promise.resolve({ data: [], error: null }),
   ]);
@@ -46,10 +56,12 @@ export default async function VecinoLayout({
       ? String(bloqueCodigo)
       : "sin asignar";
   const avisosPendientes = avisosPendientesRes.data?.length ?? 0;
+  const buzonPendientes = buzonPendientesRes.data?.length ?? 0;
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
     { href: "/vecino/avisos", label: "Avisos" },
+    { href: "/vecino/sugerencias", label: "Sugerencias" },
     { href: "/vecino/transparencia", label: "Transparencia" },
   ];
 
@@ -92,6 +104,11 @@ export default async function VecinoLayout({
                       {avisosPendientes}
                     </span>
                   ) : null}
+                  {item.href === "/vecino/sugerencias" && buzonPendientes > 0 ? (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                      {buzonPendientes}
+                    </span>
+                  ) : null}
                 </span>
               </Link>
             ))}
@@ -108,7 +125,7 @@ export default async function VecinoLayout({
       <main className="mx-auto max-w-7xl px-4 py-3 pb-20 md:px-6 md:py-6">{children}</main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#0f2740]/95 px-2 py-1.5 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-1.5">
+        <div className="mx-auto grid max-w-md grid-cols-4 gap-1.5">
           {menu.map((item) => (
             <Link
               key={`mobile-${item.href}`}
@@ -119,6 +136,11 @@ export default async function VecinoLayout({
               {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
                 <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
                   {avisosPendientes}
+                </span>
+              ) : null}
+              {item.href === "/vecino/sugerencias" && buzonPendientes > 0 ? (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                  {buzonPendientes}
                 </span>
               ) : null}
             </Link>

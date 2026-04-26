@@ -34,6 +34,7 @@ export default async function VecinoAvisosPage() {
       .update({ leida: true })
       .eq("bloque_id", usuario.perfil.bloque_id)
       .eq("departamento_id", usuario.perfil.departamento_id)
+      .in("tipo", ["aviso_admin", "rechazo_pago"])
       .eq("leida", false);
   }
 

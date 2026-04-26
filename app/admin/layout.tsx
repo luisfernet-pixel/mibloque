@@ -22,7 +22,7 @@ export default async function AdminLayout({
   if (!usuario) redirect("/login");
 
   const supabase = createAdminClient();
-  const [pendientesRes, bloqueRes] = await Promise.all([
+  const [pendientesRes, bloqueRes, sugerenciasRes] = await Promise.all([
     supabase
       .from("confirmaciones_pago")
       .select("id")
@@ -33,9 +33,15 @@ export default async function AdminLayout({
       .select("nombre, codigo")
       .eq("id", usuario.perfil.bloque_id)
       .maybeSingle(),
+    supabase
+      .from("buzon_sugerencias")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("estado", "pendiente"),
   ]);
 
   const comprobantesPendientes = pendientesRes.data?.length ?? 0;
+  const sugerenciasPendientes = sugerenciasRes.data?.length ?? 0;
   const nombreAdmin = normalizarNombreAdmin(usuario.perfil.nombre);
   const bloqueNombre = bloqueRes.data?.nombre || null;
   const bloqueCodigo = bloqueRes.data?.codigo || null;
@@ -49,6 +55,7 @@ export default async function AdminLayout({
     { href: "/admin", label: "Inicio" },
     { href: "/admin/cuotas", label: "Cobros" },
     { href: "/admin/confirmaciones", label: "Confirmaciones" },
+    { href: "/admin/sugerencias", label: "Sugerencias" },
     { href: "/admin/gastos", label: "Gastos" },
     { href: "/admin/avisos", label: "Avisos" },
     { href: "/admin/reportes", label: "Reportes" },
@@ -88,6 +95,11 @@ export default async function AdminLayout({
                   {item.href === "/admin/confirmaciones" && comprobantesPendientes > 0 ? (
                     <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
                       {comprobantesPendientes}
+                    </span>
+                  ) : null}
+                  {item.href === "/admin/sugerencias" && sugerenciasPendientes > 0 ? (
+                    <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                      {sugerenciasPendientes}
                     </span>
                   ) : null}
                 </span>
