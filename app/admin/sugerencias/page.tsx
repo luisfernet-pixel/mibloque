@@ -93,7 +93,11 @@ async function responderBuzon(formData: FormData) {
       .from("notificaciones_vecino")
       .insert(notifyPayloadBase);
     if (notifyErrorWithoutMetadata) {
-      redirect("/admin/sugerencias?error=notify");
+      revalidatePath("/admin/sugerencias");
+      revalidatePath("/admin");
+      revalidatePath("/vecino/sugerencias");
+      revalidatePath("/vecino");
+      redirect("/admin/sugerencias?ok=1");
     }
   }
 

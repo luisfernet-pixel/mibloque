@@ -168,41 +168,42 @@ export default async function VecinoSugerenciasPage({
               />
             </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <div className="space-y-1">
-                {params.sent === "1" ? (
-                  <p className="text-xs font-semibold text-cyan-200">Mensaje enviado al admin.</p>
-                ) : null}
-                {params.read === "1" ? (
-                  <p className="text-xs font-semibold text-cyan-200">Respuestas marcadas como leidas.</p>
-                ) : null}
-                {params.error === "datos" ? (
-                  <p className="text-xs font-semibold text-red-200">Completa asunto y mensaje.</p>
-                ) : null}
-                {params.error === "save" ? (
-                  <p className="text-xs font-semibold text-red-200">
-                    No se pudo enviar. Verifica migracion de BD y vuelve a intentar.
-                  </p>
-                ) : null}
-              </div>
-              <div className="flex items-center gap-2">
-                <form action={marcarRespuestasLeidas}>
-                  <button
-                    type="submit"
-                    className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20"
-                  >
-                    Marcar leidas
-                  </button>
-                </form>
-                <button
-                  type="submit"
-                  className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
-                >
-                  Enviar
-                </button>
-              </div>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+              >
+                Enviar
+              </button>
             </div>
           </form>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="space-y-1">
+              {params.sent === "1" ? (
+                <p className="text-xs font-semibold text-cyan-200">Mensaje enviado al admin.</p>
+              ) : null}
+              {params.read === "1" ? (
+                <p className="text-xs font-semibold text-cyan-200">Respuestas marcadas como leidas.</p>
+              ) : null}
+              {params.error === "datos" ? (
+                <p className="text-xs font-semibold text-red-200">Completa asunto y mensaje.</p>
+              ) : null}
+              {params.error === "save" ? (
+                <p className="text-xs font-semibold text-red-200">
+                  No se pudo enviar. Verifica migracion de BD y vuelve a intentar.
+                </p>
+              ) : null}
+            </div>
+            <form action={marcarRespuestasLeidas}>
+              <button
+                type="submit"
+                className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20"
+              >
+                Marcar leidas
+              </button>
+            </form>
+          </div>
         </div>
       </section>
 
