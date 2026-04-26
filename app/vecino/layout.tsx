@@ -73,7 +73,7 @@ export default async function VecinoLayout({
             <div>
               <h1 className="text-base font-bold leading-tight md:text-2xl">MiBloque Vecino</h1>
               <p className="mt-1 text-xs text-slate-200 md:hidden">
-                {nombreVecino} - Depto {numeroDepto}
+                {nombreVecino} - Depto {numeroDepto} - Bloque {bloqueDisplay}
               </p>
               <p className="mt-1 hidden text-xs text-slate-200 sm:block md:text-sm">
                 Vecino: <span className="font-semibold text-white">{nombreVecino}</span> - Depto{" "}

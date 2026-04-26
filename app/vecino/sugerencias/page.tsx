@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 type SearchParams = {
   sent?: string;
   error?: string;
+  read?: string;
 };
 
 type BuzonRow = {
@@ -68,6 +69,28 @@ async function enviarBuzon(formData: FormData) {
   redirect("/vecino/sugerencias?sent=1");
 }
 
+async function marcarRespuestasLeidas() {
+  "use server";
+
+  const usuario = await requireVecino();
+  if (!usuario || !usuario.perfil.departamento_id) {
+    redirect("/login");
+  }
+
+  const supabase = createAdminClient();
+  await supabase
+    .from("notificaciones_vecino")
+    .update({ leida: true })
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("departamento_id", usuario.perfil.departamento_id)
+    .eq("tipo", "respuesta_buzon")
+    .eq("leida", false);
+
+  revalidatePath("/vecino");
+  revalidatePath("/vecino/sugerencias");
+  redirect("/vecino/sugerencias?read=1");
+}
+
 export default async function VecinoSugerenciasPage({
   searchParams,
 }: {
@@ -80,14 +103,6 @@ export default async function VecinoSugerenciasPage({
 
   const params = (await searchParams) ?? {};
   const supabase = createAdminClient();
-
-  await supabase
-    .from("notificaciones_vecino")
-    .update({ leida: true })
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", usuario.perfil.departamento_id)
-    .eq("tipo", "respuesta_buzon")
-    .eq("leida", false);
 
   const { data, error: listError } = await supabase
     .from("buzon_sugerencias")
@@ -147,23 +162,38 @@ export default async function VecinoSugerenciasPage({
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              {params.sent === "1" ? (
-                <p className="text-xs font-semibold text-cyan-200">Mensaje enviado al admin.</p>
-              ) : null}
-              {params.error === "datos" ? (
-                <p className="text-xs font-semibold text-red-200">Completa asunto y mensaje.</p>
-              ) : null}
-              {params.error === "save" ? (
-                <p className="text-xs font-semibold text-red-200">
-                  No se pudo enviar. Verifica migracion de BD y vuelve a intentar.
-                </p>
-              ) : null}
-              <button
-                type="submit"
-                className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
-              >
-                Enviar
-              </button>
+              <div className="space-y-1">
+                {params.sent === "1" ? (
+                  <p className="text-xs font-semibold text-cyan-200">Mensaje enviado al admin.</p>
+                ) : null}
+                {params.read === "1" ? (
+                  <p className="text-xs font-semibold text-cyan-200">Respuestas marcadas como leidas.</p>
+                ) : null}
+                {params.error === "datos" ? (
+                  <p className="text-xs font-semibold text-red-200">Completa asunto y mensaje.</p>
+                ) : null}
+                {params.error === "save" ? (
+                  <p className="text-xs font-semibold text-red-200">
+                    No se pudo enviar. Verifica migracion de BD y vuelve a intentar.
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <form action={marcarRespuestasLeidas}>
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition hover:bg-white/20"
+                  >
+                    Marcar leidas
+                  </button>
+                </form>
+                <button
+                  type="submit"
+                  className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+                >
+                  Enviar
+                </button>
+              </div>
             </div>
           </form>
         </div>
