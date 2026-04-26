@@ -7,6 +7,7 @@ type SearchParams = {
   sent?: string;
   error?: string;
   read?: string;
+  seen?: string;
 };
 
 type BuzonRow = {
@@ -110,6 +111,49 @@ export default async function VecinoSugerenciasPage({
 
   const params = (await searchParams) ?? {};
   const supabase = createAdminClient();
+  const shouldAutoSeen = params.seen !== "1";
+
+  if (shouldAutoSeen) {
+    const [{ data: unreadNotif }, { data: unreadRespuestas }] = await Promise.all([
+      supabase
+        .from("notificaciones_vecino")
+        .select("id")
+        .eq("bloque_id", usuario.perfil.bloque_id)
+        .eq("departamento_id", usuario.perfil.departamento_id)
+        .eq("tipo", "respuesta_buzon")
+        .eq("leida", false),
+      supabase
+        .from("buzon_sugerencias")
+        .select("id")
+        .eq("vecino_id", usuario.perfil.id)
+        .eq("estado", "respondido")
+        .eq("respuesta_leida", false),
+    ]);
+
+    const hasUnread = (unreadNotif?.length ?? 0) > 0 || (unreadRespuestas?.length ?? 0) > 0;
+
+    if (hasUnread) {
+      await Promise.all([
+        supabase
+          .from("notificaciones_vecino")
+          .update({ leida: true })
+          .eq("bloque_id", usuario.perfil.bloque_id)
+          .eq("departamento_id", usuario.perfil.departamento_id)
+          .eq("tipo", "respuesta_buzon")
+          .eq("leida", false),
+        supabase
+          .from("buzon_sugerencias")
+          .update({ respuesta_leida: true })
+          .eq("vecino_id", usuario.perfil.id)
+          .eq("estado", "respondido")
+          .eq("respuesta_leida", false),
+      ]);
+
+      revalidatePath("/vecino");
+      revalidatePath("/vecino/sugerencias");
+      redirect("/vecino/sugerencias?seen=1");
+    }
+  }
 
   const { data, error: listError } = await supabase
     .from("buzon_sugerencias")
