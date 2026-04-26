@@ -71,18 +71,29 @@ async function responderBuzon(formData: FormData) {
     redirect("/admin/sugerencias?error=save");
   }
 
-  const { error: notifyError } = await supabase.from("notificaciones_vecino").insert({
+  const notifyPayloadBase = {
     bloque_id: current.bloque_id,
     departamento_id: current.departamento_id,
     tipo: "respuesta_buzon",
     titulo: "Respuesta del admin",
     mensaje: `Tu mensaje "${current.asunto}" ya tiene respuesta.`,
+  };
+
+  // Compatibilidad: algunos entornos pueden no tener columna `metadata`.
+  const { error: notifyErrorWithMetadata } = await supabase.from("notificaciones_vecino").insert({
+    ...notifyPayloadBase,
     metadata: {
       buzon_id: current.id,
     },
   });
-  if (notifyError) {
-    redirect("/admin/sugerencias?error=notify");
+
+  if (notifyErrorWithMetadata) {
+    const { error: notifyErrorWithoutMetadata } = await supabase
+      .from("notificaciones_vecino")
+      .insert(notifyPayloadBase);
+    if (notifyErrorWithoutMetadata) {
+      redirect("/admin/sugerencias?error=notify");
+    }
   }
 
   revalidatePath("/admin/sugerencias");
