@@ -63,9 +63,9 @@ export default async function AdminLayout({
     { href: "/admin", label: "Inicio" },
     { href: "/admin/cuotas", label: "Cobros" },
     { href: "/admin/confirmaciones", label: "Confirmaciones" },
-    { href: "/admin/sugerencias", label: "Sugerencias" },
+    { href: "/admin/comunicacion", label: "Comunicacion" },
     { href: "/admin/gastos", label: "Gastos" },
-    { href: "/admin/avisos", label: "Avisos" },
+    { href: "/admin/reportes/cuadro", label: "Cuadro" },
     { href: "/admin/reportes", label: "Reportes" },
     { href: "/admin/configuracion", label: "Ajustes" },
   ];
@@ -105,7 +105,7 @@ export default async function AdminLayout({
                       {comprobantesPendientes}
                     </span>
                   ) : null}
-                  {item.href === "/admin/sugerencias" && sugerenciasPendientes > 0 ? (
+                  {item.href === "/admin/comunicacion" && sugerenciasPendientes > 0 ? (
                     <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
                       {sugerenciasPendientes}
                     </span>

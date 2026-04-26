@@ -178,6 +178,7 @@ export default async function ReporteCuadroPage({
             >
               Volver a reportes
             </Link>
+            <PrintButton label="Descargar PDF" />
             <PrintButton label="Imprimir tabla" />
           </div>
         </div>
@@ -196,4 +197,3 @@ export default async function ReporteCuadroPage({
 function quotaState(value: string | undefined) {
   return String(value || "");
 }
-

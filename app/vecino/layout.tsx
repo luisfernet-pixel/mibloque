@@ -67,11 +67,11 @@ export default async function VecinoLayout({
   const buzonPendientes = buzonPendientesRes.error
     ? (buzonNotifPendientesRes.data?.length ?? 0)
     : (buzonPendientesRes.data?.length ?? 0);
+  const comunicacionPendientes = avisosPendientes + buzonPendientes;
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
-    { href: "/vecino/avisos", label: "Avisos" },
-    { href: "/vecino/sugerencias", label: "Sugerencias" },
+    { href: "/vecino/comunicacion", label: "Comunicacion" },
     { href: "/vecino/transparencia", label: "Transparencia" },
   ];
 
@@ -109,14 +109,9 @@ export default async function VecinoLayout({
               >
                 <span className="inline-flex items-center gap-2">
                   <span>{item.label}</span>
-                  {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
+                  {item.href === "/vecino/comunicacion" && comunicacionPendientes > 0 ? (
                     <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
-                      {avisosPendientes}
-                    </span>
-                  ) : null}
-                  {item.href === "/vecino/sugerencias" && buzonPendientes > 0 ? (
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
-                      {buzonPendientes}
+                      {comunicacionPendientes}
                     </span>
                   ) : null}
                 </span>
@@ -124,9 +119,9 @@ export default async function VecinoLayout({
             ))}
           </nav>
 
-          {avisosPendientes > 0 ? (
+          {comunicacionPendientes > 0 ? (
             <div className="mt-3 hidden rounded-2xl border border-orange-400/30 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-100 md:mt-4 md:block md:px-4 md:py-3 md:text-sm">
-              Tienes {avisosPendientes} aviso(s) nuevo(s).
+              Tienes {comunicacionPendientes} novedad(es) en comunicacion.
             </div>
           ) : null}
 
@@ -139,14 +134,9 @@ export default async function VecinoLayout({
               >
                 <span className="inline-flex items-center gap-2">
                   <span>{item.label}</span>
-                  {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
+                  {item.href === "/vecino/comunicacion" && comunicacionPendientes > 0 ? (
                     <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
-                      {avisosPendientes}
-                    </span>
-                  ) : null}
-                  {item.href === "/vecino/sugerencias" && buzonPendientes > 0 ? (
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
-                      {buzonPendientes}
+                      {comunicacionPendientes}
                     </span>
                   ) : null}
                 </span>
