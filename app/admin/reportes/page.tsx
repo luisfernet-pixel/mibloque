@@ -392,9 +392,9 @@ export default async function ReportesPage({
           />
 
           <ReportButton
-            href="/admin/gastos"
-            titulo="Gastos"
-            texto="Ir a gestion de gastos."
+            href="/admin/reportes/cuadro"
+            titulo="Cuadro vitrina"
+            texto="Tabla mensual para imprimir."
           />
         </div>
       </section>

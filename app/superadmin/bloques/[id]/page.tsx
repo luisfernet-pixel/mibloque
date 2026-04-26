@@ -23,6 +23,36 @@ function deptoNumeroFromUsername(username: string) {
   return numero;
 }
 
+function parseDeptoNumero(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const numero = Number(raw);
+  if (!Number.isFinite(numero)) return null;
+  return numero;
+}
+
+function getDepartamentoNumero(value: unknown) {
+  if (Array.isArray(value)) {
+    const first = value[0] as { numero?: unknown } | undefined;
+    return first?.numero;
+  }
+  if (value && typeof value === "object") {
+    return (value as { numero?: unknown }).numero;
+  }
+  return null;
+}
+
+function deptoDisplayFromRow(item: {
+  username: string | null;
+  departamentos?: unknown;
+}) {
+  const numeroDepto = getDepartamentoNumero(item.departamentos);
+  if (numeroDepto !== undefined && numeroDepto !== null && String(numeroDepto).trim()) {
+    return String(numeroDepto).trim();
+  }
+  return item.username?.includes("-") ? (item.username.split("-").pop() ?? "").trim() : String(item.username || "");
+}
+
 export const metadata: Metadata = {
   title: "Bloque",
 };
@@ -46,7 +76,7 @@ export default async function BlockDetailPage({ params }: Props) {
         .order("created_at", { ascending: false }),
       supabase
         .from("usuarios")
-        .select("id, nombre, username, email, activo, departamento_id, created_at")
+        .select("id, nombre, username, email, activo, departamento_id, created_at, departamentos:departamento_id(numero)")
         .eq("rol", "vecino")
         .eq("bloque_id", id)
         .order("created_at", { ascending: false }),
@@ -55,8 +85,8 @@ export default async function BlockDetailPage({ params }: Props) {
   if (!bloque) notFound();
 
   const deptosOrdenados = [...(departamentosRegistrados ?? [])].sort((a, b) => {
-    const aNum = deptoNumeroFromUsername(a.username);
-    const bNum = deptoNumeroFromUsername(b.username);
+    const aNum = parseDeptoNumero(getDepartamentoNumero(a.departamentos)) ?? deptoNumeroFromUsername(a.username);
+    const bNum = parseDeptoNumero(getDepartamentoNumero(b.departamentos)) ?? deptoNumeroFromUsername(b.username);
     if (aNum !== null && bNum !== null) return bNum - aNum;
     if (aNum !== null) return -1;
     if (bNum !== null) return 1;
@@ -198,7 +228,7 @@ export default async function BlockDetailPage({ params }: Props) {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-lg font-extrabold text-cyan-200">
-                      Depto {item.username?.includes("-") ? item.username.split("-").pop() : item.username}
+                      Depto {deptoDisplayFromRow(item)}
                     </p>
                     <p className="text-sm text-white/90">{item.nombre}</p>
                     <p className="text-sm text-slate-300">{item.username} - {item.email}</p>

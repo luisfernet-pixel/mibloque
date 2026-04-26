@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function money(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO")}`;
 }
@@ -80,6 +82,12 @@ export default function TransparenciaPage() {
                 <span className="inline-flex rounded-full bg-orange-500/20 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-orange-100">
                   Transparencia simple
                 </span>
+                <Link
+                  href="/vecino/transparencia/cuadro"
+                  className="inline-flex min-h-[34px] items-center justify-center rounded-full border border-cyan-300/40 bg-cyan-500/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-cyan-100 transition hover:bg-cyan-500/25"
+                >
+                  Ver cuadro general
+                </Link>
               </div>
             </div>
           </div>
