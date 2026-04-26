@@ -20,7 +20,7 @@ async function crearAviso(formData: FormData) {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
-  const { data: avisoCreado } = await supabase
+  const { data: avisoCreado, error: avisoError } = await supabase
     .from("avisos")
     .insert({
       bloque_id: usuario.perfil.bloque_id,
@@ -30,6 +30,9 @@ async function crearAviso(formData: FormData) {
     })
     .select("id")
     .maybeSingle();
+  if (avisoError) {
+    redirect("/admin/avisos");
+  }
 
   const { data: departamentos } = await adminSupabase
     .from("departamentos")
@@ -48,9 +51,22 @@ async function crearAviso(formData: FormData) {
   }));
 
   if (rows.length > 0) {
-    await adminSupabase.from("notificaciones_vecino").insert(rows);
+    const { error: notifyErrorWithMetadata } = await adminSupabase
+      .from("notificaciones_vecino")
+      .insert(rows);
+    if (notifyErrorWithMetadata) {
+      const rowsWithoutMetadata = rows.map((item) => ({
+        bloque_id: item.bloque_id,
+        departamento_id: item.departamento_id,
+        tipo: item.tipo,
+        titulo: item.titulo,
+        mensaje: item.mensaje,
+      }));
+      await adminSupabase.from("notificaciones_vecino").insert(rowsWithoutMetadata);
+    }
   }
 
+  revalidatePath("/admin");
   revalidatePath("/admin/avisos");
   revalidatePath("/vecino");
   revalidatePath("/vecino/avisos");
