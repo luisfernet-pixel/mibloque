@@ -62,6 +62,7 @@ async function responderBuzon(formData: FormData) {
     .update({
       estado: "respondido",
       respuesta,
+      respuesta_leida: false,
       respondido_at: ahora,
       respondido_por: usuario.perfil.id,
     })

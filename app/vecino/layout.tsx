@@ -37,12 +37,11 @@ export default async function VecinoLayout({
       : Promise.resolve({ data: [], error: null }),
     usuario.perfil.departamento_id
       ? supabase
-          .from("notificaciones_vecino")
+          .from("buzon_sugerencias")
           .select("id")
-          .eq("bloque_id", usuario.perfil.bloque_id)
-          .eq("departamento_id", usuario.perfil.departamento_id)
-          .eq("tipo", "respuesta_buzon")
-          .eq("leida", false)
+          .eq("vecino_id", usuario.perfil.id)
+          .eq("estado", "respondido")
+          .eq("respuesta_leida", false)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -119,34 +118,34 @@ export default async function VecinoLayout({
               Tienes {avisosPendientes} aviso(s) nuevo(s).
             </div>
           ) : null}
+
+          <nav className="hide-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1 md:hidden">
+            {menu.map((item) => (
+              <Link
+                key={`mobile-${item.href}`}
+                href={item.href}
+                className="shrink-0 rounded-lg border border-orange-400/70 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-500 hover:text-white"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span>{item.label}</span>
+                  {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                      {avisosPendientes}
+                    </span>
+                  ) : null}
+                  {item.href === "/vecino/sugerencias" && buzonPendientes > 0 ? (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
+                      {buzonPendientes}
+                    </span>
+                  ) : null}
+                </span>
+              </Link>
+            ))}
+          </nav>
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-3 pb-20 md:px-6 md:py-6">{children}</main>
-
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#0f2740]/95 px-2 py-1.5 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-4 gap-1.5">
-          {menu.map((item) => (
-            <Link
-              key={`mobile-${item.href}`}
-              href={item.href}
-              className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 text-[11px] font-semibold text-white"
-            >
-              <span>{item.label}</span>
-              {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
-                  {avisosPendientes}
-                </span>
-              ) : null}
-              {item.href === "/vecino/sugerencias" && buzonPendientes > 0 ? (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold leading-none text-white">
-                  {buzonPendientes}
-                </span>
-              ) : null}
-            </Link>
-          ))}
-        </div>
-      </nav>
+      <main className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-6">{children}</main>
     </div>
   );
 }

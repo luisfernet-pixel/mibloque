@@ -86,6 +86,13 @@ async function marcarRespuestasLeidas() {
     .eq("tipo", "respuesta_buzon")
     .eq("leida", false);
 
+  await supabase
+    .from("buzon_sugerencias")
+    .update({ respuesta_leida: true })
+    .eq("vecino_id", usuario.perfil.id)
+    .eq("estado", "respondido")
+    .eq("respuesta_leida", false);
+
   revalidatePath("/vecino");
   revalidatePath("/vecino/sugerencias");
   redirect("/vecino/sugerencias?read=1");
