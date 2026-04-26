@@ -57,7 +57,7 @@ async function responderBuzon(formData: FormData) {
   }
 
   const ahora = new Date().toISOString();
-  await supabase
+  const { error: updateError } = await supabase
     .from("buzon_sugerencias")
     .update({
       estado: "respondido",
@@ -67,8 +67,11 @@ async function responderBuzon(formData: FormData) {
     })
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
+  if (updateError) {
+    redirect("/admin/sugerencias?error=save");
+  }
 
-  await supabase.from("notificaciones_vecino").insert({
+  const { error: notifyError } = await supabase.from("notificaciones_vecino").insert({
     bloque_id: current.bloque_id,
     departamento_id: current.departamento_id,
     tipo: "respuesta_buzon",
@@ -78,8 +81,12 @@ async function responderBuzon(formData: FormData) {
       buzon_id: current.id,
     },
   });
+  if (notifyError) {
+    redirect("/admin/sugerencias?error=notify");
+  }
 
   revalidatePath("/admin/sugerencias");
+  revalidatePath("/admin");
   revalidatePath("/vecino/sugerencias");
   revalidatePath("/vecino");
   redirect("/admin/sugerencias?ok=1");
@@ -97,14 +104,14 @@ export default async function AdminSugerenciasPage({
 
   const params = (await searchParams) ?? {};
   const supabase = createAdminClient();
-  const { data } = await supabase
+  const { data, error: listError } = await supabase
     .from("buzon_sugerencias")
     .select("id, tipo, asunto, mensaje, estado, respuesta, created_at, respondido_at, departamento_id, vecino_id")
     .eq("bloque_id", usuario.perfil.bloque_id)
     .order("created_at", { ascending: false })
     .limit(80);
 
-  const rows = (data ?? []) as BuzonAdminRow[];
+  const rows = listError ? [] : ((data ?? []) as BuzonAdminRow[]);
   const pendientes = rows.filter((item) => item.estado !== "respondido").length;
 
   return (
@@ -129,7 +136,9 @@ export default async function AdminSugerenciasPage({
               <p className="mt-4 text-sm font-semibold text-cyan-200">Respuesta enviada al vecino.</p>
             ) : null}
             {params.error ? (
-              <p className="mt-4 text-sm font-semibold text-red-200">No se pudo procesar la respuesta.</p>
+              <p className="mt-4 text-sm font-semibold text-red-200">
+                No se pudo procesar la accion ({params.error}).
+              </p>
             ) : null}
           </div>
         </div>
@@ -143,7 +152,7 @@ export default async function AdminSugerenciasPage({
         <div className="space-y-4 p-4 md:p-5">
           {rows.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] p-6 text-center text-slate-300">
-              Aun no hay mensajes de vecinos.
+              {listError ? "No se pudo cargar el buzon de mensajes." : "Aun no hay mensajes de vecinos."}
             </div>
           ) : (
             rows.map((item) => (

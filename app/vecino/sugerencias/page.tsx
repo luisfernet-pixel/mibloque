@@ -50,7 +50,7 @@ async function enviarBuzon(formData: FormData) {
   }
 
   const supabase = createAdminClient();
-  await supabase.from("buzon_sugerencias").insert({
+  const { error } = await supabase.from("buzon_sugerencias").insert({
     bloque_id: usuario.perfil.bloque_id,
     departamento_id: usuario.perfil.departamento_id,
     vecino_id: usuario.perfil.id,
@@ -58,9 +58,13 @@ async function enviarBuzon(formData: FormData) {
     asunto,
     mensaje,
   });
+  if (error) {
+    redirect("/vecino/sugerencias?error=save");
+  }
 
   revalidatePath("/vecino/sugerencias");
   revalidatePath("/admin/sugerencias");
+  revalidatePath("/admin");
   redirect("/vecino/sugerencias?sent=1");
 }
 
@@ -85,14 +89,14 @@ export default async function VecinoSugerenciasPage({
     .eq("tipo", "respuesta_buzon")
     .eq("leida", false);
 
-  const { data } = await supabase
+  const { data, error: listError } = await supabase
     .from("buzon_sugerencias")
     .select("id, tipo, asunto, mensaje, estado, respuesta, created_at, respondido_at")
     .eq("vecino_id", usuario.perfil.id)
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const rows = (data ?? []) as BuzonRow[];
+  const rows = listError ? [] : ((data ?? []) as BuzonRow[]);
 
   return (
     <main className="space-y-4 md:space-y-6">
@@ -149,6 +153,11 @@ export default async function VecinoSugerenciasPage({
               {params.error === "datos" ? (
                 <p className="text-xs font-semibold text-red-200">Completa asunto y mensaje.</p>
               ) : null}
+              {params.error === "save" ? (
+                <p className="text-xs font-semibold text-red-200">
+                  No se pudo enviar. Verifica migracion de BD y vuelve a intentar.
+                </p>
+              ) : null}
               <button
                 type="submit"
                 className="inline-flex min-h-[38px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
@@ -167,7 +176,7 @@ export default async function VecinoSugerenciasPage({
         <div className="space-y-2 p-3 md:space-y-3 md:p-5">
           {rows.length === 0 ? (
             <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
-              Aun no enviaste mensajes al admin.
+              {listError ? "No se pudo cargar historial de mensajes." : "Aun no enviaste mensajes al admin."}
             </div>
           ) : (
             rows.map((item) => (
