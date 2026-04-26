@@ -56,10 +56,10 @@ export default async function VecinoLayout({
   return (
     <div className="theme-shell min-h-screen">
       <header className="theme-hero-alt sticky top-0 z-40 border-b border-white/10 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6 md:py-4">
+        <div className="mx-auto max-w-7xl px-4 py-2 md:px-6 md:py-4">
           <div className="flex items-start justify-between gap-3 md:items-center md:gap-4">
             <div>
-              <h1 className="text-lg font-bold leading-tight md:text-2xl">MiBloque Vecino</h1>
+              <h1 className="text-base font-bold leading-tight md:text-2xl">MiBloque Vecino</h1>
               <p className="mt-1 text-xs text-slate-200 md:hidden">
                 {nombreVecino} - Depto {numeroDepto}
               </p>
@@ -98,22 +98,22 @@ export default async function VecinoLayout({
           </nav>
 
           {avisosPendientes > 0 ? (
-            <div className="mt-3 rounded-2xl border border-orange-400/30 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-100 md:mt-4 md:px-4 md:py-3 md:text-sm">
+            <div className="mt-3 hidden rounded-2xl border border-orange-400/30 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-100 md:mt-4 md:block md:px-4 md:py-3 md:text-sm">
               Tienes {avisosPendientes} aviso(s) nuevo(s).
             </div>
           ) : null}
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-4 pb-24 md:px-6 md:py-6">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-3 pb-20 md:px-6 md:py-6">{children}</main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#0f2740]/95 px-3 py-2 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#0f2740]/95 px-2 py-1.5 backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-3 gap-1.5">
           {menu.map((item) => (
             <Link
               key={`mobile-${item.href}`}
               href={item.href}
-              className="inline-flex min-h-[44px] items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 text-xs font-semibold text-white"
+              className="inline-flex min-h-[40px] items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 text-[11px] font-semibold text-white"
             >
               <span>{item.label}</span>
               {item.href === "/vecino/avisos" && avisosPendientes > 0 ? (

@@ -219,20 +219,20 @@ export default async function VecinoPage({
   const detalle = params.detalle || "";
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[24px] border border-cyan-400/30 bg-gradient-to-br from-[#0f2d48] via-[#1c4569] to-[#245b84] shadow-xl ring-1 ring-white/10">
-        <div className="grid items-center gap-5 p-4 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-6">
+    <main className="space-y-4 md:space-y-6">
+      <section className="overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#0f2d48] via-[#1c4569] to-[#245b84] shadow-xl ring-1 ring-white/10 md:rounded-[24px]">
+        <div className="grid items-center gap-3 p-3 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-6">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-200 md:text-[11px] md:tracking-[0.28em]">
               Pago rapido
             </p>
-            <h2 className="mt-2 text-2xl font-bold text-white md:text-3xl">QR de pago del admin</h2>
-            <p className="mt-3 text-sm text-slate-100 md:text-base">
+            <h2 className="mt-1.5 text-lg font-bold text-white md:mt-2 md:text-3xl">QR de pago del admin</h2>
+            <p className="mt-2 text-xs text-slate-100 md:mt-3 md:text-base">
               Escanea este QR para copiar los datos de pago. Asegurate de transferir el monto del
               mes habilitado.
             </p>
 
-            <div className="mt-4 grid gap-2 text-sm text-cyan-50">
+            <div className="mt-2 grid gap-1 text-xs text-cyan-50 md:mt-4 md:gap-2 md:text-sm">
               <p>
                 <span className="font-semibold text-cyan-100">Banco:</span> Union
               </p>
@@ -246,7 +246,7 @@ export default async function VecinoPage({
             </div>
           </div>
 
-          <div className="mx-auto w-full max-w-[250px] rounded-3xl bg-white p-3 shadow-2xl shadow-black/25">
+          <div className="mx-auto w-full max-w-[180px] rounded-2xl bg-white p-2.5 shadow-2xl shadow-black/25 md:max-w-[250px] md:rounded-3xl md:p-3">
             <Image
               src={adminQrPath}
               alt="QR para pago del admin"
@@ -255,14 +255,14 @@ export default async function VecinoPage({
               sizes="(max-width: 768px) 220px, 250px"
               quality={90}
               preload
-              className="h-auto w-full rounded-2xl"
+              className="h-auto w-full rounded-xl md:rounded-2xl"
             />
             <a
               href={adminQrPath}
               download="qr-pago-admin.png"
               target="_blank"
               rel="noreferrer"
-              className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
+              className="mt-2 inline-flex min-h-[36px] w-full items-center justify-center rounded-xl bg-[#ff5a3d] px-3 text-[11px] font-bold uppercase tracking-[0.06em] text-white transition hover:brightness-110 md:mt-3 md:min-h-[40px] md:px-4 md:text-xs md:tracking-[0.08em]"
             >
               Descargar QR
             </a>
@@ -270,43 +270,43 @@ export default async function VecinoPage({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
-        <div className="space-y-3 p-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
+      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
+        <div className="space-y-2.5 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-300">
             Pagos del vecino
           </p>
-          <h1 className="text-xl font-bold leading-tight text-white">Estado de cuotas</h1>
-          <p className="text-sm text-slate-200">
+          <h1 className="text-lg font-bold leading-tight text-white">Estado de cuotas</h1>
+          <p className="text-xs text-slate-200">
             Pendientes {filasPendientes.length} - En revision {filasEnRevision.length} - Pagados{" "}
             {filasPagadas.length}
           </p>
 
-          <details className="group rounded-2xl border border-white/15 bg-white/5 p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-cyan-100">
+          <details className="group rounded-xl border border-white/15 bg-white/5 p-2.5">
+            <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-cyan-100">
               Ver detalle
-              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:hidden">
+              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] group-open:hidden">
                 Abrir
               </span>
-              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:inline-flex">
+              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] group-open:inline-flex">
                 Cerrar
               </span>
             </summary>
 
-            <p className="mt-3 text-sm text-slate-200">
+            <p className="mt-2 text-xs text-slate-200">
               Revisa tus meses pendientes y sube el comprobante solo del mes habilitado.
             </p>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
               <InfoBox label="Pendientes" value={String(filasPendientes.length)} />
               <InfoBox label="En revision" value={String(filasEnRevision.length)} />
               <InfoBox label="Pagados" value={String(filasPagadas.length)} />
               <InfoBox label="Total meses" value={String(filas.length)} />
             </div>
 
-            <div className="mt-3">
+            <div className="mt-2">
               <Link
                 href="#subir-comprobante"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+                className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-[#ff5a3d] px-3 text-[11px] font-bold text-white transition hover:brightness-110"
               >
                 Ir a subir comprobante
               </Link>
@@ -342,25 +342,25 @@ export default async function VecinoPage({
       </section>
 
       {sent ? (
-        <section className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-4 text-cyan-100 ring-1 ring-white/10">
+        <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
           Comprobante enviado. El admin lo revisara antes de aprobarlo.
         </section>
       ) : null}
 
       {error ? (
-        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 px-5 py-4 text-red-100 ring-1 ring-white/10">
+        <section className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
           {detailForError(error, detalle)}
         </section>
       ) : null}
 
       {avisosInicio.length > 0 ? (
-        <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 px-5 py-4 text-amber-100 ring-1 ring-white/10">
+        <section className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-amber-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200 md:text-xs md:tracking-[0.22em]">
                 Avisos para ti
               </p>
-              <span className="rounded-full border border-amber-200/30 bg-amber-500/20 px-2 py-0.5 text-[11px] font-bold text-amber-50">
+              <span className="rounded-full border border-amber-200/30 bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-50 md:text-[11px]">
                 {avisosInicio.length} nuevo(s)
               </span>
             </summary>
@@ -380,7 +380,7 @@ export default async function VecinoPage({
             <div className="mt-3">
               <Link
                 href="/vecino/avisos"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-4 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
+                className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-3 text-[11px] font-bold text-amber-100 transition hover:bg-amber-400/20 md:min-h-[44px] md:px-4 md:text-xs"
               >
                 Ver todos los avisos
               </Link>
@@ -389,13 +389,13 @@ export default async function VecinoPage({
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[30px]">
+        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 md:gap-3 md:px-6 md:py-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300 md:text-xs md:tracking-[0.3em]">
               Tabla unica
             </p>
-            <h2 className="mt-2 text-2xl font-bold text-white">Meses y estado</h2>
+            <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Meses y estado</h2>
           </div>
         </div>
 
@@ -406,13 +406,13 @@ export default async function VecinoPage({
             </div>
           ) : (
             <>
-              <div className="space-y-3 md:hidden">
+              <div className="space-y-2 md:hidden">
                 {filas.map((item) => (
-                  <article key={item.id} className="rounded-2xl border border-white/10 bg-[#2d4a6c] p-4">
+                  <article key={item.id} className="rounded-xl border border-white/10 bg-[#2d4a6c] p-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-base font-bold text-white">{item.periodo || "Sin periodo"}</p>
+                      <p className="text-sm font-bold text-white">{item.periodo || "Sin periodo"}</p>
                       <span
-                        className={`inline-flex shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${estadoClass(
+                        className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold ${estadoClass(
                           item.status
                         )}`}
                       >
@@ -420,14 +420,14 @@ export default async function VecinoPage({
                       </span>
                     </div>
 
-                    <p className="mt-2 text-sm text-slate-200">Monto: {money(item.monto_total)}</p>
+                    <p className="mt-1.5 text-xs text-slate-200">Monto: {money(item.monto_total)}</p>
 
-                    <div className="mt-3">
+                    <div className="mt-2">
                       {item.status === "pendiente" ? (
                         cuotaHabilitada?.id === item.id ? (
                           <Link
                             href="#subir-comprobante"
-                            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
+                            className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-[#ff5a3d] px-3 text-[11px] font-bold text-white transition hover:brightness-110"
                           >
                             Subir comprobante
                           </Link>
@@ -449,7 +449,7 @@ export default async function VecinoPage({
                           <Link
                             href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
                             target="_blank"
-                            className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-bold text-white transition hover:bg-cyan-400"
+                            className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-cyan-500 px-3 text-[11px] font-bold text-white transition hover:bg-cyan-400"
                           >
                             Descargar recibo
                           </Link>
@@ -536,16 +536,16 @@ export default async function VecinoPage({
 
       <section
         id="subir-comprobante"
-        className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10"
+        className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[30px]"
       >
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
+        <div className="border-b border-white/10 px-4 py-3 md:px-6 md:py-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300 md:text-xs md:tracking-[0.3em]">
             Comprobante
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">Subir pago</h2>
+          <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Subir pago</h2>
         </div>
 
-        <div className="p-5 md:p-6">
+        <div className="p-4 md:p-6">
           {filasPendientes.length === 0 ? (
             <div className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-8 text-center">
               <p className="text-lg font-bold text-cyan-100">
@@ -560,7 +560,7 @@ export default async function VecinoPage({
               action="/api/vecino/reportar-pago"
               method="POST"
               encType="multipart/form-data"
-              className="grid gap-5 xl:grid-cols-[1fr_1fr]"
+              className="grid gap-4 xl:grid-cols-[1fr_1fr] md:gap-5"
             >
               <div className="space-y-2 xl:col-span-2">
                 <label className="text-sm font-semibold text-white">
@@ -626,9 +626,9 @@ function InfoBox({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#3a5879] p-4 ring-1 ring-white/10">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-300">{label}</p>
-      <p className="mt-2 text-xl font-bold leading-tight text-white">{value}</p>
+    <div className="rounded-xl bg-[#3a5879] p-2.5 ring-1 ring-white/10 md:rounded-2xl md:p-4">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-slate-300 md:text-xs md:tracking-[0.18em]">{label}</p>
+      <p className="mt-1 text-base font-bold leading-tight text-white md:mt-2 md:text-xl">{value}</p>
     </div>
   );
 }
