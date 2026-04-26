@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { requireVecino } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -95,9 +94,8 @@ export default async function VecinoSugerenciasPage({
       .eq("estado", "respondido")
       .eq("respuesta_leida", false),
   ]);
-  if (!notifSeenRes.error || !buzonSeenRes.error) {
-    revalidatePath("/vecino");
-  }
+  void notifSeenRes;
+  void buzonSeenRes;
 
   const { data, error: listError } = await supabase
     .from("buzon_sugerencias")
