@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireVecino } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
