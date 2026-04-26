@@ -3,6 +3,46 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 
+function buildReceiptNumber(prefix: string, seq: number) {
+  const safePrefix = String(prefix || "BLK")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 12) || "BLK";
+  return `${safePrefix}-${String(seq).padStart(4, "0")}`;
+}
+
+async function getNextReceiptNumber(
+  supabase: ReturnType<typeof createAdminClient>,
+  bloqueId: string
+) {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const { data: bloque } = await supabase
+      .from("bloques")
+      .select("id, codigo, recibo_consecutivo")
+      .eq("id", bloqueId)
+      .single();
+
+    if (!bloque) return null;
+
+    const seq = Number(bloque.recibo_consecutivo || 1);
+    const nextSeq = seq + 1;
+
+    const { data: updated } = await supabase
+      .from("bloques")
+      .update({ recibo_consecutivo: nextSeq })
+      .eq("id", bloqueId)
+      .eq("recibo_consecutivo", seq)
+      .select("id")
+      .maybeSingle();
+
+    if (updated) {
+      return buildReceiptNumber(String(bloque.codigo || "BLK"), seq);
+    }
+  }
+
+  return null;
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -54,6 +94,11 @@ export async function POST(
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
+  const numeroRecibo = await getNextReceiptNumber(supabase, confirmacion.bloque_id);
+  if (!numeroRecibo) {
+    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  }
+
   const { error: insertPagoError } = await supabase
     .from("pagos")
     .insert({
@@ -65,6 +110,7 @@ export async function POST(
       metodo_pago: "transferencia",
       referencia: confirmacion.referencia,
       comprobante_url: confirmacion.comprobante_url,
+      numero_recibo: numeroRecibo,
       observaciones: "Pago aprobado desde confirmaciones",
     });
 

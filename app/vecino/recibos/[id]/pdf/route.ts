@@ -76,6 +76,7 @@ export async function GET(
     .select(
       `
       id,
+      numero_recibo,
       bloque_id,
       departamento_id,
       cuota_id,
@@ -119,7 +120,7 @@ export async function GET(
     : { data: null };
 
   const pdf = buildReceiptPdf({
-    receiptNumber: pago.id.slice(0, 8).toUpperCase(),
+    receiptNumber: String((pago as { numero_recibo?: string | null }).numero_recibo || pago.id.slice(0, 8).toUpperCase()),
     vecinoName: perfil.nombre || "Vecino",
     bloqueName: bloque?.nombre || "Bloque",
     bloqueCode: bloque?.codigo || perfil.bloque_id || "-",
