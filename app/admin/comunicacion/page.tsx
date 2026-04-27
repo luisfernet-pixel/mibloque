@@ -239,22 +239,12 @@ export default async function AdminComunicacionPage({
 
       <section className="grid gap-5 xl:grid-cols-2">
         <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <details className="group" open>
-            <summary className="cursor-pointer list-none border-b border-white/10 px-5 py-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-2xl font-bold text-white">Avisos</h2>
-                <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
-                  {avisos.length} aviso(s)
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-slate-300">Publica y revisa los ultimos comunicados.</p>
-              <p className="mt-2 text-xs font-semibold text-cyan-100">
-                <span className="group-open:hidden">{">"} Mostrar</span>
-                <span className="hidden group-open:inline">v Ocultar</span>
-              </p>
-            </summary>
+          <div className="border-b border-white/10 px-5 py-4">
+            <h2 className="text-2xl font-bold text-white">Avisos</h2>
+            <p className="mt-1 text-sm text-slate-300">Publica y revisa los ultimos comunicados.</p>
+          </div>
 
-            <div className="space-y-4 p-5">
+          <div className="space-y-4 p-5">
               <form action={crearAviso} className="space-y-3 rounded-2xl border border-white/15 bg-[#2d4a6c] p-4">
                 <input
                   name="titulo"
@@ -314,8 +304,7 @@ export default async function AdminComunicacionPage({
                   </div>
                 </details>
               ) : null}
-            </div>
-          </details>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
