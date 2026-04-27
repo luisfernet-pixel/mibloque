@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
@@ -287,8 +287,8 @@ export default async function AdminComunicacionPage({
               <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                 <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
                   <span className="inline-flex items-center gap-2">
-                    <span className="group-open:hidden">▸</span>
-                    <span className="hidden group-open:inline">▾</span>
+                    <span className="group-open:hidden">{">"}</span>
+                    <span className="hidden group-open:inline">v</span>
                     <span>Historial de avisos ({avisosHistorial.length})</span>
                   </span>
                 </summary>
@@ -322,7 +322,7 @@ export default async function AdminComunicacionPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">
-                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} · Depto {item.departamento_id}
+                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} Â· Depto {item.departamento_id}
                       </p>
                       <p className="mt-1 text-sm font-bold text-white">{item.asunto}</p>
                       <p className="mt-1 text-xs text-slate-300">Enviado: {formatDate(item.created_at)}</p>
@@ -377,8 +377,8 @@ export default async function AdminComunicacionPage({
               <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                 <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
                   <span className="inline-flex items-center gap-2">
-                    <span className="group-open:hidden">▸</span>
-                    <span className="hidden group-open:inline">▾</span>
+                    <span className="group-open:hidden">{">"}</span>
+                    <span className="hidden group-open:inline">v</span>
                     <span>Historial respondido ({buzonHistorial.length})</span>
                   </span>
                 </summary>
@@ -386,7 +386,7 @@ export default async function AdminComunicacionPage({
                   {buzonHistorial.map((item) => (
                     <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">
-                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} · Depto {item.departamento_id}
+                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} Â· Depto {item.departamento_id}
                       </p>
                       <p className="mt-1 text-sm font-bold text-white">{item.asunto}</p>
                       <p className="mt-1 text-xs text-slate-300">Respondido: {formatDate(item.respondido_at)}</p>
@@ -402,3 +402,4 @@ export default async function AdminComunicacionPage({
     </main>
   );
 }
+
