@@ -103,8 +103,12 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            {coreBenefits.map((item) => (
-              <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+            {coreBenefits.map((item, index) => (
+              <div
+                key={item}
+                className="landing-card rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200"
+                style={{ animationDelay: `${0.08 + index * 0.06}s` }}
+              >
                 {item}
               </div>
             ))}
@@ -119,8 +123,12 @@ export default async function HomePage() {
           </p>
 
           <div className="mt-6 grid gap-4">
-            {modules.map((item) => (
-              <article key={item.title} className="rounded-[1.6rem] border border-white/10 bg-white/5 p-5 shadow-[0_18px_45px_rgba(2,6,23,0.2)]">
+            {modules.map((item, index) => (
+              <article
+                key={item.title}
+                className="landing-card rounded-[1.6rem] border border-white/10 bg-white/5 p-5 shadow-[0_18px_45px_rgba(2,6,23,0.2)]"
+                style={{ animationDelay: `${0.18 + index * 0.08}s` }}
+              >
                 <h3 className="text-xl font-bold text-white">{item.title}</h3>
                 <p className="mt-2 text-sm leading-7 text-slate-300">{item.text}</p>
               </article>
