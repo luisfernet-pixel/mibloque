@@ -116,6 +116,10 @@ export default async function VecinoComunicacionPage({
 
   const avisos = (avisosData ?? []) as AvisoRow[];
   const buzon = buzonError ? [] : ((buzonData ?? []) as BuzonRow[]);
+  const avisosRecientes = avisos.slice(0, 3);
+  const avisosHistorial = avisos.slice(3);
+  const buzonPendiente = buzon.filter((item) => item.estado !== "respondido");
+  const buzonHistorial = buzon.filter((item) => item.estado === "respondido");
 
   return (
     <main className="space-y-6">
@@ -156,7 +160,7 @@ export default async function VecinoComunicacionPage({
                 No hay avisos publicados.
               </div>
             ) : (
-              avisos.map((item) => (
+              avisosRecientes.map((item) => (
                 <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                   <p className="text-sm font-bold text-white">{item.titulo}</p>
                   <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
@@ -164,6 +168,22 @@ export default async function VecinoComunicacionPage({
                 </article>
               ))
             )}
+            {avisosHistorial.length > 0 ? (
+              <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
+                  Historial de avisos ({avisosHistorial.length})
+                </summary>
+                <div className="mt-3 space-y-2">
+                  {avisosHistorial.map((item) => (
+                    <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
+                      <p className="text-sm font-bold text-white">{item.titulo}</p>
+                      <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
+                      <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
+                    </article>
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </div>
         </div>
 
@@ -212,7 +232,7 @@ export default async function VecinoComunicacionPage({
                   Aun no enviaste mensajes.
                 </div>
               ) : (
-                buzon.map((item) => (
+                buzonPendiente.map((item) => (
                   <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -242,6 +262,30 @@ export default async function VecinoComunicacionPage({
                   </article>
                 ))
               )}
+              {buzonPendiente.length === 0 && buzon.length > 0 ? (
+                <div className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3 text-sm text-slate-200">
+                  No tienes mensajes pendientes de respuesta.
+                </div>
+              ) : null}
+              {buzonHistorial.length > 0 ? (
+                <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
+                    Historial de mensajes ({buzonHistorial.length})
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    {buzonHistorial.map((item) => (
+                      <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">
+                          {tipoLabel(item.tipo)}
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-white">{item.asunto}</p>
+                        <p className="mt-1 text-xs text-slate-300">Respondido: {formatDate(item.respondido_at)}</p>
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-100">{item.mensaje}</p>
+                      </article>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
             </div>
           </div>
         </div>
@@ -249,4 +293,3 @@ export default async function VecinoComunicacionPage({
     </main>
   );
 }
-

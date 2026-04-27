@@ -63,7 +63,7 @@ export default async function AdminLayout({
     { href: "/admin", label: "Inicio" },
     { href: "/admin/cuotas", label: "Cobros" },
     { href: "/admin/confirmaciones", label: "Confirmaciones" },
-    { href: "/admin/comunicacion", label: "Comunicacion" },
+    { href: "/admin/comunicacion", label: "Comunicaciones" },
     { href: "/admin/gastos", label: "Gastos" },
     { href: "/admin/reportes/cuadro", label: "Cuadro" },
     { href: "/admin/reportes", label: "Reportes" },

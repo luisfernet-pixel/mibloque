@@ -71,7 +71,7 @@ export default async function VecinoLayout({
 
   const menu = [
     { href: "/vecino", label: "Inicio" },
-    { href: "/vecino/comunicacion", label: "Comunicacion" },
+    { href: "/vecino/comunicacion", label: "Comunicaciones" },
     { href: "/vecino/transparencia", label: "Transparencia" },
   ];
 
