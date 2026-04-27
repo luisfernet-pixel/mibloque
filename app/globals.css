@@ -966,6 +966,106 @@ tbody tr:hover {
   }
 }
 
+.landing-sell .landing-ideal-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-sell .landing-ideal-panel::before {
+  content: "";
+  position: absolute;
+  inset: -140% -30%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(14, 165, 233, 0) 0deg,
+    rgba(14, 165, 233, 0.16) 68deg,
+    rgba(249, 115, 22, 0.14) 140deg,
+    rgba(14, 165, 233, 0) 220deg
+  );
+  animation: landing-panel-aura 9s linear infinite;
+  pointer-events: none;
+}
+
+.landing-sell .landing-ideal-panel::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(7, 20, 38, 0.94), rgba(17, 32, 56, 0.9));
+  pointer-events: none;
+}
+
+.landing-sell .landing-ideal-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-sell .landing-service-card {
+  animation:
+    landing-card-enter 0.58s cubic-bezier(0.22, 0.61, 0.36, 1) forwards,
+    landing-card-float 4.8s ease-in-out infinite;
+  animation-delay: var(--enter-delay, 0s), var(--float-delay, 0.5s);
+}
+
+.landing-sell .landing-chip-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-sell .landing-chip-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-130%);
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 15%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0) 85%
+  );
+  animation: landing-chip-sheen 5.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes landing-card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes landing-panel-aura {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes landing-chip-sheen {
+  0%,
+  65% {
+    transform: translateX(-130%);
+  }
+  85%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-sell .landing-ideal-panel::before,
+  .landing-sell .landing-chip-card::after,
+  .landing-sell .landing-service-card {
+    animation: none !important;
+  }
+
+  .landing-sell .landing-service-card {
+    transform: none !important;
+  }
+}
+
 /* DISCLOSURE UX: flecha visible para todos los desplegables */
 details > summary {
   position: relative;
