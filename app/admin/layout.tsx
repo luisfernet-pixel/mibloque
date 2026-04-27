@@ -70,7 +70,7 @@ export default async function AdminLayout({
   const menu = [
     { href: "/admin", label: "Inicio" },
     { href: "/admin/cuotas", label: "Cobros" },
-    { href: "/admin/confirmaciones", label: "Confirmaciones" },
+    { href: "/admin/confirmaciones", label: "Comprobantes" },
     { href: "/admin/comunicacion", label: "Comunicaciones" },
     { href: "/admin/gastos", label: "Gastos" },
     { href: "/admin/reportes", label: "Reportes" },

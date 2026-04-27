@@ -137,7 +137,7 @@ export default async function AdminConfirmacionesPage() {
             </p>
 
             <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Confirmaciones
+              Comprobantes de pagos
             </h1>
 
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
