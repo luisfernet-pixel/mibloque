@@ -928,6 +928,33 @@ tbody tr:hover {
   display: none;
 }
 
+/* DISCLOSURE UX: flecha visible para todos los desplegables */
+details > summary {
+  position: relative;
+  list-style: none;
+  padding-left: 1.4rem;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+details > summary::before {
+  content: "▸";
+  position: absolute;
+  left: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95em;
+  line-height: 1;
+  color: #9eeaf4;
+  pointer-events: none;
+}
+
+details[open] > summary::before {
+  content: "▾";
+}
+
 /* RESPONSIVE COMPACT MODE (tablet + mobile) */
 @media (max-width: 1024px) {
   .text-5xl {
