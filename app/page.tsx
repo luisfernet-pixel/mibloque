@@ -3,24 +3,24 @@ import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 
 const coreBenefits = [
-  "Cobros, pagos, gastos y avisos en un solo sistema.",
-  "Acceso desde Mac, Windows, Android y tablet.",
-  "Disponible desde cualquier lugar del mundo.",
-  "Paneles por rol: superadmin, admin y vecino.",
+  "Boletas y cuotas mensuales con seguimiento de morosidad.",
+  "Comunicados, reclamos y trazabilidad de respuestas.",
+  "Control de gastos, comprobantes y reportes por bloque.",
+  "Portales por rol para admin, vecinos y superadmin.",
 ];
 
 const modules = [
   {
-    title: "Cobranza ordenada",
-    text: "Controla cuotas, mora y validacion de comprobantes con trazabilidad.",
+    title: "Finanzas y cobranza",
+    text: "Centraliza boletas, pagos, comprobantes y estados de cuenta de cada departamento.",
   },
   {
-    title: "Portal de vecinos",
-    text: "Cada vecino revisa su estado, descarga recibos y reporta pagos.",
+    title: "Comunicacion y comunidad",
+    text: "Publica avisos, recibe sugerencias y reclamos, y mantén historial claro de cada gestion.",
   },
   {
-    title: "Gestion administrativa",
-    text: "Centraliza gastos, reportes y comunicacion del bloque.",
+    title: "Operacion diaria",
+    text: "Organiza reservas, tareas operativas y control administrativo desde un solo panel.",
   },
 ];
 
@@ -82,12 +82,12 @@ export default async function HomePage() {
           </p>
 
           <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight text-white sm:text-5xl">
-            Gestiona tu bloque con menos caos y mas control.
+            Administra tu edificio o condominio sin caos operativo.
           </h1>
 
           <p className="mt-4 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-            MiBloque centraliza la operacion diaria de administraciones y vecinos en una sola plataforma,
-            con acceso desde cualquier dispositivo y desde cualquier lugar.
+            MiBloque reemplaza Excel, grupos de chat y cuadernos con una plataforma unica para
+            cobranza, comunicacion, reportes y seguimiento por departamento.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-3">
@@ -113,9 +113,10 @@ export default async function HomePage() {
 
         <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(7,20,38,0.92),_rgba(17,32,56,0.88))] p-6 shadow-[0_28px_80px_rgba(2,6,23,0.42)]">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-200/80">Ideal para</p>
-          <h2 className="mt-3 text-2xl font-bold text-white">Edificios, condominios y conjuntos residenciales</h2>
+          <h2 className="mt-3 text-2xl font-bold text-white">Gestion integral para edificios y condominios</h2>
           <p className="mt-3 text-sm leading-7 text-slate-300">
-            Si hoy tu gestion depende de Excel y chat, MiBloque te ayuda a ordenar cobros, pagos y comunicacion sin perder seguimiento.
+            Ideal para administradores que gestionan uno o varios bloques y necesitan orden,
+            control y visibilidad en tiempo real.
           </p>
 
           <div className="mt-6 grid gap-4">
