@@ -64,10 +64,13 @@ export default async function VecinoLayout({
       ? String(bloqueCodigo)
       : "sin asignar";
   const avisosPendientes = avisosPendientesRes.data?.length ?? 0;
-  const buzonPendientes = buzonPendientesRes.error
+  const respuestasBuzonPendientes = buzonPendientesRes.error
     ? (buzonNotifPendientesRes.data?.length ?? 0)
-    : (buzonPendientesRes.data?.length ?? 0);
-  const comunicacionPendientes = avisosPendientes + buzonPendientes;
+    : Math.max(
+        buzonPendientesRes.data?.length ?? 0,
+        buzonNotifPendientesRes.data?.length ?? 0
+      );
+  const comunicacionPendientes = avisosPendientes + respuestasBuzonPendientes;
 
   const menu = [
     { href: "/vecino", label: "Inicio" },

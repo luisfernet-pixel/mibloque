@@ -22,7 +22,7 @@ export default async function AdminLayout({
   if (!usuario) redirect("/login");
 
   const supabase = createAdminClient();
-  const [pendientesRes, bloqueRes, sugerenciasRes] = await Promise.all([
+  const [pendientesRes, bloqueRes, sugerenciasRes, sugerenciasEstadoRes] = await Promise.all([
     supabase
       .from("confirmaciones_pago")
       .select("id")
@@ -38,10 +38,18 @@ export default async function AdminLayout({
       .select("id")
       .eq("bloque_id", usuario.perfil.bloque_id)
       .eq("visto_admin", false),
+    supabase
+      .from("buzon_sugerencias")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("estado", "pendiente"),
   ]);
 
   const comprobantesPendientes = pendientesRes.data?.length ?? 0;
-  let sugerenciasPendientes = sugerenciasRes.data?.length ?? 0;
+  let sugerenciasPendientes = Math.max(
+    sugerenciasRes.data?.length ?? 0,
+    sugerenciasEstadoRes.data?.length ?? 0
+  );
   if (sugerenciasRes.error) {
     const { data: fallbackData } = await supabase
       .from("buzon_sugerencias")
