@@ -151,40 +151,52 @@ export default async function VecinoComunicacionPage({
 
       <section className="grid gap-5 xl:grid-cols-2">
         <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <div className="border-b border-white/10 px-5 py-4">
-            <h2 className="text-2xl font-bold text-white">Avisos del bloque</h2>
-          </div>
-          <div className="space-y-3 p-5">
-            {avisos.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
-                No hay avisos publicados.
+          <details className="group">
+            <summary className="cursor-pointer list-none border-b border-white/10 px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-2xl font-bold text-white">Avisos del bloque</h2>
+                <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
+                  {avisos.length} aviso(s)
+                </span>
               </div>
-            ) : (
-              avisosRecientes.map((item) => (
-                <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                  <p className="text-sm font-bold text-white">{item.titulo}</p>
-                  <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
-                  <p className="mt-2 whitespace-pre-line text-sm text-slate-100">{item.mensaje}</p>
-                </article>
-              ))
-            )}
-            {avisosHistorial.length > 0 ? (
-              <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
-                  Historial de avisos ({avisosHistorial.length})
-                </summary>
-                <div className="mt-3 space-y-2">
-                  {avisosHistorial.map((item) => (
-                    <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
-                      <p className="text-sm font-bold text-white">{item.titulo}</p>
-                      <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
-                      <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
-                    </article>
-                  ))}
+              <p className="mt-2 text-sm text-slate-300">
+                Presiona para <span className="group-open:hidden">mostrar</span>
+                <span className="hidden group-open:inline">ocultar</span> los avisos.
+              </p>
+            </summary>
+
+            <div className="space-y-3 p-5">
+              {avisos.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
+                  No hay avisos publicados.
                 </div>
-              </details>
-            ) : null}
-          </div>
+              ) : (
+                avisosRecientes.map((item) => (
+                  <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                    <p className="text-sm font-bold text-white">{item.titulo}</p>
+                    <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
+                    <p className="mt-2 whitespace-pre-line text-sm text-slate-100">{item.mensaje}</p>
+                  </article>
+                ))
+              )}
+              {avisosHistorial.length > 0 ? (
+                <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
+                    Historial de avisos ({avisosHistorial.length})
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    {avisosHistorial.map((item) => (
+                      <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
+                        <p className="text-sm font-bold text-white">{item.titulo}</p>
+                        <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
+                        <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
+                      </article>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          </details>
         </div>
 
         <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
