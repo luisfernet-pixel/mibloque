@@ -10,15 +10,15 @@ export type CuadroRow = {
 
 function cellClass(state: CellState) {
   if (state === "pagado") {
-    return "bg-cyan-500/30 text-cyan-50 ring-cyan-300/40 print:bg-white print:text-black print:ring-slate-500";
+    return "bg-cyan-500/30 text-cyan-50 ring-cyan-300/40 print:bg-emerald-100 print:text-black print:ring-emerald-400";
   }
   if (state === "pendiente") {
-    return "bg-amber-500/25 text-amber-50 ring-amber-300/40 print:bg-white print:text-black print:ring-slate-500";
+    return "bg-amber-500/25 text-amber-50 ring-amber-300/40 print:bg-yellow-100 print:text-black print:ring-yellow-400";
   }
   if (state === "vencido") {
-    return "bg-red-500/30 text-red-50 ring-red-300/40 print:bg-white print:text-black print:ring-slate-500";
+    return "bg-red-500/30 text-red-50 ring-red-300/40 print:bg-red-100 print:text-black print:ring-red-400";
   }
-  return "bg-white/5 text-slate-300 ring-white/10 print:bg-white print:text-black print:ring-slate-500";
+  return "bg-white/5 text-slate-300 ring-white/10 print:bg-white print:text-black print:ring-slate-400";
 }
 
 function cellLabel(state: CellState) {
@@ -70,19 +70,19 @@ export default function CuadroVitrina({
         <table className="min-w-[980px] table-fixed border-separate border-spacing-0 print:min-w-0 print:w-full">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 w-[86px] border border-white/20 bg-[#1a334f] px-2 py-2 text-left text-xs font-bold uppercase tracking-[0.18em] text-cyan-200 print:static print:border-slate-500 print:bg-white print:text-black">
+              <th className="sticky left-0 z-10 w-[86px] border border-white/20 bg-[#1a334f] px-2 py-2 text-left text-xs font-bold uppercase tracking-[0.18em] text-cyan-200 print:static print:border-slate-500 print:bg-slate-100 print:text-black">
                 Depto
               </th>
-              <th className="sticky left-[86px] z-10 w-[190px] border border-white/20 bg-[#1a334f] px-3 py-2 text-left text-xs font-bold uppercase tracking-[0.18em] text-cyan-200 print:static print:border-slate-500 print:bg-white print:text-black">
+              <th className="sticky left-[86px] z-10 w-[190px] border border-white/20 bg-[#1a334f] px-3 py-2 text-left text-xs font-bold uppercase tracking-[0.18em] text-cyan-200 print:static print:border-slate-500 print:bg-slate-100 print:text-black">
                 Familia
               </th>
-              <th className="w-[80px] border border-white/20 bg-[#415c2b] px-2 py-2 text-center text-xs font-bold uppercase tracking-[0.18em] text-lime-100 print:border-slate-500 print:bg-white print:text-black">
+              <th className="w-[80px] border border-white/20 bg-[#415c2b] px-2 py-2 text-center text-xs font-bold uppercase tracking-[0.18em] text-lime-100 print:border-slate-500 print:bg-slate-100 print:text-black">
                 Prev
               </th>
               {MONTHS.map((month) => (
                 <th
                   key={month.value}
-                  className="w-[68px] border border-white/20 bg-[#415c2b] px-1 py-2 text-center text-xs font-bold uppercase tracking-[0.12em] text-lime-100 print:border-slate-500 print:bg-white print:text-black"
+                  className="w-[68px] border border-white/20 bg-[#415c2b] px-1 py-2 text-center text-xs font-bold uppercase tracking-[0.12em] text-lime-100 print:border-slate-500 print:bg-slate-100 print:text-black"
                 >
                   {month.label}
                 </th>
@@ -105,8 +105,8 @@ export default function CuadroVitrina({
                     <span
                       className={`inline-flex min-h-[28px] min-w-[56px] items-center justify-center rounded-md px-2 text-[11px] font-bold ring-1 ${
                         row.deudaAnterior
-                          ? "bg-red-500/30 text-red-50 ring-red-300/40 print:bg-white print:text-black print:ring-slate-500"
-                          : "bg-emerald-500/25 text-emerald-50 ring-emerald-300/40 print:bg-white print:text-black print:ring-slate-500"
+                          ? "bg-red-500/30 text-red-50 ring-red-300/40 print:bg-red-100 print:text-black print:ring-red-400"
+                          : "bg-emerald-500/25 text-emerald-50 ring-emerald-300/40 print:bg-emerald-100 print:text-black print:ring-emerald-400"
                       }`}
                     >
                       {row.deudaAnterior ? "Deuda" : "OK"}
@@ -120,6 +120,7 @@ export default function CuadroVitrina({
                         className="border border-white/15 bg-[#2d4a6c] px-1 py-2 text-center print:border-slate-500 print:bg-white"
                       >
                         <span
+                          style={{ printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" }}
                           className={`inline-flex min-h-[28px] min-w-[50px] items-center justify-center rounded-md px-2 text-[11px] font-bold ring-1 ${cellClass(
                             state
                           )}`}

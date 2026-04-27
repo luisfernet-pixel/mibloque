@@ -853,6 +853,11 @@ tbody tr:hover {
 
 /* IMPRESIÓN */
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
   html,
   body {
     background: #ffffff !important;
@@ -869,6 +874,16 @@ tbody tr:hover {
   a,
   button {
     box-shadow: none !important;
+  }
+
+  body:has(.print-cuadro-page) header.theme-hero-alt {
+    display: none !important;
+  }
+
+  body:has(.print-cuadro-page) main.mx-auto {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 }
 .menu-tab {

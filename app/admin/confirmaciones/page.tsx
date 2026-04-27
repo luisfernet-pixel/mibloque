@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -133,7 +133,7 @@ export default async function AdminConfirmacionesPage() {
         <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Validación de pagos
+              ValidaciÃ³n de pagos
             </p>
 
             <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
@@ -142,7 +142,7 @@ export default async function AdminConfirmacionesPage() {
 
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
               Revisa los comprobantes enviados por los vecinos y aprueba solo los
-              pagos correctos para mantener el bloque al día.
+              pagos correctos para mantener el bloque al dÃ­a.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -165,7 +165,7 @@ export default async function AdminConfirmacionesPage() {
           <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
             <div>
               <p className="text-sm font-semibold text-white">
-                Resumen de revisión
+                Resumen de revisiÃ³n
               </p>
               <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
                 Estado general
@@ -192,13 +192,13 @@ export default async function AdminConfirmacionesPage() {
         <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-              Revisión principal
+              RevisiÃ³n principal
             </p>
             <h2 className="mt-2 text-2xl font-bold text-white">
               Confirmaciones pendientes
             </h2>
             <p className="mt-1 text-sm text-slate-300">
-              Estas requieren atención inmediata.
+              Estas requieren atenciÃ³n inmediata.
             </p>
           </div>
 
@@ -328,90 +328,72 @@ export default async function AdminConfirmacionesPage() {
       </section>
 
       <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Historial
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
-            Confirmaciones revisadas
-          </h2>
+  <details className="group">
+    <summary className="cursor-pointer list-none border-b border-white/10 px-5 py-4 md:px-6">
+      <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Historial</p>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <h2 className="text-2xl font-bold text-white">Confirmaciones revisadas</h2>
+        <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
+          {aprobadas.length + rechazadas.length} registro(s)
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-slate-300">
+        Presiona para <span className="group-open:hidden">mostrar</span><span className="hidden group-open:inline">ocultar</span> el historial.
+      </p>
+    </summary>
+
+    <div className="p-4 md:p-5">
+      {aprobadas.length + rechazadas.length === 0 ? (
+        <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
+          <p className="text-lg font-bold text-white">Aún no hay confirmaciones revisadas</p>
         </div>
+      ) : (
+        <div className="space-y-4">
+          {[...aprobadas, ...rechazadas].map((item) => (
+            <div
+              key={item.id}
+              className="rounded-[24px] border border-white/20 bg-[#2d4a6c] p-5 shadow-lg"
+            >
+              <div className="grid gap-4 md:grid-cols-5">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Departamento</p>
+                  <p className="mt-2 font-bold text-white">{getDepto(item.departamentos)}</p>
+                </div>
 
-        <div className="p-4 md:p-5">
-          {aprobadas.length + rechazadas.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
-              <p className="text-lg font-bold text-white">
-                Aún no hay confirmaciones revisadas
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {[...aprobadas, ...rechazadas].map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-[24px] border border-white/20 bg-[#2d4a6c] p-5 shadow-lg"
-                >
-                  <div className="grid gap-4 md:grid-cols-5">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                        Departamento
-                      </p>
-                      <p className="mt-2 font-bold text-white">
-                        {getDepto(item.departamentos)}
-                      </p>
-                    </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Periodo</p>
+                  <p className="mt-2 font-bold text-white">{getPeriodo(item.cuotas)}</p>
+                </div>
 
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                        Periodo
-                      </p>
-                      <p className="mt-2 font-bold text-white">
-                        {getPeriodo(item.cuotas)}
-                      </p>
-                    </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Monto</p>
+                  <p className="mt-2 font-bold text-white">{money(item.monto_reportado)}</p>
+                </div>
 
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                        Monto
-                      </p>
-                      <p className="mt-2 font-bold text-white">
-                        {money(item.monto_reportado)}
-                      </p>
-                    </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Revisado</p>
+                  <p className="mt-2 text-slate-100">{formatDate(item.revisado_at || item.created_at)}</p>
+                </div>
 
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                        Revisado
-                      </p>
-                      <p className="mt-2 text-slate-100">
-                        {formatDate(item.revisado_at || item.created_at)}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                        Estado
-                      </p>
-                      <div className="mt-2">
-                        <EstadoBadge estado={item.estado} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 border-t border-white/10 pt-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                      Referencia
-                    </p>
-                    <p className="mt-2 text-slate-100">
-                      {item.referencia || "Sin referencia"}
-                    </p>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Estado</p>
+                  <div className="mt-2">
+                    <EstadoBadge estado={item.estado} />
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Referencia</p>
+                <p className="mt-2 text-slate-100">{item.referencia || "Sin referencia"}</p>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      </section>
+      )}
+    </div>
+  </details>
+</section>
     </main>
   );
 }
@@ -455,3 +437,4 @@ function InfoBox({
     </div>
   );
 }
+

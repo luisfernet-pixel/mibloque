@@ -156,7 +156,7 @@ export default async function ReporteCuadroPage({
     });
 
   return (
-    <main className="space-y-6 print:space-y-2">
+    <main className="print-cuadro-page space-y-6 print:space-y-2">
       <section className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8 print:rounded-none print:bg-white print:p-0 print:shadow-none print:ring-0">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -179,7 +179,6 @@ export default async function ReporteCuadroPage({
               Volver a reportes
             </Link>
             <PrintButton label="Descargar PDF" />
-            <PrintButton label="Imprimir tabla" />
           </div>
         </div>
       </section>
