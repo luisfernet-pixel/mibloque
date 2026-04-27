@@ -205,8 +205,6 @@ export default async function AdminComunicacionPage({
   const avisos = (avisosData ?? []) as AvisoRow[];
   const buzon = buzonError ? [] : ((buzonData ?? []) as BuzonRow[]);
   const pendientes = buzon.filter((item) => item.estado !== "respondido").length;
-  const avisosRecientes = avisos.slice(0, 3);
-  const avisosHistorial = avisos.slice(3);
   const buzonPendiente = buzon.filter((item) => item.estado !== "respondido");
   const buzonHistorial = buzon.filter((item) => item.estado === "respondido");
 
@@ -269,41 +267,30 @@ export default async function AdminComunicacionPage({
                 </div>
               </form>
 
-              <div className="space-y-3">
-                {avisos.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
-                    No hay avisos publicados.
-                  </div>
-                ) : (
-                  avisosRecientes.map((item) => (
-                    <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                      <p className="text-sm font-bold text-white">{item.titulo}</p>
-                      <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
-                      <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
-                    </article>
-                  ))
-                )}
-              </div>
-              {avisosHistorial.length > 0 ? (
-                <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                  <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="group-open:hidden">{">"}</span>
-                      <span className="hidden group-open:inline">v</span>
-                      <span>Historial de avisos ({avisosHistorial.length})</span>
-                    </span>
-                  </summary>
-                  <div className="mt-3 space-y-2">
-                    {avisosHistorial.map((item) => (
+              <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="group-open:hidden">{">"}</span>
+                    <span className="hidden group-open:inline">v</span>
+                    <span>Historial de avisos ({avisos.length})</span>
+                  </span>
+                </summary>
+                <div className="mt-3 space-y-2">
+                  {avisos.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-white/20 bg-[#1d3551] p-3 text-sm text-slate-300">
+                      No hay avisos publicados.
+                    </div>
+                  ) : (
+                    avisos.map((item) => (
                       <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
                         <p className="text-sm font-bold text-white">{item.titulo}</p>
                         <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
                         <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
                       </article>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
+                    ))
+                  )}
+                </div>
+              </details>
           </div>
         </div>
 
