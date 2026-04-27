@@ -239,71 +239,83 @@ export default async function AdminComunicacionPage({
 
       <section className="grid gap-5 xl:grid-cols-2">
         <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <div className="border-b border-white/10 px-5 py-4">
-            <h2 className="text-2xl font-bold text-white">Avisos</h2>
-            <p className="mt-1 text-sm text-slate-300">Publica y revisa los ultimos comunicados.</p>
-          </div>
-          <div className="space-y-4 p-5">
-            <form action={crearAviso} className="space-y-3 rounded-2xl border border-white/15 bg-[#2d4a6c] p-4">
-              <input
-                name="titulo"
-                placeholder="Titulo del aviso"
-                required
-                className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none focus:border-cyan-400/40"
-              />
-              <textarea
-                name="mensaje"
-                rows={3}
-                placeholder="Mensaje del aviso"
-                required
-                className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none focus:border-cyan-400/40"
-              />
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
-                >
-                  Publicar
-                </button>
+          <details className="group" open>
+            <summary className="cursor-pointer list-none border-b border-white/10 px-5 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-2xl font-bold text-white">Avisos</h2>
+                <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
+                  {avisos.length} aviso(s)
+                </span>
               </div>
-            </form>
+              <p className="mt-1 text-sm text-slate-300">Publica y revisa los ultimos comunicados.</p>
+              <p className="mt-2 text-xs font-semibold text-cyan-100">
+                <span className="group-open:hidden">{">"} Mostrar</span>
+                <span className="hidden group-open:inline">v Ocultar</span>
+              </p>
+            </summary>
 
-            <div className="space-y-3">
-              {avisos.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
-                  No hay avisos publicados.
+            <div className="space-y-4 p-5">
+              <form action={crearAviso} className="space-y-3 rounded-2xl border border-white/15 bg-[#2d4a6c] p-4">
+                <input
+                  name="titulo"
+                  placeholder="Titulo del aviso"
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none focus:border-cyan-400/40"
+                />
+                <textarea
+                  name="mensaje"
+                  rows={3}
+                  placeholder="Mensaje del aviso"
+                  required
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none focus:border-cyan-400/40"
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
+                  >
+                    Publicar
+                  </button>
                 </div>
-              ) : (
-                avisosRecientes.map((item) => (
-                  <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                    <p className="text-sm font-bold text-white">{item.titulo}</p>
-                    <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
-                    <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
-                  </article>
-                ))
-              )}
-            </div>
-            {avisosHistorial.length > 0 ? (
-              <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="group-open:hidden">{">"}</span>
-                    <span className="hidden group-open:inline">v</span>
-                    <span>Historial de avisos ({avisosHistorial.length})</span>
-                  </span>
-                </summary>
-                <div className="mt-3 space-y-2">
-                  {avisosHistorial.map((item) => (
-                    <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
+              </form>
+
+              <div className="space-y-3">
+                {avisos.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
+                    No hay avisos publicados.
+                  </div>
+                ) : (
+                  avisosRecientes.map((item) => (
+                    <article key={item.id} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                       <p className="text-sm font-bold text-white">{item.titulo}</p>
                       <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
                       <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
                     </article>
-                  ))}
-                </div>
-              </details>
-            ) : null}
-          </div>
+                  ))
+                )}
+              </div>
+              {avisosHistorial.length > 0 ? (
+                <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                  <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="group-open:hidden">{">"}</span>
+                      <span className="hidden group-open:inline">v</span>
+                      <span>Historial de avisos ({avisosHistorial.length})</span>
+                    </span>
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    {avisosHistorial.map((item) => (
+                      <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
+                        <p className="text-sm font-bold text-white">{item.titulo}</p>
+                        <p className="mt-1 text-xs text-slate-300">{formatDate(item.created_at)}</p>
+                        <p className="mt-2 line-clamp-3 text-sm text-slate-100">{item.mensaje}</p>
+                      </article>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+          </details>
         </div>
 
         <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
