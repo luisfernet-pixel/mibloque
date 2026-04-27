@@ -19,8 +19,8 @@ const modules = [
     text: "Publica avisos, recibe sugerencias y reclamos, y mantén historial claro de cada gestion.",
   },
   {
-    title: "Operacion diaria",
-    text: "Organiza reservas, tareas operativas y control administrativo desde un solo panel.",
+    title: "Transparencia y control",
+    text: "Consulta reportes, morosidad, recibos y resumen de cuotas por departamento para una gestion clara y confiable.",
   },
 ];
 
