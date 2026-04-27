@@ -284,9 +284,13 @@ export default async function AdminComunicacionPage({
               )}
             </div>
             {avisosHistorial.length > 0 ? (
-              <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
-                  Historial de avisos ({avisosHistorial.length})
+              <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="group-open:hidden">▸</span>
+                    <span className="hidden group-open:inline">▾</span>
+                    <span>Historial de avisos ({avisosHistorial.length})</span>
+                  </span>
                 </summary>
                 <div className="mt-3 space-y-2">
                   {avisosHistorial.map((item) => (
@@ -370,9 +374,13 @@ export default async function AdminComunicacionPage({
               </div>
             ) : null}
             {buzonHistorial.length > 0 ? (
-              <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
-                <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
-                  Historial respondido ({buzonHistorial.length})
+              <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+                <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="group-open:hidden">▸</span>
+                    <span className="hidden group-open:inline">▾</span>
+                    <span>Historial respondido ({buzonHistorial.length})</span>
+                  </span>
                 </summary>
                 <div className="mt-3 space-y-2">
                   {buzonHistorial.map((item) => (
