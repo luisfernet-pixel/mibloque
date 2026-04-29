@@ -56,7 +56,7 @@ export default async function HomePage() {
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-center bg-no-repeat opacity-[0.14]"
         style={{
-          backgroundImage: "url('/landing-building-watermark.png')",
+          backgroundImage: "url('/landing-building-watermark.jpg')",
           backgroundSize: "cover",
         }}
       />
@@ -148,3 +148,4 @@ export default async function HomePage() {
     </main>
   );
 }
+
