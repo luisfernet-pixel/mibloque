@@ -1,4 +1,3 @@
-﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
@@ -310,7 +309,7 @@ export default async function AdminComunicacionPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">
-                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} Â· Depto {item.departamento_id}
+                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} · Depto {item.departamento_id}
                       </p>
                       <p className="mt-1 text-sm font-bold text-white">{item.asunto}</p>
                       <p className="mt-1 text-xs text-slate-300">Enviado: {formatDate(item.created_at)}</p>
@@ -374,7 +373,7 @@ export default async function AdminComunicacionPage({
                   {buzonHistorial.map((item) => (
                     <article key={item.id} className="rounded-lg border border-white/10 bg-[#1d3551] p-3">
                       <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">
-                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} Â· Depto {item.departamento_id}
+                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} · Depto {item.departamento_id}
                       </p>
                       <p className="mt-1 text-sm font-bold text-white">{item.asunto}</p>
                       <p className="mt-1 text-xs text-slate-300">Respondido: {formatDate(item.respondido_at)}</p>
