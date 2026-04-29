@@ -44,6 +44,7 @@ export default async function HomePage() {
   const rol = usuario?.perfil.rol ?? null;
   const panelHref = getPanelHref(rol);
   const panelLabel = getPanelLabel(rol);
+  const demoEnabled = process.env.NEXT_PUBLIC_ENABLE_DEMO === "true";
 
   if (usuario) {
     redirect(panelHref);
@@ -95,12 +96,14 @@ export default async function HomePage() {
             <Link href={panelHref} className="btn-primary rounded-2xl px-6 py-3 text-sm font-bold">
               {panelLabel}
             </Link>
-            <Link
-              href="/demo"
-              className="rounded-2xl border border-orange-300/40 bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
-            >
-              Ver Demo
-            </Link>
+            {demoEnabled ? (
+              <Link
+                href="/demo"
+                className="rounded-2xl border border-orange-300/40 bg-orange-500 px-6 py-3 text-sm font-bold text-white transition hover:brightness-110"
+              >
+                Ver Demo
+              </Link>
+            ) : null}
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">

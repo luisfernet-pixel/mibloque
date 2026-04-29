@@ -1,48 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MiBloque App
 
-## Getting Started
+Aplicacion web para administracion de bloques/condominios con paneles para `superadmin`, `admin` y `vecino`.
 
-First, run the development server:
+## Stack
+
+- Next.js `16.2.4` (App Router)
+- React `19.2.4`
+- Supabase (Auth + Postgres + Storage)
+- TypeScript + ESLint
+
+## Scripts
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Variables de entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Environment Variables
-
-For local development with Supabase, create a `.env.local` file with:
+Crea `.env.local` con:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_THEME=ocean
+NEXT_PUBLIC_ENABLE_DEMO=false
 ```
 
-The service role key is required for superadmin flows that create or edit admins and departments without triggering email-based Auth flows.
+Notas:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `SUPABASE_SERVICE_ROLE_KEY` es necesaria para flujos de superadmin (creacion/edicion de usuarios sin email flow).
+- `NEXT_PUBLIC_ENABLE_DEMO=true` muestra el acceso Demo en el landing. En produccion se recomienda `false`.
 
-## Learn More
+## Estructura principal
 
-To learn more about Next.js, take a look at the following resources:
+- `app/`: rutas y layouts (admin, vecino, superadmin, demo, api)
+- `components/`: componentes reutilizables de UI
+- `lib/`: auth, supabase clients y utilidades (incluye generador PDF)
+- `supabase/migrations/`: migraciones SQL versionadas
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Verificacion recomendada antes de deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. `npm run lint`
+2. `npm run build`
+3. Revisar que `.env.local` no tenga secretos de prueba
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
