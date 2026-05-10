@@ -142,17 +142,36 @@ async function editarGasto(formData: FormData) {
     }
   }
 
-  await supabase
+  const payloadBase = {
+    fecha_gasto,
+    categoria,
+    concepto,
+    monto,
+  };
+
+  const payloadConComprobante = {
+    ...payloadBase,
+    ...(comprobanteUrl ? { comprobante_url: comprobanteUrl } : {}),
+  };
+
+  const updateBuilder = supabase
     .from("gastos")
-    .update({
-      fecha_gasto,
-      categoria,
-      concepto,
-      monto,
-      ...(comprobanteUrl ? { comprobante_url: comprobanteUrl } : {}),
-    })
+    .update(payloadConComprobante)
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
+
+  if (comprobanteUrl) {
+    const { error: updateError } = await updateBuilder.select("id").single();
+    if (updateError && String(updateError.message || "").includes("comprobante_url")) {
+      await supabase
+        .from("gastos")
+        .update(payloadBase)
+        .eq("id", id)
+        .eq("bloque_id", usuario.perfil.bloque_id);
+    }
+  } else {
+    await updateBuilder;
+  }
 
   redirect("/admin/gastos");
 }

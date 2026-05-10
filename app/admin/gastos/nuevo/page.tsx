@@ -93,14 +93,24 @@ async function crearGasto(formData: FormData) {
     }
   }
 
-  await supabase.from("gastos").insert({
+  const payloadBase = {
     bloque_id: usuario.perfil.bloque_id,
     fecha_gasto: fecha,
     categoria,
     concepto,
     monto,
+  };
+
+  const payloadConComprobante = {
+    ...payloadBase,
     comprobante_url: comprobanteUrl,
-  });
+  };
+
+  const { error: insertError } = await supabase.from("gastos").insert(payloadConComprobante);
+
+  if (insertError && String(insertError.message || "").includes("comprobante_url")) {
+    await supabase.from("gastos").insert(payloadBase);
+  }
 
   redirect("/admin/gastos");
 }
