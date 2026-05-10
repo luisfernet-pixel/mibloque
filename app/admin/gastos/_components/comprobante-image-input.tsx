@@ -65,16 +65,14 @@ export default function ComprobanteImageInput({
   name: string;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [message, setMessage] = useState(
-    "Sube foto de factura o recibo. Si pesa mucho, se comprime automaticamente."
-  );
+  const [message, setMessage] = useState("");
 
   const onChange = async () => {
     const input = inputRef.current;
     const file = input?.files?.[0];
 
     if (!input || !file) {
-      setMessage("Sube foto de factura o recibo. Si pesa mucho, se comprime automaticamente.");
+      setMessage("");
       return;
     }
 
@@ -103,9 +101,9 @@ export default function ComprobanteImageInput({
         name={name}
         accept="image/*"
         onChange={onChange}
-        className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white file:mr-3 file:rounded-lg file:border-0 file:bg-[#ff5a3d] file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+        className="w-full rounded-xl border border-white/10 bg-[#173454] px-2.5 py-2 text-sm text-white file:mr-2 file:rounded-lg file:border-0 file:bg-[#ff5a3d] file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-white"
       />
-      <p className="mt-2 text-xs text-slate-300">{message}</p>
+      {message ? <p className="mt-2 text-xs text-slate-300">{message}</p> : null}
     </div>
   );
 }

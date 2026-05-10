@@ -265,7 +265,7 @@ export default async function NuevoGastoPage() {
                 />
               </div>
 
-              <div className="xl:col-span-3">
+              <div className="xl:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-100">
                   Concepto
                 </label>
@@ -299,7 +299,7 @@ export default async function NuevoGastoPage() {
                 </div>
               </div>
 
-              <div className="xl:col-span-1">
+              <div className="xl:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-100">
                   Recibo / factura
                 </label>
