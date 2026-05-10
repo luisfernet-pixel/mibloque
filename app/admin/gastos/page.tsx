@@ -651,7 +651,6 @@ export default async function GastosPage({
                                 <form action={eliminarGasto}>
                                   <input type="hidden" name="id" value={item.id} />
                                   <ConfirmDeleteButton
-                                    disabled={locked}
                                     className={`rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 ${
                                       locked ? "pointer-events-none opacity-40" : ""
                                     }`}
