@@ -328,7 +328,7 @@ export default async function GastosPage({
               return (
                 <article
                   key={item.id}
-                  className="rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 shadow-lg"
+                  className="rounded-2xl border border-white/20 bg-[#2d4a6c] px-3 py-2 shadow-lg"
                 >
                   {enEdicion ? (
                     <form action={editarGasto} className="space-y-3.5">
@@ -470,54 +470,40 @@ export default async function GastosPage({
                       </div>
                     </form>
                   ) : (
-                    <div className="grid gap-3 md:grid-cols-[160px_160px_1fr_140px_150px_auto] md:items-center">
-                      <div>
-                        <p className="text-sm text-slate-300">Fecha</p>
-                        <p className="mt-1 font-semibold text-white">{formatDate(item.fecha_gasto)}</p>
-                      </div>
+                    <div className="grid gap-2 md:grid-cols-[120px_130px_1fr_120px_auto] md:items-center">
+                      <p className="text-sm font-semibold text-white">{formatDate(item.fecha_gasto)}</p>
 
-                      <div>
-                        <p className="text-sm text-slate-300">Categoria</p>
-                        <div className="mt-2">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${categoriaClass(
-                              item.categoria
-                            )}`}
-                          >
-                            {item.categoria}
-                          </span>
-                        </div>
-                      </div>
+                      <span
+                        className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${categoriaClass(
+                          item.categoria
+                        )}`}
+                      >
+                        {item.categoria}
+                      </span>
 
-                      <div>
-                        <p className="text-sm text-slate-300">Concepto</p>
-                        <p className="mt-1 text-slate-100">{item.concepto}</p>
-                      </div>
+                      <p className="truncate text-sm text-slate-100">{item.concepto}</p>
 
-                      <div>
-                        <p className="text-sm text-slate-300">Monto</p>
-                        <p className="mt-1 text-xl font-bold text-white">{money(item.monto)}</p>
-                      </div>
+                      <p className="text-sm font-bold text-white">{money(item.monto)}</p>
 
-                      <div className="flex flex-wrap justify-end gap-3">
+                      <div className="flex flex-nowrap justify-end gap-2">
                         {item.comprobante_url ? (
                           <a
                             href={item.comprobante_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+                            className="rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
                           >
                             Ver recibo
                           </a>
                         ) : (
-                          <span className="rounded-xl border border-slate-500/40 bg-slate-500/10 px-4 py-2 font-semibold text-slate-300">
+                          <span className="rounded-lg border border-slate-500/40 bg-slate-500/10 px-3 py-1.5 text-xs font-semibold text-slate-300">
                             Sin recibo
                           </span>
                         )}
 
                         <a
                           href={`/admin/gastos?editar=${item.id}`}
-                          className="rounded-xl bg-cyan-500 px-4 py-2 font-bold text-white transition hover:bg-cyan-400"
+                          className="rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-cyan-400"
                         >
                           Editar
                         </a>
@@ -525,7 +511,7 @@ export default async function GastosPage({
                         <form action={eliminarGasto}>
                           <input type="hidden" name="id" value={item.id} />
                           <ConfirmDeleteButton
-                            className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 font-semibold text-white transition hover:bg-white/10"
+                            className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
                             confirmText="Seguro que quieres eliminar este gasto? Esta accion no se puede deshacer."
                           >
                             Eliminar
