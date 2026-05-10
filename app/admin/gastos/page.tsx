@@ -127,6 +127,7 @@ async function editarGasto(formData: FormData) {
     redirect("/admin/gastos");
   }
 
+  const supabase = await createClient();
   const adminSupabase = createAdminClient();
   const bloqueado = parseMonthKey(monthKey(fecha_gasto));
   if (bloqueado) {
