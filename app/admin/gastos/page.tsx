@@ -218,6 +218,7 @@ async function eliminarGasto(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!id) redirect("/admin/gastos");
 
+  const supabase = await createClient();
   const adminSupabase = createAdminClient();
   const { data: gasto } = await supabase
     .from("gastos")
