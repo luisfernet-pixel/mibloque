@@ -286,7 +286,7 @@ async function toggleMesBloqueado(formData: FormData) {
 export default async function GastosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ editar?: string }>;
+  searchParams?: Promise<{ editar?: string; notice?: string }>;
 }) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
@@ -389,6 +389,12 @@ export default async function GastosPage({
       {error ? (
         <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
           Error cargando gastos: {error.message}
+        </section>
+      ) : null}
+
+      {params.notice === "mes_distinto" ? (
+        <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+          Gasto registrado en un mes distinto al actual.
         </section>
       ) : null}
 

@@ -83,10 +83,6 @@ async function crearGasto(formData: FormData) {
   );
 
   const bloqueo = parseMonthKey(monthKey(fecha));
-  const mesActual = monthKey(new Date().toISOString());
-  if (monthKey(fecha) !== mesActual) {
-    redirect("/admin/gastos/nuevo?error=mes_no_actual");
-  }
   if (bloqueo) {
     const { data: cierre } = await adminSupabase
       .from("gastos_cierres_mensuales")
@@ -144,6 +140,10 @@ async function crearGasto(formData: FormData) {
     await supabase.from("gastos").insert(payloadBase);
   }
 
+  const mesActual = monthKey(new Date().toISOString());
+  if (monthKey(fecha) !== mesActual) {
+    redirect("/admin/gastos?notice=mes_distinto");
+  }
   redirect("/admin/gastos");
 }
 
@@ -223,11 +223,6 @@ export default async function NuevoGastoPage({
       {params.error === "mes_bloqueado" ? (
         <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
           Ese mes esta bloqueado. Desbloquealo en la lista de gastos para registrar movimientos.
-        </section>
-      ) : null}
-      {params.error === "mes_no_actual" ? (
-        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
-          Solo puedes registrar gastos del mes actual.
         </section>
       ) : null}
       {params.error === "datos" ? (
