@@ -40,6 +40,21 @@ function resolverCategoria(formData: FormData) {
   return categoriaManual || categoriaSeleccionada;
 }
 
+function monthKey(fecha: string) {
+  const f = new Date(fecha);
+  const y = f.getFullYear();
+  const m = String(f.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function parseMonthKey(key: string) {
+  const [anioTxt, mesTxt] = key.split("-");
+  const anio = Number(anioTxt);
+  const mes = Number(mesTxt);
+  if (!Number.isInteger(anio) || !Number.isInteger(mes) || mes < 1 || mes > 12) return null;
+  return { anio, mes };
+}
+
 async function crearGasto(formData: FormData) {
   "use server";
 
@@ -47,6 +62,7 @@ async function crearGasto(formData: FormData) {
   if (!usuario) redirect("/login");
 
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
 
   const fecha = String(formData.get("fecha_gasto") || "");
   const categoria = resolverCategoria(formData);
@@ -65,6 +81,18 @@ async function crearGasto(formData: FormData) {
     categoria,
     guardarCategoria
   );
+
+  const bloqueo = parseMonthKey(monthKey(fecha));
+  if (bloqueo) {
+    const { data: cierre } = await adminSupabase
+      .from("gastos_cierres_mensuales")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("anio", bloqueo.anio)
+      .eq("mes", bloqueo.mes)
+      .maybeSingle();
+    if (cierre) redirect("/admin/gastos");
+  }
 
   let comprobanteUrl: string | null = null;
 
@@ -135,32 +163,32 @@ export default async function NuevoGastoPage() {
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Registro de egresos
-            </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
+                  Registro de egresos
+                </p>
 
-            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
-              Nuevo gasto
-            </h1>
+                <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
+                  Nuevo gasto
+                </h1>
+              </div>
 
-            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              Registra un gasto del bloque de forma clara, rapida y ordenada.
-            </p>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/admin/gastos"
+                  className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-bold text-white transition hover:bg-white/10"
+                >
+                  Volver a gastos
+                </Link>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/admin/gastos"
-                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-bold text-white transition hover:bg-white/10"
-              >
-                Volver a gastos
-              </Link>
-
-              <Link
-                href="/admin/gastos/categorias"
-                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
-              >
-                Categorias
-              </Link>
+                <Link
+                  href="/admin/gastos/categorias"
+                  className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
+                >
+                  Categorias
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -170,10 +198,11 @@ export default async function NuevoGastoPage() {
               Antes de guardar
             </p>
 
-            <div className="mt-5 space-y-3">
-              <TipBox text="Puedes elegir una categoria existente o escribir una nueva." />
-              <TipBox text="Si esa categoria te servira despues, marcala para guardarla en tu catalogo." />
-              <TipBox text="Escribe un concepto claro y registra el monto exacto pagado." />
+            <div className="mt-3 rounded-xl bg-[#3a5879] p-3 ring-1 ring-white/10">
+              <p className="text-sm text-slate-100">
+                1. Elige una categoria o escribe una nueva. 2. Si se repetira, guardala en tu
+                catalogo. 3. Registra un concepto breve y el monto exacto.
+              </p>
             </div>
           </div>
         </div>
@@ -189,8 +218,8 @@ export default async function NuevoGastoPage() {
 
         <div className="p-3 md:p-4">
           <form action={crearGasto} className="space-y-3.5">
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="date-white">
+            <div className="grid gap-3 xl:grid-cols-12">
+              <div className="date-white xl:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-100">
                   Fecha
                 </label>
@@ -204,7 +233,7 @@ export default async function NuevoGastoPage() {
                 />
               </div>
 
-              <div>
+              <div className="xl:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-slate-100">
                   Categoria
                 </label>
@@ -222,22 +251,60 @@ export default async function NuevoGastoPage() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-slate-300">
-                  Tambien puedes escribir una categoria puntual abajo.
-                </p>
               </div>
-            </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-100">
-                Otra categoria (opcional)
-              </label>
-              <input
-                type="text"
-                name="categoria_manual"
-                placeholder="Ejemplo: Arreglo de bomba"
-                className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-              />
+              <div className="xl:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-slate-100">
+                  Otra categoria
+                </label>
+                <input
+                  type="text"
+                  name="categoria_manual"
+                  placeholder="Ejemplo: Jardinero"
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
+                />
+              </div>
+
+              <div className="xl:col-span-3">
+                <label className="mb-2 block text-sm font-medium text-slate-100">
+                  Concepto
+                </label>
+
+                <input
+                  type="text"
+                  name="concepto"
+                  required
+                  placeholder="Ejemplo: Pago de agua abril"
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-400/40"
+                />
+              </div>
+
+              <div className="xl:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-slate-100">
+                  Monto
+                </label>
+
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-medium text-slate-500">
+                    Bs
+                  </span>
+
+                  <input
+                    type="number"
+                    name="monto"
+                    step="0.01"
+                    required
+                    className="w-full rounded-xl border border-white/10 bg-[#173454] py-2 pl-9 pr-2 text-white outline-none transition focus:border-cyan-400/40"
+                  />
+                </div>
+              </div>
+
+              <div className="xl:col-span-1">
+                <label className="mb-2 block text-sm font-medium text-slate-100">
+                  Recibo / factura
+                </label>
+                <ComprobanteImageInput name="comprobante" />
+              </div>
             </div>
 
             <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-sm text-slate-100">
@@ -246,49 +313,8 @@ export default async function NuevoGastoPage() {
                 name="guardar_categoria"
                 className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent"
               />
-              <span>Guardar esta categoria en mi lista para reutilizarla luego.</span>
+              <span>Guardar categoria para reutilizar.</span>
             </label>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-100">
-                Concepto
-              </label>
-
-              <input
-                type="text"
-                name="concepto"
-                required
-                placeholder="Ejemplo: Pago de agua abril"
-                className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-400/40"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-100">
-                Monto
-              </label>
-
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
-                  Bs
-                </span>
-
-                <input
-                  type="number"
-                  name="monto"
-                  step="0.01"
-                  required
-                  className="w-full rounded-xl border border-white/10 bg-[#173454] py-2 pl-11 pr-3 text-white outline-none transition focus:border-cyan-400/40"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-100">
-                Recibo / factura (opcional)
-              </label>
-              <ComprobanteImageInput name="comprobante" />
-            </div>
 
             <div className="flex flex-wrap justify-end gap-3 border-t border-white/10 pt-5">
               <Link
@@ -317,13 +343,5 @@ export default async function NuevoGastoPage() {
         `}</style>
       </section>
     </main>
-  );
-}
-
-function TipBox({ text }: { text: string }) {
-  return (
-    <div className="rounded-xl bg-[#3a5879] p-4 ring-1 ring-white/10">
-      <p className="text-sm text-slate-100">{text}</p>
-    </div>
   );
 }

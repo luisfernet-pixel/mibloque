@@ -37,6 +37,27 @@ function esDelMesActual(fecha: string) {
   return f.getFullYear() === hoy.getFullYear() && f.getMonth() === hoy.getMonth();
 }
 
+function monthKey(fecha: string) {
+  const f = new Date(fecha);
+  const y = f.getFullYear();
+  const m = String(f.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function monthLabel(fecha: string) {
+  const f = new Date(fecha);
+  const label = f.toLocaleDateString("es-BO", { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function parseMonthKey(key: string) {
+  const [anioTxt, mesTxt] = key.split("-");
+  const anio = Number(anioTxt);
+  const mes = Number(mesTxt);
+  if (!Number.isInteger(anio) || !Number.isInteger(mes) || mes < 1 || mes > 12) return null;
+  return { anio, mes };
+}
+
 function categoriaClass(value: string) {
   const v = (value || "").toLowerCase();
 
@@ -106,7 +127,18 @@ async function editarGasto(formData: FormData) {
     redirect("/admin/gastos");
   }
 
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const bloqueado = parseMonthKey(monthKey(fecha_gasto));
+  if (bloqueado) {
+    const { data: cierre } = await adminSupabase
+      .from("gastos_cierres_mensuales")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("anio", bloqueado.anio)
+      .eq("mes", bloqueado.mes)
+      .maybeSingle();
+    if (cierre) redirect("/admin/gastos");
+  }
 
   await guardarCategoriaSiCorresponde(
     supabase,
@@ -185,13 +217,66 @@ async function eliminarGasto(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!id) redirect("/admin/gastos");
 
-  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const { data: gasto } = await supabase
+    .from("gastos")
+    .select("fecha_gasto")
+    .eq("id", id)
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .maybeSingle();
+  if (!gasto) redirect("/admin/gastos");
+
+  const bloqueado = parseMonthKey(monthKey(String(gasto.fecha_gasto || "")));
+  if (bloqueado) {
+    const { data: cierre } = await adminSupabase
+      .from("gastos_cierres_mensuales")
+      .select("id")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("anio", bloqueado.anio)
+      .eq("mes", bloqueado.mes)
+      .maybeSingle();
+    if (cierre) redirect("/admin/gastos");
+  }
 
   await supabase
     .from("gastos")
     .delete()
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
+
+  redirect("/admin/gastos");
+}
+
+async function toggleMesBloqueado(formData: FormData) {
+  "use server";
+
+  const usuario = await requireAdmin();
+  if (!usuario) redirect("/login");
+
+  const month_key = String(formData.get("month_key") || "");
+  const parsed = parseMonthKey(month_key);
+  if (!parsed) redirect("/admin/gastos");
+
+  const adminSupabase = createAdminClient();
+  const { data: existente, error: lockReadError } = await adminSupabase
+    .from("gastos_cierres_mensuales")
+    .select("id")
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("anio", parsed.anio)
+    .eq("mes", parsed.mes)
+    .maybeSingle();
+
+  if (lockReadError) redirect("/admin/gastos");
+
+  if (existente) {
+    await adminSupabase.from("gastos_cierres_mensuales").delete().eq("id", existente.id);
+  } else {
+    await adminSupabase.from("gastos_cierres_mensuales").insert({
+      bloque_id: usuario.perfil.bloque_id,
+      anio: parsed.anio,
+      mes: parsed.mes,
+    });
+  }
 
   redirect("/admin/gastos");
 }
@@ -209,7 +294,8 @@ export default async function GastosPage({
 
   const supabase = await createClient();
 
-  const [{ data: gastos, error }, { data: categorias }] = await Promise.all([
+  const adminSupabase = createAdminClient();
+  const [{ data: gastos, error }, { data: categorias }, { data: cierres }] = await Promise.all([
     supabase
       .from("gastos")
       .select("id, bloque_id, fecha_gasto, categoria, concepto, monto, comprobante_url")
@@ -220,65 +306,76 @@ export default async function GastosPage({
       .select("id, nombre")
       .eq("bloque_id", usuario.perfil.bloque_id)
       .order("nombre", { ascending: true }),
+    adminSupabase
+      .from("gastos_cierres_mensuales")
+      .select("anio, mes")
+      .eq("bloque_id", usuario.perfil.bloque_id),
   ]);
 
   const rows = (gastos ?? []) as GastoRow[];
   const categoriasRows = (categorias ?? []) as CategoriaRow[];
+  const monthsLocked = new Set((cierres ?? []).map((c) => `${c.anio}-${String(c.mes).padStart(2, "0")}`));
 
   const rowsMesActual = rows.filter((item) => esDelMesActual(item.fecha_gasto));
   const totalMesActual = rowsMesActual.reduce((acc, item) => acc + Number(item.monto || 0), 0);
   const movimientosMesActual = rowsMesActual.length;
   const categoriasMesActual = new Set(rowsMesActual.map((item) => item.categoria)).size;
   const ultimoGasto = rows[0];
+  const mesesAgrupados = rows.reduce(
+    (acc, item) => {
+      const key = monthKey(item.fecha_gasto);
+      const actual = acc.get(key);
+
+      if (actual) {
+        actual.items.push(item);
+        actual.total += Number(item.monto || 0);
+      } else {
+        acc.set(key, {
+          key,
+          label: monthLabel(item.fecha_gasto),
+          total: Number(item.monto || 0),
+          items: [item],
+        });
+      }
+
+      return acc;
+    },
+    new Map<
+      string,
+      { key: string; label: string; total: number; items: GastoRow[] }
+    >()
+  );
 
   return (
     <main className="space-y-3">
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Gestion de egresos
-            </p>
+        <div className="p-4 md:p-4">
+          <div className="rounded-[24px] bg-gradient-to-r from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
+                  Gestion de egresos
+                </p>
+                <h1 className="mt-1 text-lg font-bold leading-tight text-white md:text-3xl">
+                  Gastos del bloque
+                </h1>
+              </div>
 
-            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
-              Gastos del bloque
-            </h1>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/admin/gastos/nuevo"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
+                >
+                  Nuevo gasto
+                </Link>
 
-            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              Registra, corrige y ordena los gastos del bloque para mantener el
-              control financiero claro y actualizado.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/admin/gastos/nuevo"
-                className="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
-              >
-                Nuevo gasto
-              </Link>
-
-              <Link
-                href="/admin/gastos/categorias"
-                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
-              >
-                Administrar categorias
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
-            <div>
-              <p className="text-sm font-semibold text-white">Resumen de gastos</p>
-              <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
-                Movimiento actual
-              </p>
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <InfoBox label="Gastado este mes" value={money(totalMesActual)} />
-              <InfoBox label="Gastos del mes" value={String(movimientosMesActual)} />
-              <InfoBox label="Categorias usadas" value={String(categoriasMesActual)} />
-              <InfoBox label="Ultimo gasto" value={ultimoGasto ? money(ultimoGasto.monto) : "Bs 0"} />
+                <Link
+                  href="/admin/gastos/categorias"
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
+                >
+                  Administrar categorias
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -322,15 +419,56 @@ export default async function GastosPage({
           <div className="p-8 text-center text-slate-300">No hay gastos registrados todavia.</div>
         ) : (
           <div className="space-y-2.5 p-3 md:p-3">
-            {rows.map((item) => {
-              const enEdicion = editarId === item.id;
+            {Array.from(mesesAgrupados.values()).map((grupo) => {
+              const openByDefault =
+                grupo.items.some((item) => item.id === editarId) || grupo === Array.from(mesesAgrupados.values())[0];
+              const locked = monthsLocked.has(grupo.key);
 
               return (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-white/20 bg-[#2d4a6c] px-3 py-2 shadow-lg"
+                <details
+                  key={grupo.key}
+                  open={openByDefault}
+                  className="overflow-hidden rounded-2xl border border-white/20 bg-[#2d4a6c] shadow-lg"
                 >
-                  {enEdicion ? (
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-white">{grupo.label}</p>
+                      <p className="text-xs text-slate-300">{grupo.items.length} movimiento(s)</p>
+                      {locked ? (
+                        <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                          Bloqueado
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm font-bold text-cyan-200">Total: {money(grupo.total)}</p>
+                  </summary>
+
+                  <div className="flex items-center justify-end border-t border-white/10 px-3 py-2">
+                    <form action={toggleMesBloqueado}>
+                      <input type="hidden" name="month_key" value={grupo.key} />
+                      <button
+                        type="submit"
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition ${
+                          locked
+                            ? "border-amber-300/40 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25"
+                            : "border-white/20 bg-white/10 text-white hover:bg-white/20"
+                        }`}
+                      >
+                        {locked ? "Desbloquear mes" : "Bloquear mes"}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="space-y-2 border-t border-white/10 px-3 py-2">
+                    {grupo.items.map((item) => {
+                      const enEdicion = editarId === item.id;
+
+                      return (
+                        <article
+                          key={item.id}
+                          className="rounded-xl border border-white/20 bg-[#314f71] px-3 py-2"
+                        >
+                          {enEdicion && !locked ? (
                     <form action={editarGasto} className="space-y-3.5">
                       <input type="hidden" name="id" value={item.id} />
 
@@ -347,8 +485,8 @@ export default async function GastosPage({
                         </span>
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                        <div className="date-white">
+                      <div className="grid gap-3 xl:grid-cols-12">
+                        <div className="date-white xl:col-span-2">
                           <label className="mb-2 block text-sm font-medium text-slate-100">
                             Fecha
                           </label>
@@ -361,7 +499,7 @@ export default async function GastosPage({
                           />
                         </div>
 
-                        <div>
+                        <div className="xl:col-span-2">
                           <label className="mb-2 block text-sm font-medium text-slate-100">
                             Categoria
                           </label>
@@ -377,12 +515,21 @@ export default async function GastosPage({
                               </option>
                             ))}
                           </select>
-                          <p className="mt-2 text-xs text-slate-300">
-                            Tambien puedes escribir una categoria puntual abajo.
-                          </p>
                         </div>
 
-                        <div>
+                        <div className="xl:col-span-2">
+                          <label className="mb-2 block text-sm font-medium text-slate-100">
+                            Otra categoria
+                          </label>
+                          <input
+                            type="text"
+                            name="categoria_manual"
+                            placeholder="Ejemplo: Jardinero"
+                            className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
+                          />
+                        </div>
+
+                        <div className="xl:col-span-3">
                           <label className="mb-2 block text-sm font-medium text-slate-100">
                             Concepto
                           </label>
@@ -395,12 +542,12 @@ export default async function GastosPage({
                           />
                         </div>
 
-                        <div>
+                        <div className="xl:col-span-2">
                           <label className="mb-2 block text-sm font-medium text-slate-100">
                             Monto
                           </label>
                           <div className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
+                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-medium text-slate-500">
                               Bs
                             </span>
                             <input
@@ -409,39 +556,27 @@ export default async function GastosPage({
                               step="0.01"
                               defaultValue={item.monto}
                               required
-                              className="w-full rounded-xl border border-white/10 bg-[#173454] py-2 pl-11 pr-3 text-white outline-none transition focus:border-cyan-400/40"
+                              className="w-full rounded-xl border border-white/10 bg-[#173454] py-2 pl-9 pr-2 text-white outline-none transition focus:border-cyan-400/40"
                             />
                           </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-100">
-                          Nuevo recibo / factura (opcional)
-                        </label>
-                        <ComprobanteImageInput name="comprobante" />
-                        {item.comprobante_url ? (
-                          <a
-                            href={item.comprobante_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="mt-2 inline-flex text-xs font-semibold text-cyan-300 underline-offset-2 hover:underline"
-                          >
-                            Ver comprobante actual
-                          </a>
-                        ) : null}
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-100">
-                          Otra categoria (opcional)
-                        </label>
-                        <input
-                          type="text"
-                          name="categoria_manual"
-                          placeholder="Ejemplo: Arreglo puntual"
-                          className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-                        />
+                        <div className="xl:col-span-1">
+                          <label className="mb-2 block text-sm font-medium text-slate-100">
+                            Nuevo recibo / factura
+                          </label>
+                          <ComprobanteImageInput name="comprobante" />
+                          {item.comprobante_url ? (
+                            <a
+                              href={item.comprobante_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-2 inline-flex text-xs font-semibold text-cyan-300 underline-offset-2 hover:underline"
+                            >
+                              Ver comprobante actual
+                            </a>
+                          ) : null}
+                        </div>
                       </div>
 
                       <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-sm text-slate-100">
@@ -450,7 +585,7 @@ export default async function GastosPage({
                           name="guardar_categoria"
                           className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent"
                         />
-                        <span>Guardar esta categoria en mi lista para reutilizarla luego.</span>
+                        <span>Guardar categoria para reutilizar.</span>
                       </label>
 
                       <div className="flex flex-wrap justify-end gap-3 border-t border-white/10 pt-4">
@@ -469,58 +604,68 @@ export default async function GastosPage({
                         </button>
                       </div>
                     </form>
-                  ) : (
-                    <div className="grid gap-2 md:grid-cols-[120px_130px_1fr_120px_auto] md:items-center">
-                      <p className="text-sm font-semibold text-white">{formatDate(item.fecha_gasto)}</p>
+                          ) : (
+                            <div className="grid gap-2 md:grid-cols-[110px_130px_2fr_140px_auto] md:items-center">
+                              <p className="text-sm font-semibold text-white">{formatDate(item.fecha_gasto)}</p>
 
-                      <span
-                        className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${categoriaClass(
-                          item.categoria
-                        )}`}
-                      >
-                        {item.categoria}
-                      </span>
+                              <span
+                                className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${categoriaClass(
+                                  item.categoria
+                                )}`}
+                              >
+                                {item.categoria}
+                              </span>
 
-                      <p className="truncate text-sm text-slate-100">{item.concepto}</p>
+                              <p className="truncate text-sm text-slate-100">{item.concepto}</p>
 
-                      <p className="text-sm font-bold text-white">{money(item.monto)}</p>
+                              <p className="text-sm font-bold text-white">{money(item.monto)}</p>
 
-                      <div className="flex flex-nowrap justify-end gap-2">
-                        {item.comprobante_url ? (
-                          <a
-                            href={item.comprobante_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
-                          >
-                            Ver recibo
-                          </a>
-                        ) : (
-                          <span className="rounded-lg border border-slate-500/40 bg-slate-500/10 px-3 py-1.5 text-xs font-semibold text-slate-300">
-                            Sin recibo
-                          </span>
-                        )}
+                              <div className="flex flex-nowrap justify-end gap-2">
+                                {item.comprobante_url ? (
+                                  <a
+                                    href={item.comprobante_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
+                                  >
+                                    Ver recibo
+                                  </a>
+                                ) : (
+                                  <span className="rounded-lg border border-slate-500/40 bg-slate-500/10 px-3 py-1.5 text-xs font-semibold text-slate-300">
+                                    Sin recibo
+                                  </span>
+                                )}
 
-                        <a
-                          href={`/admin/gastos?editar=${item.id}`}
-                          className="rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-cyan-400"
-                        >
-                          Editar
-                        </a>
+                                <a
+                                  href={locked ? "#" : `/admin/gastos?editar=${item.id}`}
+                                  aria-disabled={locked}
+                                  className={`rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-cyan-400 ${
+                                    locked ? "pointer-events-none opacity-40" : ""
+                                  }`}
+                                >
+                                  Editar
+                                </a>
 
-                        <form action={eliminarGasto}>
-                          <input type="hidden" name="id" value={item.id} />
-                          <ConfirmDeleteButton
-                            className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
-                            confirmText="Seguro que quieres eliminar este gasto? Esta accion no se puede deshacer."
-                          >
-                            Eliminar
-                          </ConfirmDeleteButton>
-                        </form>
-                      </div>
-                    </div>
-                  )}
-                </article>
+                                <form action={eliminarGasto}>
+                                  <input type="hidden" name="id" value={item.id} />
+                                  <ConfirmDeleteButton
+                                    disabled={locked}
+                                    className={`rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 ${
+                                      locked ? "pointer-events-none opacity-40" : ""
+                                    }`}
+                                    confirmText="Seguro que quieres eliminar este gasto? Esta accion no se puede deshacer."
+                                  >
+                                    Eliminar
+                                  </ConfirmDeleteButton>
+                                </form>
+                              </div>
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </details>
               );
             })}
           </div>
@@ -558,21 +703,6 @@ function KpiCard({
     <div className={`rounded-[24px] border p-4 text-white shadow-xl ${tones[tone]}`}>
       <p className="text-sm text-slate-200">{title}</p>
       <p className="mt-3 text-xl font-bold text-white">{value}</p>
-    </div>
-  );
-}
-
-function InfoBox({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl bg-[#3a5879] p-4 ring-1 ring-white/10">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-300">{label}</p>
-      <p className="mt-1.5 text-lg font-bold text-white">{value}</p>
     </div>
   );
 }
