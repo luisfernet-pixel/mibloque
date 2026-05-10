@@ -1,7 +1,44 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { extname } from "node:path";
 import { requireAdmin } from "@/lib/auth";
+import ComprobanteImageInput from "../_components/comprobante-image-input";
+
+type CategoriaRow = {
+  id: string;
+  nombre: string;
+};
+
+async function guardarCategoriaSiCorresponde(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  bloqueId: string,
+  categoria: string,
+  guardarEnCatalogo: boolean
+) {
+  if (!guardarEnCatalogo || !categoria) return;
+
+  const { data: existente } = await supabase
+    .from("categorias_gasto")
+    .select("id")
+    .eq("bloque_id", bloqueId)
+    .ilike("nombre", categoria)
+    .maybeSingle();
+
+  if (existente) return;
+
+  await supabase.from("categorias_gasto").insert({
+    bloque_id: bloqueId,
+    nombre: categoria,
+  });
+}
+
+function resolverCategoria(formData: FormData) {
+  const categoriaSeleccionada = String(formData.get("categoria") || "").trim();
+  const categoriaManual = String(formData.get("categoria_manual") || "").trim();
+  return categoriaManual || categoriaSeleccionada;
+}
 
 async function crearGasto(formData: FormData) {
   "use server";
@@ -12,12 +49,48 @@ async function crearGasto(formData: FormData) {
   const supabase = await createClient();
 
   const fecha = String(formData.get("fecha_gasto") || "");
-  const categoria = String(formData.get("categoria") || "").trim();
+  const categoria = resolverCategoria(formData);
   const concepto = String(formData.get("concepto") || "").trim();
   const monto = Number(formData.get("monto") || 0);
+  const archivo = formData.get("comprobante") as File | null;
+  const guardarCategoria = String(formData.get("guardar_categoria") || "") === "on";
 
   if (!fecha || !categoria || !concepto || monto <= 0) {
     redirect("/admin/gastos/nuevo");
+  }
+
+  await guardarCategoriaSiCorresponde(
+    supabase,
+    usuario.perfil.bloque_id,
+    categoria,
+    guardarCategoria
+  );
+
+  let comprobanteUrl: string | null = null;
+
+  if (archivo && archivo.size > 0) {
+    const adminSupabase = createAdminClient();
+    const bytes = await archivo.arrayBuffer();
+    const buffer = new Uint8Array(bytes);
+    const extension = extname(archivo.name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9.]/g, "");
+    const safeName = `${Date.now()}-${crypto.randomUUID()}${extension || ".jpg"}`;
+    const fileName = `gastos/${usuario.perfil.bloque_id}/${safeName}`;
+
+    const { error: uploadError } = await adminSupabase.storage
+      .from("comprobantes")
+      .upload(fileName, buffer, {
+        contentType: archivo.type || "application/octet-stream",
+        upsert: false,
+      });
+
+    if (!uploadError) {
+      const { data: publicFile } = adminSupabase.storage
+        .from("comprobantes")
+        .getPublicUrl(fileName);
+      comprobanteUrl = publicFile.publicUrl;
+    }
   }
 
   await supabase.from("gastos").insert({
@@ -26,15 +99,11 @@ async function crearGasto(formData: FormData) {
     categoria,
     concepto,
     monto,
+    comprobante_url: comprobanteUrl,
   });
 
   redirect("/admin/gastos");
 }
-
-type CategoriaRow = {
-  id: string;
-  nombre: string;
-};
 
 export default async function NuevoGastoPage() {
   const usuario = await requireAdmin();
@@ -52,69 +121,65 @@ export default async function NuevoGastoPage() {
   const hoy = new Date().toISOString().split("T")[0];
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Registro de egresos
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
               Nuevo gasto
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
-              Registra un gasto del bloque de forma clara, rápida y ordenada.
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+              Registra un gasto del bloque de forma clara, rapida y ordenada.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/admin/gastos"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-6 text-sm font-bold text-white transition hover:bg-white/10"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-bold text-white transition hover:bg-white/10"
               >
                 Volver a gastos
               </Link>
 
               <Link
                 href="/admin/gastos/categorias"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
               >
-                Categorías
+                Categorias
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
-            <p className="text-sm font-semibold text-white">
-              Recomendaciones
-            </p>
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
+            <p className="text-sm font-semibold text-white">Recomendaciones</p>
             <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
               Antes de guardar
             </p>
 
             <div className="mt-5 space-y-3">
-              <TipBox text="Usa una categoría correcta para mejorar reportes." />
-              <TipBox text="Escribe un concepto claro y fácil de entender." />
-              <TipBox text="Registra el monto exacto pagado." />
+              <TipBox text="Puedes elegir una categoria existente o escribir una nueva." />
+              <TipBox text="Si esa categoria te servira despues, marcala para guardarla en tu catalogo." />
+              <TipBox text="Escribe un concepto claro y registra el monto exacto pagado." />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
             Formulario
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
-            Registrar gasto
-          </h2>
+          <h2 className="mt-1.5 text-lg font-bold text-white">Registrar gasto</h2>
         </div>
 
-        <div className="p-5 md:p-6">
-          <form action={crearGasto} className="space-y-5">
-            <div className="grid gap-5 md:grid-cols-2">
+        <div className="p-3 md:p-4">
+          <form action={crearGasto} className="space-y-3.5">
+            <div className="grid gap-3 md:grid-cols-2">
               <div className="date-white">
                 <label className="mb-2 block text-sm font-medium text-slate-100">
                   Fecha
@@ -125,30 +190,54 @@ export default async function NuevoGastoPage() {
                   name="fecha_gasto"
                   defaultValue={hoy}
                   required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
                 />
               </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-100">
-                  Categoría
+                  Categoria
                 </label>
 
                 <select
                   name="categoria"
-                  defaultValue=""
                   required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
+                  defaultValue=""
                 >
-                  <option value="">Selecciona una categoría</option>
+                  <option value="">Selecciona una categoria</option>
                   {categoriasRows.map((categoria) => (
                     <option key={categoria.id} value={categoria.nombre}>
                       {categoria.nombre}
                     </option>
                   ))}
                 </select>
+                <p className="mt-2 text-xs text-slate-300">
+                  Tambien puedes escribir una categoria puntual abajo.
+                </p>
               </div>
             </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-100">
+                Otra categoria (opcional)
+              </label>
+              <input
+                type="text"
+                name="categoria_manual"
+                placeholder="Ejemplo: Arreglo de bomba"
+                className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
+              />
+            </div>
+
+            <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-sm text-slate-100">
+              <input
+                type="checkbox"
+                name="guardar_categoria"
+                className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent"
+              />
+              <span>Guardar esta categoria en mi lista para reutilizarla luego.</span>
+            </label>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-100">
@@ -160,7 +249,7 @@ export default async function NuevoGastoPage() {
                 name="concepto"
                 required
                 placeholder="Ejemplo: Pago de agua abril"
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-400/40"
+                className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-400/40"
               />
             </div>
 
@@ -179,22 +268,29 @@ export default async function NuevoGastoPage() {
                   name="monto"
                   step="0.01"
                   required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] py-3 pl-12 pr-4 text-white outline-none transition focus:border-cyan-400/40"
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] py-2 pl-11 pr-3 text-white outline-none transition focus:border-cyan-400/40"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-100">
+                Recibo / factura (opcional)
+              </label>
+              <ComprobanteImageInput name="comprobante" />
             </div>
 
             <div className="flex flex-wrap justify-end gap-3 border-t border-white/10 pt-5">
               <Link
                 href="/admin/gastos"
-                className="rounded-2xl border border-white/15 bg-white/5 px-5 py-3 font-semibold text-white transition hover:bg-white/10"
+                className="rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 font-semibold text-white transition hover:bg-white/10"
               >
                 Cancelar
               </Link>
 
               <button
                 type="submit"
-                className="rounded-2xl bg-[#ff5a3d] px-6 py-3 font-bold text-white transition hover:brightness-110"
+                className="rounded-xl bg-[#ff5a3d] px-6 py-3 font-bold text-white transition hover:brightness-110"
               >
                 Guardar gasto
               </button>
@@ -216,7 +312,7 @@ export default async function NuevoGastoPage() {
 
 function TipBox({ text }: { text: string }) {
   return (
-    <div className="rounded-2xl bg-[#3a5879] p-4 ring-1 ring-white/10">
+    <div className="rounded-xl bg-[#3a5879] p-4 ring-1 ring-white/10">
       <p className="text-sm text-slate-100">{text}</p>
     </div>
   );
