@@ -499,23 +499,22 @@ export default async function GastosPage({
                         <p className="mt-1 text-xl font-bold text-white">{money(item.monto)}</p>
                       </div>
 
-                      <div>
-                        <p className="text-sm text-slate-300">Comprobante</p>
+                      <div className="flex flex-wrap justify-end gap-3">
                         {item.comprobante_url ? (
                           <a
                             href={item.comprobante_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-1 inline-flex text-sm font-semibold text-cyan-300 underline-offset-2 hover:underline"
+                            className="rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 font-semibold text-emerald-200 transition hover:bg-emerald-500/25"
                           >
                             Ver recibo
                           </a>
                         ) : (
-                          <p className="mt-1 text-sm text-slate-400">Sin archivo</p>
+                          <span className="rounded-xl border border-slate-500/40 bg-slate-500/10 px-4 py-2 font-semibold text-slate-300">
+                            Sin recibo
+                          </span>
                         )}
-                      </div>
 
-                      <div className="flex flex-wrap justify-end gap-3">
                         <a
                           href={`/admin/gastos?editar=${item.id}`}
                           className="rounded-xl bg-cyan-500 px-4 py-2 font-bold text-white transition hover:bg-cyan-400"
