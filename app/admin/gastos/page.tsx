@@ -316,6 +316,9 @@ export default async function GastosPage({
 
   const rows = (gastos ?? []) as GastoRow[];
   const categoriasRows = (categorias ?? []) as CategoriaRow[];
+  const categoriasSinOtros = categoriasRows.filter(
+    (categoria) => categoria.nombre.trim().toLowerCase() !== "otros"
+  );
   const monthsLocked = new Set((cierres ?? []).map((c) => `${c.anio}-${String(c.mes).padStart(2, "0")}`));
 
   const rowsMesActual = rows.filter((item) => esDelMesActual(item.fecha_gasto));
@@ -507,11 +510,20 @@ export default async function GastosPage({
                           </label>
                           <select
                             name="categoria"
-                            required
                             className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-                            defaultValue={item.categoria}
+                            defaultValue={item.categoria || "Otros"}
                           >
-                            {categoriasRows.map((categoria) => (
+                            <option value="Otros">Otros</option>
+                            {item.categoria &&
+                            item.categoria.trim().toLowerCase() !== "otros" &&
+                            !categoriasSinOtros.some(
+                              (categoria) =>
+                                categoria.nombre.trim().toLowerCase() ===
+                                item.categoria.trim().toLowerCase()
+                            ) ? (
+                              <option value={item.categoria}>{item.categoria}</option>
+                            ) : null}
+                            {categoriasSinOtros.map((categoria) => (
                               <option key={categoria.id} value={categoria.nombre}>
                                 {categoria.nombre}
                               </option>

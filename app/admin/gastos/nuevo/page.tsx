@@ -72,7 +72,7 @@ async function crearGasto(formData: FormData) {
   const guardarCategoria = String(formData.get("guardar_categoria") || "") === "on";
 
   if (!fecha || !categoria || !concepto || monto <= 0) {
-    redirect("/admin/gastos/nuevo");
+    redirect("/admin/gastos/nuevo?error=datos");
   }
 
   await guardarCategoriaSiCorresponde(
@@ -83,6 +83,10 @@ async function crearGasto(formData: FormData) {
   );
 
   const bloqueo = parseMonthKey(monthKey(fecha));
+  const mesActual = monthKey(new Date().toISOString());
+  if (monthKey(fecha) !== mesActual) {
+    redirect("/admin/gastos/nuevo?error=mes_no_actual");
+  }
   if (bloqueo) {
     const { data: cierre } = await adminSupabase
       .from("gastos_cierres_mensuales")
@@ -91,7 +95,7 @@ async function crearGasto(formData: FormData) {
       .eq("anio", bloqueo.anio)
       .eq("mes", bloqueo.mes)
       .maybeSingle();
-    if (cierre) redirect("/admin/gastos");
+    if (cierre) redirect("/admin/gastos/nuevo?error=mes_bloqueado");
   }
 
   let comprobanteUrl: string | null = null;
@@ -143,9 +147,14 @@ async function crearGasto(formData: FormData) {
   redirect("/admin/gastos");
 }
 
-export default async function NuevoGastoPage() {
+export default async function NuevoGastoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ error?: string }>;
+}) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  const params = (await searchParams) ?? {};
 
   const supabase = await createClient();
 
@@ -156,6 +165,9 @@ export default async function NuevoGastoPage() {
     .order("nombre", { ascending: true });
 
   const categoriasRows = (categorias ?? []) as CategoriaRow[];
+  const categoriasSinOtros = categoriasRows.filter(
+    (categoria) => categoria.nombre.trim().toLowerCase() !== "otros"
+  );
   const hoy = new Date().toISOString().split("T")[0];
 
   return (
@@ -208,6 +220,22 @@ export default async function NuevoGastoPage() {
         </div>
       </section>
 
+      {params.error === "mes_bloqueado" ? (
+        <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+          Ese mes esta bloqueado. Desbloquealo en la lista de gastos para registrar movimientos.
+        </section>
+      ) : null}
+      {params.error === "mes_no_actual" ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          Solo puedes registrar gastos del mes actual.
+        </section>
+      ) : null}
+      {params.error === "datos" ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          Completa fecha, categoria (o otra categoria), concepto y monto valido.
+        </section>
+      ) : null}
+
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
@@ -240,12 +268,11 @@ export default async function NuevoGastoPage() {
 
                 <select
                   name="categoria"
-                  required
                   className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-                  defaultValue=""
+                  defaultValue="Otros"
                 >
-                  <option value="">Selecciona una categoria</option>
-                  {categoriasRows.map((categoria) => (
+                  <option value="Otros">Otros</option>
+                  {categoriasSinOtros.map((categoria) => (
                     <option key={categoria.id} value={categoria.nombre}>
                       {categoria.nombre}
                     </option>
