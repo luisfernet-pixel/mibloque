@@ -154,12 +154,12 @@ export default async function VecinoCuadroTransparenciaPage({
     });
 
   return (
-    <main className="space-y-6">
-      <section className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <main className="space-y-3">
+      <section className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Transparencia</p>
-            <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Cuadro general de cuotas</h1>
+            <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Cuadro general de cuotas</h1>
             <p className="mt-3 text-sm text-slate-200">
               {nombreBloque} · Gestion {anio}
             </p>

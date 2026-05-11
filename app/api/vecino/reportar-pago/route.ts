@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { extname } from "node:path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserSafe } from "@/lib/auth";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -11,9 +12,7 @@ export async function POST(req: Request) {
   const referencia = String(formData.get("referencia") || "");
   const archivo = formData.get("archivo") as File | null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user || !archivo || !cuotaId || !referencia.trim()) {
     return NextResponse.redirect(new URL("/vecino?error=datos", req.url), 303);

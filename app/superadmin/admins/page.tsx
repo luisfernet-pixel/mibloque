@@ -23,24 +23,24 @@ export default async function AdminsPage() {
   const bloqueMap = new Map((bloques ?? []).map((item) => [item.id, item.nombre] as const));
 
   return (
-    <main className="space-y-6">
-      <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="theme-hero rounded-[24px] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Administradores</h1>
+        <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Administradores</h1>
         <p className="mt-4 max-w-2xl text-slate-200">
           Edita, borra o crea nuevas cuentas de administrador.
         </p>
         <div className="mt-6">
           <Link
             href="/superadmin/admins/nuevo"
-            className="btn-primary inline-flex rounded-2xl px-5 py-3 text-sm font-bold"
+            className="btn-primary inline-flex rounded-2xl px-3.5 py-2 text-sm font-bold"
           >
             Nuevo admin
           </Link>
         </div>
       </section>
 
-      <section className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
+      <section className="theme-panel rounded-[24px] p-6 shadow-xl ring-1 ring-white/10">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-white/10 text-left text-slate-200">

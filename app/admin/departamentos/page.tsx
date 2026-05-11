@@ -10,10 +10,10 @@ export default async function DepartamentosPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between gap-4">
+      <div className="mx-auto max-w-6xl space-y-3">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-gray-900">
               Departamentos
             </h1>
             <p className="text-gray-600">
@@ -36,24 +36,24 @@ export default async function DepartamentosPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-100 text-left">
                   <tr>
-                    <th className="px-4 py-3">Depto</th>
-                    <th className="px-4 py-3">Estado</th>
-                    <th className="px-4 py-3">Activo</th>
+                    <th className="px-3 py-2">Depto</th>
+                    <th className="px-3 py-2">Estado</th>
+                    <th className="px-3 py-2">Activo</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {departamentos?.map((item) => (
                     <tr key={item.id} className="border-t">
-                      <td className="px-4 py-3 font-semibold">
+                      <td className="px-3 py-2 font-semibold">
                         {item.numero}
                       </td>
 
-                      <td className="px-4 py-3 capitalize">
+                      <td className="px-3 py-2 capitalize">
                         {item.estado_ocupacion}
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         {item.activo ? "Sí" : "No"}
                       </td>
                     </tr>

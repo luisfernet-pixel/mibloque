@@ -51,7 +51,7 @@ export default function DemoLayout({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-3 md:px-5 md:py-4">{children}</main>
     </div>
   );
 }

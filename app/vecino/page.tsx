@@ -3,6 +3,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUserSafe } from "@/lib/auth";
 
 type SearchParams = {
   sent?: string;
@@ -92,10 +93,7 @@ export default async function VecinoPage({
   const params = (await searchParams) ?? {};
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
 
@@ -219,7 +217,7 @@ export default async function VecinoPage({
   const detalle = params.detalle || "";
 
   return (
-    <main className="space-y-4 md:space-y-6">
+    <main className="space-y-2.5 md:space-y-3">
       <section className="overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#0f2d48] via-[#1c4569] to-[#245b84] shadow-xl ring-1 ring-white/10 md:rounded-[24px]">
         <div className="grid items-center gap-3 p-3 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-6">
           <div>
@@ -315,22 +313,22 @@ export default async function VecinoPage({
         </div>
       </section>
 
-      <section className="hidden overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+      <section className="hidden overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Pagos del vecino
             </p>
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
               Estado de cuotas por mes
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               Revisa que meses estan pendientes, cuales estan en revision y cuales
               ya fueron aprobados.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InfoBox label="Pendientes" value={String(filasPendientes.length)} />
               <InfoBox label="En revision" value={String(filasEnRevision.length)} />
@@ -342,19 +340,19 @@ export default async function VecinoPage({
       </section>
 
       {sent ? (
-        <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
+        <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
           Comprobante enviado. El admin lo revisara antes de aprobarlo.
         </section>
       ) : null}
 
       {error ? (
-        <section className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
+        <section className="rounded-2xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
           {detailForError(error, detalle)}
         </section>
       ) : null}
 
       {avisosInicio.length > 0 ? (
-        <section className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-amber-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
+        <section className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-amber-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200 md:text-xs md:tracking-[0.22em]">
@@ -389,8 +387,8 @@ export default async function VecinoPage({
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[30px]">
-        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 md:gap-3 md:px-6 md:py-4">
+      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[24px]">
+        <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-2 md:gap-3 md:px-6 md:py-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300 md:text-xs md:tracking-[0.3em]">
               Tabla unica
@@ -399,7 +397,7 @@ export default async function VecinoPage({
           </div>
         </div>
 
-        <div className="p-4 md:p-5">
+        <div className="p-4 md:p-4">
           {filas.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
               <p className="text-lg font-bold text-white">No hay cuotas registradas</p>
@@ -466,10 +464,10 @@ export default async function VecinoPage({
                 <table className="min-w-full overflow-hidden rounded-2xl border border-white/10">
                   <thead className="bg-[#1f3d5f] text-left text-xs uppercase tracking-[0.2em] text-slate-300">
                     <tr>
-                      <th className="px-4 py-3">Mes</th>
-                      <th className="px-4 py-3">Monto</th>
-                      <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Accion</th>
+                      <th className="px-3 py-2">Mes</th>
+                      <th className="px-3 py-2">Monto</th>
+                      <th className="px-3 py-2">Estado</th>
+                      <th className="px-3 py-2">Accion</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -536,16 +534,16 @@ export default async function VecinoPage({
 
       <section
         id="subir-comprobante"
-        className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[30px]"
+        className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[24px]"
       >
-        <div className="border-b border-white/10 px-4 py-3 md:px-6 md:py-4">
+        <div className="border-b border-white/10 px-3 py-2 md:px-6 md:py-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300 md:text-xs md:tracking-[0.3em]">
             Comprobante
           </p>
           <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Subir pago</h2>
         </div>
 
-        <div className="p-4 md:p-6">
+        <div className="p-3 md:p-4">
           {filasPendientes.length === 0 ? (
             <div className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-8 text-center">
               <p className="text-lg font-bold text-cyan-100">
@@ -560,13 +558,13 @@ export default async function VecinoPage({
               action="/api/vecino/reportar-pago"
               method="POST"
               encType="multipart/form-data"
-              className="grid gap-4 xl:grid-cols-[1fr_1fr] md:gap-5"
+              className="grid gap-3 xl:grid-cols-[1fr_1fr] md:gap-3"
             >
               <div className="space-y-2 xl:col-span-2">
                 <label className="text-sm font-semibold text-white">
                   Mes habilitado para pagar
                 </label>
-                <div className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3">
+                <div className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
                   <p className="text-sm font-bold text-cyan-100">
                     {cuotaHabilitada?.periodo || "Sin periodo"}
                   </p>
@@ -586,7 +584,7 @@ export default async function VecinoPage({
                   name="referencia"
                   placeholder="Ej: transferencia BNB o QR"
                   required
-                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-4 py-3 text-white outline-none transition placeholder:text-slate-400 focus:border-cyan-400/40"
+                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-3 py-2 text-white outline-none transition placeholder:text-slate-400 focus:border-cyan-400/40"
                 />
               </div>
 
@@ -598,14 +596,14 @@ export default async function VecinoPage({
                   type="file"
                   name="archivo"
                   required
-                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-4 py-3 text-slate-200 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-cyan-400"
+                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-3 py-2 text-slate-200 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-cyan-400"
                 />
               </div>
 
               <div className="xl:col-span-2">
                 <button
                   type="submit"
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#ff5a3d] px-6 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
+                  className="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
                 >
                   Enviar comprobante
                 </button>

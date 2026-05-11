@@ -134,24 +134,24 @@ export default async function ReporteDepartamentoPage({
   });
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Reporte detallado
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
               Por departamento
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               Consulta deuda, pagos y movimientos históricos por unidad.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <p className="text-sm font-semibold text-white">
               Seleccionar departamento
             </p>
@@ -160,7 +160,7 @@ export default async function ReporteDepartamentoPage({
               <select
                 name="departamento"
                 defaultValue={deptoIdActivo}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none"
+                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none"
               >
                 {departamentosRows.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -171,7 +171,7 @@ export default async function ReporteDepartamentoPage({
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-[#ff5a3d] px-5 py-3 font-bold text-white transition hover:brightness-110"
+                className="w-full rounded-2xl bg-[#ff5a3d] px-3.5 py-2 font-bold text-white transition hover:brightness-110"
               >
                 Ver reporte
               </button>
@@ -180,7 +180,7 @@ export default async function ReporteDepartamentoPage({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Card
           title="Departamento"
           value={String(departamentoActual?.numero || "-")}
@@ -196,33 +196,33 @@ export default async function ReporteDepartamentoPage({
         />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <Mini title="Deuda total" value={formatBs(deudaTotal)} />
         <Mini title="Pagos registrados" value={String(pagosRows.length)} />
         <Mini title="Movimientos" value={String(movimientos.length)} />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
             Historial completo
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
+          <h2 className="mt-2 text-xl font-bold text-white">
             Movimientos del departamento
           </h2>
         </div>
 
-        <div className="p-4 md:p-5">
+        <div className="p-4 md:p-4">
           {movimientos.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center text-slate-300">
               Este departamento no tiene movimientos todavía.
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {movimientos.map((m, i) => (
                 <div
                   key={i}
-                  className="grid gap-4 rounded-[24px] border border-white/20 bg-[#2d4a6c] p-5 md:grid-cols-[180px_1fr_120px_140px_160px] md:items-center"
+                  className="grid gap-3 rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 md:grid-cols-[180px_1fr_120px_140px_160px] md:items-center"
                 >
                   <div>
                     <p className="text-sm text-slate-300">Fecha</p>
@@ -274,9 +274,9 @@ function Card({
   value: string;
 }) {
   return (
-    <div className="rounded-[24px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10">
+    <div className="rounded-[24px] bg-[#213b59] p-4 shadow-xl ring-1 ring-white/10">
       <p className="text-sm text-slate-300">{title}</p>
-      <p className="mt-3 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-3 text-xl font-bold text-white">{value}</p>
     </div>
   );
 }
@@ -291,7 +291,7 @@ function Mini({
   return (
     <div className="rounded-2xl bg-[#2d4a6c] p-4 ring-1 ring-white/10">
       <p className="text-sm text-slate-300">{title}</p>
-      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-2 text-xl font-bold text-white">{value}</p>
     </div>
   );
 }

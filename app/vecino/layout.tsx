@@ -82,7 +82,7 @@ export default async function VecinoLayout({
     <div className="theme-shell min-h-screen">
       <header className="theme-hero-alt sticky top-0 z-40 border-b border-white/10 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-2 md:px-6 md:py-4">
-          <div className="flex items-start justify-between gap-3 md:items-center md:gap-4">
+          <div className="flex items-start justify-between gap-3 md:items-center md:gap-3">
             <div>
               <h1 className="text-base font-bold leading-tight md:text-2xl">MiBloque Vecino</h1>
               <p className="mt-1 text-xs text-slate-200 md:hidden">
@@ -149,7 +149,7 @@ export default async function VecinoLayout({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-6">{children}</main>
+      <main className="mx-auto max-w-7xl px-3 py-2 md:px-6 md:py-6">{children}</main>
     </div>
   );
 }

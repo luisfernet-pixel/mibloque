@@ -38,14 +38,14 @@ export default async function EditVecinoPage({ params }: Props) {
   const departamentoActual = departamentos?.find((item) => item.id === vecino.departamento_id);
 
   return (
-    <main className="space-y-6">
-      <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="theme-hero rounded-[24px] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Editar departamento</h1>
+        <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Editar departamento</h1>
         <p className="mt-4 max-w-2xl text-slate-200">Change the code, apartment, password or status.</p>
       </section>
 
-      <section className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
+      <section className="theme-panel rounded-[24px] p-6 shadow-xl ring-1 ring-white/10">
         <UserCreateForm
           mode="departamento"
           blocks={bloques ?? []}
@@ -71,13 +71,13 @@ export default async function EditVecinoPage({ params }: Props) {
             <input type="hidden" name="id" value={vecino.id} />
             <Link
               href="/superadmin/vecinos"
-              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="rounded-2xl border border-white/10 bg-white/5 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
             >
               Volver
             </Link>
             <ConfirmActionButton
               confirmText="Borrar este departamento? Perdera acceso al sistema."
-              className="rounded-2xl bg-[#ff5a3d] px-5 py-3 text-sm font-bold text-white transition hover:brightness-110"
+              className="rounded-2xl bg-[#ff5a3d] px-3.5 py-2 text-sm font-bold text-white transition hover:brightness-110"
             >
               Borrar departamento
             </ConfirmActionButton>

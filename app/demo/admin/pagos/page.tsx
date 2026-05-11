@@ -29,7 +29,7 @@ const rows = [
 
 export default function DemoAdminPagosPage() {
   return (
-    <main className="space-y-6">
+    <main className="space-y-3">
       <section className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
         <Link
           href="/demo/admin"
@@ -59,10 +59,10 @@ export default function DemoAdminPagosPage() {
         </button>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="p-6 md:p-8">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="p-4 md:p-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Cobros</p>
-          <h1 className="mt-2 text-3xl font-bold text-white">Historial de pagos</h1>
+          <h1 className="mt-2 text-xl font-bold text-white">Historial de pagos</h1>
           <p className="mt-2 text-sm text-slate-300">
             Pantalla navegable de demostracion. Los botones internos estan desactivados.
           </p>
@@ -85,28 +85,28 @@ export default function DemoAdminPagosPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#20354d] shadow-xl ring-1 ring-white/10">
+      <section className="overflow-hidden rounded-[24px] bg-[#20354d] shadow-xl ring-1 ring-white/10">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-[#16283c] text-left text-slate-300">
               <tr>
-                <th className="px-4 py-3">Fecha</th>
-                <th className="px-4 py-3">Depto</th>
-                <th className="px-4 py-3">Periodo</th>
-                <th className="px-4 py-3">Monto</th>
-                <th className="px-4 py-3">Metodo</th>
-                <th className="px-4 py-3">Referencia</th>
+                <th className="px-3 py-2">Fecha</th>
+                <th className="px-3 py-2">Depto</th>
+                <th className="px-3 py-2">Periodo</th>
+                <th className="px-3 py-2">Monto</th>
+                <th className="px-3 py-2">Metodo</th>
+                <th className="px-3 py-2">Referencia</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((item) => (
                 <tr key={`${item.fecha}-${item.depto}-${item.ref}`} className="border-t border-white/10 text-slate-200">
-                  <td className="px-4 py-3">{item.fecha}</td>
-                  <td className="px-4 py-3 font-semibold text-white">{item.depto}</td>
-                  <td className="px-4 py-3">{item.periodo}</td>
-                  <td className="px-4 py-3 font-bold text-white">{item.monto}</td>
-                  <td className="px-4 py-3">{item.metodo}</td>
-                  <td className="px-4 py-3">{item.ref}</td>
+                  <td className="px-3 py-2">{item.fecha}</td>
+                  <td className="px-3 py-2 font-semibold text-white">{item.depto}</td>
+                  <td className="px-3 py-2">{item.periodo}</td>
+                  <td className="px-3 py-2 font-bold text-white">{item.monto}</td>
+                  <td className="px-3 py-2">{item.metodo}</td>
+                  <td className="px-3 py-2">{item.ref}</td>
                 </tr>
               ))}
             </tbody>

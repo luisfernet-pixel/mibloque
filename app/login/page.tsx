@@ -1,9 +1,33 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
+
+const SESSION_CHECK_TIMEOUT_MS = 8000;
+
+type PromiseValue<T extends PromiseLike<unknown>> = T extends PromiseLike<infer U> ? U : never;
+
+function withTimeout<T extends PromiseLike<unknown>>(
+  promise: T,
+  message: string
+): Promise<PromiseValue<T>> {
+  return new Promise<PromiseValue<T>>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), SESSION_CHECK_TIMEOUT_MS);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value as PromiseValue<T>);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,42 +47,57 @@ export default function LoginPage() {
     let cancelled = false;
 
     async function checkExistingSession() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await withTimeout(
+          supabase.auth.getUser(),
+          "La verificacion de sesion esta tardando demasiado."
+        );
 
-      if (!user || cancelled) {
+        if (!user || cancelled) {
+          return;
+        }
+
+        const { data: perfil, error: perfilError } = await withTimeout(
+          supabase.from("usuarios").select("rol").eq("id", user.id).single(),
+          "No se pudo verificar el perfil del usuario."
+        );
+
+        if (cancelled) return;
+
+        if (perfilError) {
+          throw perfilError;
+        }
+
+        if (perfil?.rol === "superadmin") {
+          router.replace("/superadmin");
+          return;
+        }
+
+        if (perfil?.rol === "admin") {
+          router.replace("/admin");
+          return;
+        }
+
+        if (perfil?.rol === "vecino") {
+          router.replace("/vecino");
+          return;
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? `${err.message} Puedes iniciar sesion manualmente.`
+              : "No se pudo verificar la sesion actual. Puedes iniciar sesion manualmente."
+          );
+        }
+      } finally {
         if (!cancelled) {
           setCheckingSession(false);
         }
-        return;
       }
-
-      const { data: perfil } = await supabase
-        .from("usuarios")
-        .select("rol")
-        .eq("id", user.id)
-        .single();
-
-      if (cancelled) return;
-
-      if (perfil?.rol === "superadmin") {
-        router.replace("/superadmin");
-        return;
-      }
-
-      if (perfil?.rol === "admin") {
-        router.replace("/admin");
-        return;
-      }
-
-      if (perfil?.rol === "vecino") {
-        router.replace("/vecino");
-        return;
-      }
-
-      setCheckingSession(false);
     }
 
     void checkExistingSession();
@@ -220,12 +259,12 @@ export default function LoginPage() {
       <div className="mx-auto max-w-2xl">
         <section className="theme-panel rounded-3xl p-6 shadow-2xl">
           <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-white">Iniciar sesion</h2>
+            <h2 className="text-xl font-bold text-white">Iniciar sesion</h2>
             <p className="mt-2 text-sm text-slate-300">Elige tu tipo de acceso</p>
           </div>
 
           {error && (
-            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
               {error}
             </div>
           )}
@@ -233,7 +272,7 @@ export default function LoginPage() {
           <div className="space-y-5">
             <form
               onSubmit={loginAdmin}
-              className="theme-panel-soft rounded-3xl border border-white/10 p-5"
+              className="theme-panel-soft rounded-3xl border border-white/10 p-4"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -246,7 +285,7 @@ export default function LoginPage() {
                 </span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/80">Email</label>
                   <input
@@ -254,7 +293,7 @@ export default function LoginPage() {
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
-                    className="w-full px-4 py-3"
+                    className="w-full px-3 py-2"
                     required
                   />
                 </div>
@@ -266,7 +305,7 @@ export default function LoginPage() {
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     placeholder="Tu contrasena"
-                    className="w-full px-4 py-3"
+                    className="w-full px-3 py-2"
                     required
                   />
                 </div>
@@ -274,7 +313,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loadingAdmin}
-                  className="btn-primary w-full rounded-2xl px-4 py-3 font-semibold"
+                  className="btn-primary w-full rounded-2xl px-3 py-2 font-semibold"
                 >
                   {loadingAdmin ? "Ingresando..." : "Entrar como admin"}
                 </button>
@@ -283,7 +322,7 @@ export default function LoginPage() {
 
             <form
               onSubmit={loginVecino}
-              className="theme-panel-soft rounded-3xl border border-white/10 p-5"
+              className="theme-panel-soft rounded-3xl border border-white/10 p-4"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -296,7 +335,7 @@ export default function LoginPage() {
                 </span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white/80">Usuario</label>
                   <input
@@ -304,7 +343,7 @@ export default function LoginPage() {
                     value={vecinoUser}
                     onChange={(e) => setVecinoUser(e.target.value)}
                     placeholder="24-202"
-                    className="w-full px-4 py-3"
+                    className="w-full px-3 py-2"
                     required
                   />
                 </div>
@@ -316,7 +355,7 @@ export default function LoginPage() {
                     value={vecinoCode}
                     onChange={(e) => setVecinoCode(e.target.value)}
                     placeholder="Tu clave"
-                    className="w-full px-4 py-3"
+                    className="w-full px-3 py-2"
                     required
                   />
                 </div>
@@ -324,7 +363,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loadingVecino}
-                  className="btn-primary w-full rounded-2xl px-4 py-3 font-semibold"
+                  className="btn-primary w-full rounded-2xl px-3 py-2 font-semibold"
                 >
                   {loadingVecino ? "Ingresando..." : "Entrar como vecino"}
                 </button>

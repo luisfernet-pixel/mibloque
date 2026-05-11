@@ -156,14 +156,14 @@ export default async function ReporteCuadroPage({
     });
 
   return (
-    <main className="print-cuadro-page space-y-6 print:space-y-2">
-      <section className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8 print:rounded-none print:bg-white print:p-0 print:shadow-none print:ring-0">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <main className="print-cuadro-page space-y-3 print:space-y-2">
+      <section className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5 print:rounded-none print:bg-white print:p-0 print:shadow-none print:ring-0">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300 print:text-slate-600">
               Reporte mural
             </p>
-            <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl print:mt-1 print:text-2xl print:text-black">
+            <h1 className="mt-2 text-lg font-bold text-white md:text-3xl print:mt-1 print:text-2xl print:text-black">
               Resumen de cuotas por departamento
             </h1>
             <p className="mt-3 text-sm text-slate-200 print:text-slate-700">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { buildReceiptPdf } from "@/lib/pdf";
+import { getAuthUserSafe } from "@/lib/auth";
 
 function money(value: number | null | undefined) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", {
@@ -46,10 +47,7 @@ export async function GET(
   const { id } = await params;
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) {
     return NextResponse.redirect(new URL("/login", req.url), 303);

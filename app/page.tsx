@@ -110,7 +110,7 @@ export default async function HomePage() {
             {coreBenefits.map((item, index) => (
               <div
                 key={item}
-                className="landing-card landing-chip-card rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200"
+                className="landing-card landing-chip-card rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200"
                 style={{ animationDelay: `${0.08 + index * 0.06}s` }}
               >
                 {item}
@@ -121,16 +121,16 @@ export default async function HomePage() {
 
         <div className="landing-ideal-panel rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,_rgba(7,20,38,0.92),_rgba(17,32,56,0.88))] p-6 shadow-[0_28px_80px_rgba(2,6,23,0.42)]">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-200/80">Ideal para</p>
-          <h2 className="mt-3 text-2xl font-bold text-white">Edificios, condominios y conjuntos residenciales</h2>
+          <h2 className="mt-3 text-xl font-bold text-white">Edificios, condominios y conjuntos residenciales</h2>
           <p className="mt-3 text-sm leading-7 text-slate-300">
             Si hoy tu gestion depende de Excel y chat, MiBloque te ayuda a ordenar cobros, pagos y comunicacion sin perder seguimiento.
           </p>
 
-          <div className="mt-6 grid gap-4">
+          <div className="mt-6 grid gap-3">
             {modules.map((item, index) => (
               <article
                 key={item.title}
-                className="landing-card landing-service-card rounded-[1.6rem] border border-white/10 bg-white/5 p-5 shadow-[0_18px_45px_rgba(2,6,23,0.2)]"
+                className="landing-card landing-service-card rounded-[1.6rem] border border-white/10 bg-white/5 p-4 shadow-[0_18px_45px_rgba(2,6,23,0.2)]"
                 style={
                   {
                     "--enter-delay": `${0.18 + index * 0.08}s`,

@@ -122,20 +122,20 @@ export default async function VecinoComunicacionPage({
   const buzonHistorial = buzon.filter((item) => item.estado === "respondido");
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Comunicacion</p>
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
               Avisos y sugerencias
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               Revisa avisos del bloque y envía reclamos/sugerencias en una sola pantalla.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-300">Resumen</p>
             <div className="mt-4 space-y-2 text-sm text-slate-200">
               <p>Avisos visibles: <span className="font-bold text-white">{avisos.length}</span></p>
@@ -149,12 +149,12 @@ export default async function VecinoComunicacionPage({
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-2">
-        <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+      <section className="grid gap-3 xl:grid-cols-2">
+        <div className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
           <details className="group">
-            <summary className="cursor-pointer list-none border-b border-white/10 px-5 py-4">
+            <summary className="cursor-pointer list-none border-b border-white/10 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-2xl font-bold text-white">Avisos del bloque</h2>
+                <h2 className="text-xl font-bold text-white">Avisos del bloque</h2>
                 <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
                   {avisos.length} aviso(s)
                 </span>
@@ -165,7 +165,7 @@ export default async function VecinoComunicacionPage({
               </p>
             </summary>
 
-            <div className="space-y-3 p-5">
+            <div className="space-y-3 p-4">
               {avisos.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
                   No hay avisos publicados.
@@ -199,11 +199,11 @@ export default async function VecinoComunicacionPage({
           </details>
         </div>
 
-        <div className="overflow-hidden rounded-[28px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <div className="border-b border-white/10 px-5 py-4">
-            <h2 className="text-2xl font-bold text-white">Sugerencias y reclamos</h2>
+        <div className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+          <div className="border-b border-white/10 px-4 py-3">
+            <h2 className="text-xl font-bold text-white">Sugerencias y reclamos</h2>
           </div>
-          <div className="space-y-4 p-5">
+          <div className="space-y-3 p-4">
             <form action={enviarBuzon} className="space-y-3 rounded-2xl border border-white/15 bg-[#2d4a6c] p-4">
               <div className="grid gap-3 md:grid-cols-[170px_1fr]">
                 <select

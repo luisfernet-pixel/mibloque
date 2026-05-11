@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
+import { getAuthUserSafe } from "@/lib/auth";
 
 export type ActionState = {
   ok: boolean;
@@ -17,10 +18,7 @@ const initialState: ActionState = {
 
 async function requireSuperadmin() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) {
     throw new Error("Debes iniciar sesión.");

@@ -1,11 +1,29 @@
 import { createClient } from "@/lib/supabase/server";
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+export async function getAuthUserSafe(supabase?: SupabaseServerClient) {
+  const client = supabase ?? (await createClient());
+
+  try {
+    const {
+      data: { user },
+      error,
+    } = await client.auth.getUser();
+
+    if (error) {
+      return null;
+    }
+
+    return user ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getUsuarioActual() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) return null;
 

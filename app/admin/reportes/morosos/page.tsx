@@ -96,25 +96,25 @@ export default async function MorososPage() {
   const totalPendientes = lista.reduce((acc, item) => acc + item.pendientes, 0);
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Reporte de cobranza
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
               Morosos
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               Visualiza los departamentos que tienen cuotas pendientes o vencidas
               y el monto total adeudado.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <p className="text-sm font-semibold text-white">
               Resumen rápido
             </p>
@@ -131,33 +131,33 @@ export default async function MorososPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <Card titulo="Morosos" valor={String(lista.length)} />
         <Card titulo="Pendientes" valor={String(totalPendientes)} />
         <AlertCard titulo="Deuda total" valor={formatBs(deudaTotal)} />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
             Lista actual
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
+          <h2 className="mt-2 text-xl font-bold text-white">
             Departamentos con deuda
           </h2>
         </div>
 
-        <div className="p-4 md:p-5">
+        <div className="p-4 md:p-4">
           {lista.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center text-slate-300">
               No hay morosos. Excelente.
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {lista.map((item, i) => (
                 <div
                   key={i}
-                  className="grid gap-4 rounded-[24px] border border-white/20 bg-[#2d4a6c] p-5 md:grid-cols-[160px_1fr_140px_180px] md:items-center"
+                  className="grid gap-3 rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 md:grid-cols-[160px_1fr_140px_180px] md:items-center"
                 >
                   <div>
                     <p className="text-sm text-slate-300">Departamento</p>
@@ -204,9 +204,9 @@ function Card({
   valor: string;
 }) {
   return (
-    <div className="rounded-[24px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10">
+    <div className="rounded-[24px] bg-[#213b59] p-4 shadow-xl ring-1 ring-white/10">
       <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
+      <p className="mt-3 text-xl font-bold text-white">{valor}</p>
     </div>
   );
 }
@@ -219,9 +219,9 @@ function AlertCard({
   valor: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-orange-400/30 bg-orange-500/10 p-5 shadow-xl">
+    <div className="rounded-[24px] border border-orange-400/30 bg-orange-500/10 p-4 shadow-xl">
       <p className="text-sm text-orange-100">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
+      <p className="mt-3 text-xl font-bold text-white">{valor}</p>
     </div>
   );
 }

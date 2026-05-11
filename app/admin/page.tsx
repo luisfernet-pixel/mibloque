@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUserSafe } from "@/lib/auth";
 
 function bs(n: number) {
   return `Bs ${Number(n || 0).toLocaleString("es-BO")}`;
@@ -19,8 +20,13 @@ function esDelMesActual(fecha?: string | null) {
   );
 }
 
+function getPrimerNombre(value: string | null | undefined) {
+  const raw = String(value || "").trim();
+  if (!raw) return "Admin";
+  return raw.split(/\s+/)[0] || raw;
+}
+
 type AdminCuotaRow = {
-  id: string;
   monto_total: number | null;
   estado: string | null;
   created_at: string | null;
@@ -33,49 +39,24 @@ type AdminGastoRow = {
 };
 
 type AdminPagoRow = {
-  id: string;
   monto_pagado: number | null;
   fecha_pago: string | null;
-  departamento_id: string | null;
 };
 
 type AdminDepartamentoRow = {
   id: string;
-  numero: string | number | null;
-};
-
-type AdminConfirmacionRow = {
-  id: string;
-  estado: string | null;
-  created_at: string | null;
-  departamento_id: string | null;
-  departamentos:
-    | {
-        id: string;
-        bloque_id: string | null;
-        numero: string | number | null;
-      }
-    | {
-        id: string;
-        bloque_id: string | null;
-        numero: string | number | null;
-      }[]
-    | null;
 };
 
 export default async function AdminPage() {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
 
   const { data: perfil } = await supabase
     .from("usuarios")
-    .select("rol, bloque_id")
+    .select("rol, bloque_id, nombre")
     .eq("id", user.id)
     .single();
 
@@ -90,7 +71,7 @@ export default async function AdminPage() {
     await Promise.all([
       adminSupabase
         .from("cuotas")
-        .select("id, monto_total, estado, created_at, departamento_id")
+        .select("monto_total, estado, created_at, departamento_id")
         .eq("bloque_id", bloqueId),
 
       adminSupabase
@@ -100,29 +81,18 @@ export default async function AdminPage() {
 
       adminSupabase
         .from("confirmaciones_pago")
-        .select(`
-          id,
-          estado,
-          created_at,
-          departamento_id,
-          departamentos:departamento_id (
-            id,
-            bloque_id,
-            numero
-          )
-        `)
+        .select("id")
         .eq("bloque_id", bloqueId)
-        .eq("estado", "pendiente")
-        .order("created_at", { ascending: false }),
+        .eq("estado", "pendiente"),
 
       adminSupabase
         .from("pagos")
-        .select("id, monto_pagado, fecha_pago, departamento_id")
+        .select("monto_pagado, fecha_pago")
         .eq("bloque_id", bloqueId),
 
       adminSupabase
         .from("departamentos")
-        .select("id, numero")
+        .select("id")
         .eq("bloque_id", bloqueId),
     ]);
 
@@ -130,229 +100,140 @@ export default async function AdminPage() {
   const gastos = (gastosRes.data ?? []) as AdminGastoRow[];
   const pagos = (pagosRes.data ?? []) as AdminPagoRow[];
   const departamentos = (departamentosRes.data ?? []) as AdminDepartamentoRow[];
-  const confirmaciones = (confirmacionesRes.data ?? []) as AdminConfirmacionRow[];
 
   const cobradoDelMes = pagos
     .filter((x) => esDelMesActual(x.fecha_pago))
-    .reduce((a: number, x) => a + Number(x.monto_pagado || 0), 0);
-
-  const pendienteActual = cuotas
-    .filter((x) => {
-      const estado = String(x.estado || "").toLowerCase();
-      return estado === "pendiente" || estado === "vencido";
-    })
-    .reduce((a: number, x) => a + Number(x.monto_total || 0), 0);
+    .reduce((a, x) => a + Number(x.monto_pagado || 0), 0);
 
   const gastosDelMes = gastos
     .filter((x) => esDelMesActual(x.created_at))
-    .reduce((a: number, x) => a + Number(x.monto || 0), 0);
+    .reduce((a, x) => a + Number(x.monto || 0), 0);
 
-  const saldoActual = cobradoDelMes - gastosDelMes;
-  const comprobantesPorRevisar = confirmaciones.length;
+  const saldoDelMes = cobradoDelMes - gastosDelMes;
 
-  const deptosMoraMes = new Set(
+  const estadosDeuda = new Set(["pendiente", "vencido"]);
+
+  const deptosConDeudaMes = new Set(
     cuotas
       .filter((x) => {
         const estado = String(x.estado || "").toLowerCase();
-        return (
-          (estado === "pendiente" || estado === "vencido") &&
-          esDelMesActual(x.created_at)
-        );
+        return estadosDeuda.has(estado) && esDelMesActual(x.created_at);
       })
       .map((x) => x.departamento_id)
       .filter(Boolean)
   ).size;
 
-  const deptosMoraAntigua = new Set(
+  const deptosConDeudaAnterior = new Set(
     cuotas
       .filter((x) => {
         const estado = String(x.estado || "").toLowerCase();
-        return (
-          (estado === "pendiente" || estado === "vencido") &&
-          !esDelMesActual(x.created_at)
-        );
+        return estadosDeuda.has(estado) && !esDelMesActual(x.created_at);
       })
       .map((x) => x.departamento_id)
       .filter(Boolean)
   ).size;
 
   const deptosAlDia = departamentos.filter((depto) => {
-    const tieneDeuda = cuotas.some((c) => {
-      const estado = String(c.estado || "").toLowerCase();
-      return (
-        c.departamento_id === depto.id &&
-        (estado === "pendiente" || estado === "vencido")
-      );
+    const tieneDeuda = cuotas.some((cuota) => {
+      const estado = String(cuota.estado || "").toLowerCase();
+      return cuota.departamento_id === depto.id && estadosDeuda.has(estado);
     });
 
     return !tieneDeuda;
   }).length;
 
+  const comprobantesPendientes = confirmacionesRes.data?.length ?? 0;
+  const primerNombre = getPrimerNombre(perfil.nombre);
+
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
-        <div className="space-y-3 p-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-300">
-            Administracion
-          </p>
-          <h1 className="text-2xl font-bold leading-tight text-white">Inicio</h1>
-          <p className="text-sm text-slate-200">
-            Saldo {bs(saldoActual)} - Pendientes revisar {comprobantesPorRevisar}
-          </p>
-
-          <details className="group rounded-2xl border border-white/15 bg-white/5 p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-cyan-100">
-              Ver detalle
-              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:hidden">
-                Abrir
-              </span>
-              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] group-open:inline-flex">
-                Cerrar
-              </span>
-            </summary>
-
-            <p className="mt-3 text-sm text-slate-200">
-              Controla cobros, gastos y pagos pendientes desde un solo lugar.
-            </p>
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <InfoBox label="Pend. revisar" value={String(comprobantesPorRevisar)} />
-              <InfoBox label="Deptos al dia" value={String(deptosAlDia)} />
-              <InfoBox label="Mora antigua" value={String(deptosMoraAntigua)} />
-              <InfoBox label="Pendiente" value={bs(pendienteActual)} />
-            </div>
-
-            <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
-              <Link
-                href="/admin/pagos/nuevo"
-                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-bold text-white transition hover:brightness-110"
-              >
-                Pago manual
-              </Link>
-              <Link
-                href="/admin/confirmaciones"
-                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white transition hover:brightness-110"
-              >
-                Comprobantes
-              </Link>
-              <Link
-                href="/admin/cuotas"
-                className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
-              >
-                Cobros
-              </Link>
-            </div>
-          </details>
-        </div>
+    <main className="space-y-6 md:space-y-8">
+      <section className="space-y-2">
+        <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
+          Hola, {primerNombre}
+        </h1>
+        <p className="text-lg text-slate-300 md:text-xl">
+          Que quieres hacer ahora?
+        </p>
       </section>
 
-      <section className="hidden overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Administracion
-            </p>
-
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Inicio
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
-              Resumen operativo del bloque. Controla cobros, gastos y pagos
-              pendientes desde un solo lugar.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/admin/pagos/nuevo"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-cyan-500 px-6 text-sm font-bold text-white shadow-lg shadow-cyan-950/30 transition hover:brightness-110"
-              >
-                Registrar pago manual
-              </Link>
-
-              <Link
-                href="/admin/confirmaciones"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#ff5a3d] px-6 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
-              >
-                Revisar comprobantes
-              </Link>
-
-              <Link
-                href="/admin/cuotas"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20"
-              >
-                Gestionar cobros
-              </Link>
-
-              <Link
-                href="/admin/gastos"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-6 text-sm font-bold text-white transition hover:bg-white/10"
-              >
-                Ver gastos
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
-            <div>
-              <p className="text-sm font-semibold text-white">
-                Estado inmediato
-              </p>
-              <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
-                Indicadores clave
-              </p>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <InfoBox label="Saldo del mes" value={bs(saldoActual)} />
-              <InfoBox
-                label="Pendientes revisar"
-                value={String(comprobantesPorRevisar)}
-              />
-              <InfoBox label="Deptos al dia" value={String(deptosAlDia)} />
-              <InfoBox
-                label="Mora antigua"
-                value={String(deptosMoraAntigua)}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card titulo="Cobrado del mes" valor={bs(cobradoDelMes)} />
-        <Card titulo="Pendiente actual" valor={bs(pendienteActual)} />
-        <Card titulo="Gastos del mes" valor={bs(gastosDelMes)} />
-        <AlertCard
-          titulo="Comprobantes pendientes"
-          valor={String(comprobantesPorRevisar)}
-          href="/admin/confirmaciones"
+      <section className="grid gap-4 md:grid-cols-2 xl:gap-5">
+        <ActionCard
+          href="/admin/pagos/nuevo"
+          title="Registrar pago"
+          description="Cuando un vecino paga en efectivo, QR o transferencia."
+          tone="cyan"
+          icon={<CashIcon />}
+        />
+        <ActionCard
+          href="/admin/vecinos-pagos"
+          title="Ver quien debe"
+          description="Revisa vecinos con cuotas pendientes o mora."
+          tone="orange"
+          icon={<BookIcon />}
+        />
+        <ActionCard
+          href="/admin/gastos/nuevo"
+          title="Registrar gasto"
+          description="Anota pagos de limpieza, jardinero, luz, agua o reparaciones."
+          tone="blue"
+          icon={<ReceiptIcon />}
+        />
+        <ActionCard
+          href="/admin/comunicacion"
+          title="Enviar aviso"
+          description="Publica un comunicado para todos los vecinos."
+          tone="sky"
+          icon={<MegaphoneIcon />}
         />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Estado general
+      <section className="rounded-[28px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10 md:p-7">
+        <div className="flex flex-col gap-1">
+          <p className="text-2xl font-bold text-white md:text-3xl">
+            Resumen del mes
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
-            Situacion del bloque
-          </h2>
+          <p className="text-sm text-slate-300 md:text-base">
+            Lo mas importante del dinero este mes.
+          </p>
         </div>
 
-        <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 md:p-6">
-          <Mini titulo="Saldo mensual" valor={bs(saldoActual)} />
-          <Mini
-            titulo="Mora de este mes"
-            valor={String(deptosMoraMes)}
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <SummaryTile
+            label="Cobre"
+            value={bs(cobradoDelMes)}
+            valueClassName="text-cyan-300"
           />
-          <Mini
-            titulo="Mora antigua"
-            valor={String(deptosMoraAntigua)}
+          <SummaryTile
+            label="Gaste"
+            value={bs(gastosDelMes)}
+            valueClassName="text-[#ff8a6b]"
           />
-          <Mini
-            titulo="Departamentos al dia"
-            valor={String(deptosAlDia)}
+          <SummaryTile
+            label="Saldo"
+            value={bs(saldoDelMes)}
+            valueClassName="text-white"
+          />
+        </div>
+      </section>
+
+      <section className="rounded-[28px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10 md:p-7">
+        <div className="flex flex-col gap-1">
+          <p className="text-2xl font-bold text-white md:text-3xl">Vecinos</p>
+          <p className="text-sm text-slate-300 md:text-base">
+            Una vista rapida para saber como esta el bloque.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Al dia" value={String(deptosAlDia)} />
+          <StatCard label="Deben este mes" value={String(deptosConDeudaMes)} />
+          <StatCard
+            label="Deben meses anteriores"
+            value={String(deptosConDeudaAnterior)}
+          />
+          <StatCard
+            label="Comprobantes por revisar"
+            value={String(comprobantesPendientes)}
           />
         </div>
       </section>
@@ -360,66 +241,66 @@ export default async function AdminPage() {
   );
 }
 
-function Card({
-  titulo,
-  valor,
-}: {
-  titulo: string;
-  valor: string;
-}) {
-  return (
-    <div className="rounded-[24px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10">
-      <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
-    </div>
-  );
-}
-
-function AlertCard({
-  titulo,
-  valor,
+function ActionCard({
   href,
+  title,
+  description,
+  tone,
+  icon,
 }: {
-  titulo: string;
-  valor: string;
   href: string;
+  title: string;
+  description: string;
+  tone: "cyan" | "orange" | "blue" | "sky";
+  icon: React.ReactNode;
 }) {
-  const alerta = Number(valor || 0) > 0;
+  const tones = {
+    cyan: "border-cyan-300/20 hover:border-cyan-300/35",
+    orange: "border-orange-300/20 hover:border-orange-300/35",
+    blue: "border-blue-300/20 hover:border-blue-300/35",
+    sky: "border-sky-300/20 hover:border-sky-300/35",
+  };
 
   return (
     <Link
       href={href}
-      className={`rounded-[24px] p-5 shadow-xl ring-1 transition ${
-        alerta
-          ? "bg-[#ff5a3d] ring-orange-300/20 hover:brightness-110"
-          : "bg-[#213b59] ring-white/10 hover:bg-[#29425f]"
-      }`}
+      className={`rounded-[28px] border bg-[#213b59] p-5 shadow-xl transition hover:bg-[#29425f] md:p-7 ${tones[tone]}`}
     >
-      <p className="text-sm text-white/90">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
-      <p className="mt-2 text-sm text-white/90">
-        {alerta ? "Revisar ahora" : "Sin pendientes"}
-      </p>
+      <div className="flex items-start gap-4">
+        <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-2xl font-bold text-white md:text-3xl">{title}</p>
+          <p className="mt-2 text-base leading-7 text-slate-200 md:text-lg">
+            {description}
+          </p>
+        </div>
+      </div>
     </Link>
   );
 }
 
-function Mini({
-  titulo,
-  valor,
+function SummaryTile({
+  label,
+  value,
+  valueClassName,
 }: {
-  titulo: string;
-  valor: string;
+  label: string;
+  value: string;
+  valueClassName?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#2d4a6c] p-4 ring-1 ring-white/10">
-      <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-2 text-2xl font-bold text-white">{valor}</p>
+    <div className="rounded-[22px] bg-[#2d4a6c] px-4 py-4">
+      <p className="text-base text-slate-300">{label}</p>
+      <p className={`mt-2 text-3xl font-bold ${valueClassName || "text-white"}`}>
+        {value}
+      </p>
     </div>
   );
 }
 
-function InfoBox({
+function StatCard({
   label,
   value,
 }: {
@@ -427,12 +308,84 @@ function InfoBox({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#3a5879] p-4 ring-1 ring-white/10">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
-        {label}
-      </p>
-      <p className="mt-2 text-xl font-bold text-white">{value}</p>
+    <div className="rounded-[22px] bg-[#2d4a6c] px-4 py-4">
+      <p className="text-sm text-slate-300 md:text-base">{label}</p>
+      <p className="mt-2 text-3xl font-bold text-white">{value}</p>
     </div>
   );
 }
 
+function CashIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-cyan-300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="6" width="18" height="12" rx="2.5" />
+      <circle cx="12" cy="12" r="2.7" />
+      <path d="M7 9h.01M17 15h.01" />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-[#ff8a6b]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v17H7.5A2.5 2.5 0 0 0 5 21.5v-17Z" />
+      <path d="M7.5 2A2.5 2.5 0 0 0 5 4.5V19" />
+      <path d="M9 7h6M9 11h6" />
+    </svg>
+  );
+}
+
+function ReceiptIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-blue-300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M7 3h10v18l-2-1.4L13 21l-2-1.4L9 21l-2-1.4L5 21V5a2 2 0 0 1 2-2Z" />
+      <path d="M9 8h6M9 12h6M9 16h4" />
+    </svg>
+  );
+}
+
+function MegaphoneIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-sky-300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 11v2a2 2 0 0 0 2 2h2l4 4V5L7 9H5a2 2 0 0 0-2 2Z" />
+      <path d="M16 8.5a4.5 4.5 0 0 1 0 7" />
+      <path d="M18.5 6a8 8 0 0 1 0 12" />
+    </svg>
+  );
+}

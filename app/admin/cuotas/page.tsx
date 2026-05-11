@@ -125,86 +125,91 @@ export default async function CuotasPage() {
   }
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-2.5 p-3 md:p-3.5 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Cobros
+              Vecinos y pagos
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Cuotas y cobros
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
+              Ver quien debe
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
-              Revisa deudas, pagos realizados y el estado general de cobro del
-              bloque.
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+              Aqui puedes ver que departamentos deben, cuanto deben y revisar
+              pagos o comprobantes sin entrar a pantallas complicadas.
             </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-2 md:grid md:w-full md:grid-cols-3 md:items-center">
               <Link
                 href="/admin/confirmaciones"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-[#ff5a3d] px-6 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110 md:justify-self-start"
               >
-                Revisar comprobantes
+                Ver comprobantes
+              </Link>
+
+              <Link
+                href="/admin/pagos/nuevo"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-bold text-white transition hover:bg-white/15 md:justify-self-center"
+              >
+                Registrar pago
               </Link>
 
               <Link
                 href="/admin/pagos"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20 md:justify-self-end"
               >
-                Historial de pagos
+                Ver historial
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <div>
               <p className="text-sm font-semibold text-white">
-                Resumen de cobranza
+                Resumen rapido
               </p>
               <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
-                Estado actual
+                Lo mas importante
               </p>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <InfoBox label="Pendientes" value={String(pendientes.length)} />
               <InfoBox label="Vencidas" value={String(vencidas.length)} />
-              <InfoBox label="Pagadas" value={String(pagadas.length)} />
-              <InfoBox label="Total cuotas" value={String(cuotas.length)} />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <Mini titulo="Por cobrar" valor={bs(totalPendiente)} />
         <Mini titulo="Vencido" valor={bs(totalVencido)} />
         <Mini titulo="Ya cobrado" valor={bs(totalPagado)} />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
               Deudas del bloque
             </p>
-            <h2 className="mt-2 text-2xl font-bold text-white">
-              Estado de cuotas por departamento
+            <h2 className="mt-1.5 text-lg font-bold text-white">
+              Vecinos con cuotas pendientes
             </h2>
-            <p className="mt-1 text-sm text-slate-300">
-              Agrupado por departamento con total adeudado por unidad.
+            <p className="mt-1 text-xs text-slate-300">
+              Cada tarjeta muestra cuanto debe ese departamento.
             </p>
           </div>
 
-          <div className="w-fit rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white">
+          <div className="w-fit rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white">
             {departamentos.length} departamento(s)
           </div>
         </div>
 
-        <div className="p-4 md:p-5">
+        <div className="p-3 md:p-3">
           {departamentos.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
               <p className="text-lg font-bold text-white">
@@ -212,17 +217,17 @@ export default async function CuotasPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {grupos.map((grupo) => (
                 <details
                   key={grupo.departamento}
-                  className="group rounded-[24px] border border-white/20 bg-[#2d4a6c] p-4 md:p-5"
+                  className="group rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 md:p-3"
                 >
                   <summary className="list-none cursor-pointer">
-                    <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:items-end">
+                    <div className="grid gap-2 md:grid-cols-[1fr_auto_auto_auto_auto] md:items-end">
                       <div>
-                        <p className="text-sm text-slate-300">Departamento</p>
-                        <p className="mt-1 text-xl font-bold text-white">
+                        <p className="text-xs text-slate-300">Departamento</p>
+                        <p className="mt-1 text-lg font-bold text-white">
                           {grupo.departamento}
                         </p>
                       </div>
@@ -231,7 +236,7 @@ export default async function CuotasPage() {
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
                           Total adeudado
                         </p>
-                        <p className="mt-1 text-xl font-extrabold text-orange-200">
+                        <p className="mt-1 text-lg font-extrabold text-orange-200">
                           {bs(grupo.totalAdeudado)}
                         </p>
                       </div>
@@ -240,7 +245,7 @@ export default async function CuotasPage() {
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
                           Pendiente
                         </p>
-                        <p className="mt-1 text-lg font-bold text-orange-100">
+                        <p className="mt-1 text-base font-bold text-orange-100">
                           {bs(grupo.totalPendiente)}
                         </p>
                       </div>
@@ -249,23 +254,23 @@ export default async function CuotasPage() {
                         <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
                           Vencido
                         </p>
-                        <p className="mt-1 text-lg font-bold text-red-200">
+                        <p className="mt-1 text-base font-bold text-red-200">
                           {bs(grupo.totalVencido)}
                         </p>
                       </div>
 
                       <div className="self-center md:justify-self-end">
-                        <span className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-sm font-bold text-cyan-100 transition group-open:hidden">
+                        <span className="inline-flex min-h-[34px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-3 text-xs font-bold text-cyan-100 transition group-open:hidden">
                           Ampliar
                         </span>
-                        <span className="hidden min-h-[40px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-bold text-white transition group-open:inline-flex">
+                        <span className="hidden min-h-[34px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 text-xs font-bold text-white transition group-open:inline-flex">
                           Reducir
                         </span>
                       </div>
                     </div>
                   </summary>
 
-                  <div className="mt-4 border-t border-white/10 pt-4 group-open:block">
+                  <div className="mt-3 border-t border-white/10 pt-3 group-open:block">
                     <div>
                       {grupo.cuotas.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-white/20 bg-[#264465] px-4 py-4 text-sm text-slate-200">
@@ -276,7 +281,7 @@ export default async function CuotasPage() {
                           {grupo.cuotas.map((item) => (
                             <div
                               key={item.id}
-                              className="grid gap-3 rounded-2xl border border-white/10 bg-[#264465] px-4 py-3 md:grid-cols-[1fr_auto_auto] md:items-center"
+                              className="grid gap-3 rounded-2xl border border-white/10 bg-[#264465] px-3 py-2 md:grid-cols-[1fr_auto_auto] md:items-center"
                             >
                               <div>
                                 <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
@@ -333,9 +338,9 @@ function Mini({
   valor: string;
 }) {
   return (
-    <div className="rounded-[24px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10">
-      <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
+    <div className="rounded-[20px] bg-[#213b59] p-3 shadow-xl ring-1 ring-white/10">
+      <p className="text-xs text-slate-300">{titulo}</p>
+      <p className="mt-1.5 text-lg font-bold text-white">{valor}</p>
     </div>
   );
 }

@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 
 export default function NuevoBloquePage() {
   return (
-    <main className="space-y-6">
-      <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="theme-hero rounded-[24px] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
           Superadmin
         </p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">
+        <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">
           Crear nuevo bloque
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
@@ -21,7 +21,7 @@ export default function NuevoBloquePage() {
         </p>
       </section>
 
-      <section className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
+      <section className="theme-panel rounded-[24px] p-6 shadow-xl ring-1 ring-white/10">
         <BlockCreateForm action={createBlockAction} />
       </section>
     </main>

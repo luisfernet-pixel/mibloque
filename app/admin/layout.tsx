@@ -69,19 +69,17 @@ export default async function AdminLayout({
 
   const menu = [
     { href: "/admin", label: "Inicio" },
-    { href: "/admin/cuotas", label: "Cobros" },
-    { href: "/admin/confirmaciones", label: "Comprobantes" },
-    { href: "/admin/comunicacion", label: "Comunicaciones" },
+    { href: "/admin/vecinos-pagos", label: "Vecinos y pagos" },
     { href: "/admin/gastos", label: "Gastos" },
+    { href: "/admin/comunicacion", label: "Avisos" },
     { href: "/admin/reportes", label: "Reportes" },
-    { href: "/admin/configuracion", label: "Ajustes" },
   ];
 
   return (
     <div className="theme-shell min-h-screen">
       <header className="theme-hero-alt sticky top-0 z-40 border-b border-white/10 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
+        <div className="mx-auto max-w-7xl px-3 py-2 md:px-6 md:py-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
             <div>
               <h1 className="text-lg font-bold leading-tight md:text-2xl">MiBloque Admin</h1>
               <p className="mt-1 hidden text-xs text-slate-200 sm:block md:text-sm">
@@ -107,7 +105,7 @@ export default async function AdminLayout({
               >
                 <span className="inline-flex items-center gap-2">
                   <span>{item.label}</span>
-                  {item.href === "/admin/confirmaciones" && comprobantesPendientes > 0 ? (
+                  {item.href === "/admin/vecinos-pagos" && comprobantesPendientes > 0 ? (
                     <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
                       {comprobantesPendientes}
                     </span>
@@ -122,6 +120,15 @@ export default async function AdminLayout({
             ))}
           </nav>
 
+          <div className="mt-2 flex justify-end">
+            <Link
+              href="/admin/configuracion"
+              className="text-xs font-semibold text-slate-300 transition hover:text-white"
+            >
+              Ajustes
+            </Link>
+          </div>
+
           {comprobantesPendientes > 0 ? (
             <div className="mt-3 rounded-2xl border border-orange-400/30 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-100 md:mt-4 md:px-4 md:py-3 md:text-sm">
               Tienes {comprobantesPendientes} comprobante(s) pendiente(s) por revisar.
@@ -130,7 +137,7 @@ export default async function AdminLayout({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-3 md:px-5 md:py-4">{children}</main>
     </div>
   );
 }

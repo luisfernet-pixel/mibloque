@@ -8,14 +8,14 @@ const cuotas = [
 
 export default function DemoVecinoPage() {
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.2fr_0.8fr]">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Portal vecino
             </p>
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
+            <h1 className="mt-3 text-xl font-bold leading-tight text-white md:text-4xl">
               Estado de cuotas
             </h1>
             <p className="mt-4 text-sm leading-7 text-slate-200">
@@ -24,14 +24,14 @@ export default function DemoVecinoPage() {
             <div className="mt-6">
               <Link
                 href="/demo/vecino/transparencia"
-                className="rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-bold text-white"
+                className="rounded-2xl bg-cyan-500 px-3.5 py-2 text-sm font-bold text-white"
               >
                 Ver transparencia
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-4 md:p-6">
             <InfoBox label="Pendientes" value="1" />
             <div className="mt-3">
               <InfoBox label="En revision" value="1" />
@@ -43,8 +43,8 @@ export default function DemoVecinoPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#20354d] shadow-xl ring-1 ring-white/10">
-        <div className="p-4 md:p-5">
+      <section className="overflow-hidden rounded-[24px] bg-[#20354d] shadow-xl ring-1 ring-white/10">
+        <div className="p-4 md:p-4">
           <table className="min-w-full text-sm">
             <thead className="text-left text-slate-300">
               <tr className="border-b border-white/10">

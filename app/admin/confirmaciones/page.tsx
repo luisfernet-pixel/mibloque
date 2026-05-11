@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -128,44 +128,44 @@ export default async function AdminConfirmacionesPage() {
   );
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              ValidaciÃ³n de pagos
+              Validación de pagos
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Comprobantes de pagos
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
+              Comprobantes por revisar
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               Revisa los comprobantes enviados por los vecinos y aprueba solo los
-              pagos correctos para mantener el bloque al dÃ­a.
+              pagos correctos para mantener el bloque al día.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/admin/cuotas"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-6 text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
               >
-                Ver cobros
+                Ver quien debe
               </Link>
 
               <Link
                 href="/admin"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-6 text-sm font-bold text-white transition hover:bg-white/10"
+                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-bold text-white transition hover:bg-white/10"
               >
                 Volver al inicio
               </Link>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <div>
               <p className="text-sm font-semibold text-white">
-                Resumen de revisiÃ³n
+                Resumen de revisión
               </p>
               <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
                 Estado general
@@ -173,7 +173,7 @@ export default async function AdminConfirmacionesPage() {
             </div>
 
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <InfoBox label="Pendientes" value={String(pendientes.length)} />
+              <InfoBox label="Por revisar" value={String(pendientes.length)} />
               <InfoBox label="Aprobadas" value={String(aprobadas.length)} />
               <InfoBox label="Rechazadas" value={String(rechazadas.length)} />
               <InfoBox label="Total" value={String(rows.length)} />
@@ -182,23 +182,23 @@ export default async function AdminConfirmacionesPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <KpiCard title="Pendientes" value={String(pendientes.length)} tone="orange" />
         <KpiCard title="Aprobadas" value={String(aprobadas.length)} tone="cyan" />
         <KpiCard title="Rechazadas" value={String(rechazadas.length)} tone="red" />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-              RevisiÃ³n principal
+              Revisión principal
             </p>
-            <h2 className="mt-2 text-2xl font-bold text-white">
-              Confirmaciones pendientes
+            <h2 className="mt-2 text-xl font-bold text-white">
+              Comprobantes pendientes
             </h2>
             <p className="mt-1 text-sm text-slate-300">
-              Estas requieren atenciÃ³n inmediata.
+              Estas requieren atención inmediata.
             </p>
           </div>
 
@@ -207,7 +207,7 @@ export default async function AdminConfirmacionesPage() {
           </div>
         </div>
 
-        <div className="p-4 md:p-5">
+        <div className="p-4 md:p-4">
           {pendientes.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
               <p className="text-lg font-bold text-white">
@@ -218,13 +218,13 @@ export default async function AdminConfirmacionesPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {pendientes.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-[24px] border border-white/20 bg-[#2d4a6c] p-5 shadow-lg"
+                  className="rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 shadow-lg"
                 >
-                  <div className="grid gap-4 md:grid-cols-4">
+                  <div className="grid gap-3 md:grid-cols-4">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
                         Departamento
@@ -262,7 +262,7 @@ export default async function AdminConfirmacionesPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-[1fr_220px_180px] md:items-end">
+                  <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px_180px] md:items-end">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
                         Referencia
@@ -327,12 +327,12 @@ export default async function AdminConfirmacionesPage() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
   <details className="group">
-    <summary className="cursor-pointer list-none border-b border-white/10 px-5 py-4 md:px-6">
+    <summary className="cursor-pointer list-none border-b border-white/10 px-4 py-3 md:px-4">
       <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Historial</p>
       <div className="mt-2 flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold text-white">Confirmaciones revisadas</h2>
+        <h2 className="text-xl font-bold text-white">Confirmaciones revisadas</h2>
         <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
           {aprobadas.length + rechazadas.length} registro(s)
         </span>
@@ -342,19 +342,19 @@ export default async function AdminConfirmacionesPage() {
       </p>
     </summary>
 
-    <div className="p-4 md:p-5">
+    <div className="p-4 md:p-4">
       {aprobadas.length + rechazadas.length === 0 ? (
         <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
-          <p className="text-lg font-bold text-white">Aún no hay confirmaciones revisadas</p>
+          <p className="text-lg font-bold text-white">A�n no hay confirmaciones revisadas</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[...aprobadas, ...rechazadas].map((item) => (
             <div
               key={item.id}
-              className="rounded-[24px] border border-white/20 bg-[#2d4a6c] p-5 shadow-lg"
+              className="rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 shadow-lg"
             >
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid gap-3 md:grid-cols-5">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Departamento</p>
                   <p className="mt-2 font-bold text-white">{getDepto(item.departamentos)}</p>
@@ -414,9 +414,9 @@ function KpiCard({
   };
 
   return (
-    <div className={`rounded-[24px] border p-5 text-white shadow-xl ${tones[tone]}`}>
+    <div className={`rounded-[24px] border p-4 text-white shadow-xl ${tones[tone]}`}>
       <p className="text-sm text-slate-200">{title}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{value}</p>
+      <p className="mt-3 text-xl font-bold text-white">{value}</p>
     </div>
   );
 }

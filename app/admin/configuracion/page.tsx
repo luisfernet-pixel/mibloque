@@ -98,7 +98,7 @@ export default async function ConfiguracionPage({
     .maybeSingle();
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-3">
       {errorRaw ? (
         <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 px-5 py-4 text-red-100 ring-1 ring-white/10">
           No se pudo guardar configuracion: {errorRaw}
@@ -106,24 +106,24 @@ export default async function ConfiguracionPage({
         </section>
       ) : null}
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Ajustes del sistema
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Configuracion
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
+              Configuracion del bloque
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
               Define cuota mensual, vencimiento, mora y saldo inicial del bloque.
             </p>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
-            <p className="text-sm font-semibold text-white">Importante</p>
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
+            <p className="text-sm font-semibold text-white">Ten en cuenta</p>
             <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
               Consideraciones
             </p>
@@ -138,7 +138,7 @@ export default async function ConfiguracionPage({
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <InfoCard
           title="Cuota actual"
           value={money(Number(config?.cuota_mensual ?? 0))}
@@ -150,7 +150,7 @@ export default async function ConfiguracionPage({
           tone="cyan"
         />
         <InfoCard
-          title="Mora mensual"
+          title="Mora"
           value={money(Number(config?.valor_mora ?? 0))}
           tone="orangeSoft"
         />
@@ -161,12 +161,12 @@ export default async function ConfiguracionPage({
         />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Datos principales
+            Datos del bloque
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
+          <h2 className="mt-2 text-xl font-bold text-white">
             Cobro, vencimiento y base inicial
           </h2>
           <p className="mt-1 text-sm text-slate-300">
@@ -174,9 +174,9 @@ export default async function ConfiguracionPage({
           </p>
         </div>
 
-        <div className="p-5 md:p-6">
-          <form action={guardarConfiguracion} className="space-y-5">
-            <div className="grid gap-5 md:grid-cols-2">
+        <div className="p-3 md:p-4">
+          <form action={guardarConfiguracion} className="space-y-3.5">
+            <div className="grid gap-3 md:grid-cols-2">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-100">
                   Nombre del administrador
@@ -187,7 +187,7 @@ export default async function ConfiguracionPage({
                   name="nombre_administracion"
                   defaultValue={config?.nombre_administracion ?? ""}
                   required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
                 />
               </div>
 
@@ -207,7 +207,7 @@ export default async function ConfiguracionPage({
                     step="0.01"
                     defaultValue={config?.cuota_mensual ?? 0}
                     required
-                    className="w-full rounded-2xl border border-white/10 bg-[#173454] py-3 pl-12 pr-4 text-white outline-none transition focus:border-cyan-400/40"
+                    className="w-full rounded-2xl border border-white/10 bg-[#173454] py-2 pl-11 pr-3 text-white outline-none transition focus:border-cyan-400/40"
                   />
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default async function ConfiguracionPage({
                   max={28}
                   defaultValue={config?.dia_vencimiento ?? 15}
                   required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
                 />
               </div>
 
@@ -244,7 +244,7 @@ export default async function ConfiguracionPage({
                     step="0.01"
                     defaultValue={config?.valor_mora ?? 0}
                     required
-                    className="w-full rounded-2xl border border-white/10 bg-[#173454] py-3 pl-12 pr-4 text-white outline-none transition focus:border-cyan-400/40"
+                    className="w-full rounded-2xl border border-white/10 bg-[#173454] py-2 pl-11 pr-3 text-white outline-none transition focus:border-cyan-400/40"
                   />
                 </div>
               </div>
@@ -265,7 +265,7 @@ export default async function ConfiguracionPage({
                     step="0.01"
                     defaultValue={config?.saldo_inicial ?? 0}
                     required
-                    className="w-full rounded-2xl border border-white/10 bg-[#173454] py-3 pl-12 pr-4 text-white outline-none transition focus:border-cyan-400/40"
+                    className="w-full rounded-2xl border border-white/10 bg-[#173454] py-2 pl-11 pr-3 text-white outline-none transition focus:border-cyan-400/40"
                   />
                 </div>
               </div>
@@ -324,9 +324,9 @@ function InfoCard({
   };
 
   return (
-    <div className={`rounded-[24px] border p-5 text-white shadow-xl ${tones[tone]}`}>
+    <div className={`rounded-[24px] border p-4 text-white shadow-xl ${tones[tone]}`}>
       <p className="text-sm text-slate-200">{title}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{value}</p>
+      <p className="mt-3 text-xl font-bold text-white">{value}</p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserSafe } from "@/lib/auth";
 import LogoutButton from "@/app/logout-button";
 
 const navItems = [{ href: "/superadmin", label: "Panel" }];
@@ -11,10 +12,7 @@ export default async function SuperadminLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) {
     redirect("/login");
@@ -33,7 +31,7 @@ export default async function SuperadminLayout({
   return (
     <div className="theme-shell min-h-screen text-slate-100">
       <header className="theme-shell sticky top-0 z-40 border-b border-white/10 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 sm:px-5 sm:py-4 lg:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-3 py-2 sm:px-5 sm:py-4 lg:px-6">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <p className="text-lg font-bold tracking-tight text-white md:text-2xl">MiBloque Superadmin</p>

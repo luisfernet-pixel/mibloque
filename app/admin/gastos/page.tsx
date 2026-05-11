@@ -371,14 +371,14 @@ export default async function GastosPage({
                   href="/admin/gastos/nuevo"
                   className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
                 >
-                  Nuevo gasto
+                  Registrar gasto
                 </Link>
 
                 <Link
                   href="/admin/gastos/categorias"
                   className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20"
                 >
-                  Administrar categorias
+                  Categorias
                 </Link>
               </div>
             </div>
@@ -399,7 +399,7 @@ export default async function GastosPage({
       ) : null}
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard title="Gastado este mes" value={money(totalMesActual)} tone="orange" />
+        <KpiCard title="Gaste este mes" value={money(totalMesActual)} tone="orange" />
         <KpiCard title="Movimientos del mes" value={String(movimientosMesActual)} tone="cyan" />
         <KpiCard title="Categorias activas" value={String(categoriasMesActual)} tone="blue" />
         <KpiCard
@@ -413,11 +413,11 @@ export default async function GastosPage({
         <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-              Historial operativo
+            Historial
             </p>
             <h2 className="mt-1.5 text-lg font-bold text-white">Gastos registrados</h2>
             <p className="mt-1 text-xs text-slate-300">
-              Revisa, edita o elimina movimientos guardados.
+              Aqui puedes revisar, editar o eliminar gastos guardados.
             </p>
           </div>
 

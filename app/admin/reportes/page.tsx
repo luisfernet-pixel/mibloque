@@ -245,36 +245,36 @@ export default async function ReportesPage({
   }
 
   return (
-    <main className="space-y-6">
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-6 p-6 md:p-8 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Inteligencia financiera
+              Reportes
             </p>
 
-            <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-5xl">
-              Reportes
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
+              Como va el bloque
             </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
-              Puedes ver reportes mensuales o anuales. Este panel muestra siempre
-              el periodo exacto aplicado para evitar confusiones.
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+              Aqui puedes ver como va el bloque en dinero y abrir reportes mas
+              detallados cuando los necesites.
             </p>
 
-            <div className="mt-6 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3">
+            <div className="mt-6 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
               <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-                Periodo aplicado
+                Periodo elegido
               </p>
               <p className="mt-1 text-lg font-bold text-white">{rango.periodoTitulo}</p>
               <p className="mt-1 text-sm text-cyan-100">{rango.periodoDetalle}</p>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/15 bg-[#2f4b6c] p-5 md:p-6">
-            <p className="text-sm font-semibold text-white">Filtro del reporte</p>
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
+            <p className="text-sm font-semibold text-white">Elegir periodo</p>
             <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
-              Mensual o anual
+              Mes o gestion
             </p>
 
             <form method="GET" className="mt-5 space-y-3">
@@ -284,7 +284,7 @@ export default async function ReportesPage({
               <select
                 name="modo"
                 defaultValue={modo}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
               >
                 <option value="mensual">Mensual</option>
                 <option value="anual">Anual</option>
@@ -296,7 +296,7 @@ export default async function ReportesPage({
               <select
                 name="mes"
                 defaultValue={rango.mesValue}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
               >
                 <option value="01">Enero</option>
                 <option value="02">Febrero</option>
@@ -321,12 +321,12 @@ export default async function ReportesPage({
                 min={2000}
                 max={2100}
                 defaultValue={rango.anioValue}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
               />
 
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-[#ff5a3d] px-5 py-3 font-bold text-white transition hover:brightness-110"
+                className="w-full rounded-2xl bg-[#ff5a3d] px-3.5 py-2 font-bold text-white transition hover:brightness-110"
               >
                 Ver reporte
               </button>
@@ -337,48 +337,48 @@ export default async function ReportesPage({
 
       <section className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-4 ring-1 ring-white/10">
         <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-          Formula principal
+          Como leer este reporte
         </p>
         <p className="mt-1 text-sm text-cyan-100">
-          Saldo final del periodo = Saldo inicial + Balance del periodo
+          Saldo del periodo = Saldo inicial + ingresos - gastos
         </p>
         <p className="mt-1 text-xs text-cyan-50">
-          El saldo historico acumulado incluye todos los meses previos hasta el corte seleccionado.
+          El saldo historico acumulado incluye todo lo anterior hasta el corte elegido.
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <Card titulo="Ingresos del periodo" valor={formatBs(ingresos)} />
         <Card titulo="Gastos del periodo" valor={formatBs(gastos)} />
         <Card titulo="Balance del periodo" valor={formatBs(balancePeriodo)} />
         <Card titulo="Saldo inicial" valor={formatBs(saldoInicial)} />
         <Card titulo="Saldo final del periodo" valor={formatBs(saldoFinalPeriodo)} />
         <Card
-          titulo="Saldo historico acumulado"
+          titulo="Saldo acumulado"
           valor={formatBs(saldoAcumuladoHistorico)}
         />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-3 md:grid-cols-3">
         <Mini titulo="Pagos del periodo" valor={String(pagosPeriodo.length)} />
         <Mini titulo="Deptos al dia" valor={String(departamentosAlDia)} />
-        <AlertCard titulo="Morosos" valor={String(morosos)} />
+        <AlertCard titulo="Deben" valor={String(morosos)} />
       </section>
 
-      <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Accesos rapidos
+            Ver mas
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-white">
-            Reportes disponibles
+          <h2 className="mt-2 text-xl font-bold text-white">
+            Reportes detallados
           </h2>
           <p className="mt-1 text-sm text-slate-300">
-            Selecciona el reporte que quieres abrir.
+            Abre el reporte que necesitas revisar.
           </p>
         </div>
 
-        <div className="grid gap-4 p-5 md:grid-cols-3 md:p-6">
+        <div className="grid gap-3 p-4 md:grid-cols-3 md:p-6">
           <ReportButton
             href="/admin/reportes/departamento"
             titulo="Por departamento"
@@ -410,9 +410,9 @@ function Card({
   valor: string;
 }) {
   return (
-    <div className="rounded-[24px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10">
+    <div className="rounded-[24px] bg-[#213b59] p-4 shadow-xl ring-1 ring-white/10">
       <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
+      <p className="mt-3 text-xl font-bold text-white">{valor}</p>
     </div>
   );
 }
@@ -425,9 +425,9 @@ function AlertCard({
   valor: string;
 }) {
   return (
-    <div className="rounded-[24px] border border-orange-400/30 bg-orange-500/10 p-5 shadow-xl">
+    <div className="rounded-[24px] border border-orange-400/30 bg-orange-500/10 p-4 shadow-xl">
       <p className="text-sm text-orange-100">{titulo}</p>
-      <p className="mt-3 text-3xl font-bold text-white">{valor}</p>
+      <p className="mt-3 text-xl font-bold text-white">{valor}</p>
     </div>
   );
 }
@@ -442,7 +442,7 @@ function Mini({
   return (
     <div className="rounded-2xl bg-[#2d4a6c] p-4 ring-1 ring-white/10">
       <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-2 text-2xl font-bold text-white">{valor}</p>
+      <p className="mt-2 text-xl font-bold text-white">{valor}</p>
     </div>
   );
 }
@@ -459,7 +459,7 @@ function ReportButton({
   return (
     <Link
       href={href}
-      className="group rounded-[24px] border border-white/15 bg-[#2d4a6c] p-5 shadow-lg transition hover:bg-[#35557b] hover:ring-1 hover:ring-cyan-400/20"
+      className="group rounded-[24px] border border-white/15 bg-[#2d4a6c] p-4 shadow-lg transition hover:bg-[#35557b] hover:ring-1 hover:ring-cyan-400/20"
     >
       <div className="flex h-full min-h-[150px] flex-col justify-between">
         <div>

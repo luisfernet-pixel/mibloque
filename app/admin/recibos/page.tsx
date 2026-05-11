@@ -53,9 +53,9 @@ export default async function AdminRecibosPage() {
   const recibosRows = (recibos ?? []) as ReciboRow[];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="panel p-6">
-        <h1 className="text-2xl font-bold">Recibos</h1>
+        <h1 className="text-xl font-bold">Recibos</h1>
         <p className="text-sm text-slate-400 mt-1">
           Publica recibos para cada vecino.
         </p>
@@ -65,7 +65,7 @@ export default async function AdminRecibosPage() {
         action="/admin/recibos/upload"
         method="post"
         encType="multipart/form-data"
-        className="panel p-6 grid gap-4"
+        className="panel p-6 grid gap-3"
       >
         <select name="vecino_id" required className="input">
           <option value="">Seleccionar vecino</option>

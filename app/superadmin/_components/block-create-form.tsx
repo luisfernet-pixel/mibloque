@@ -30,10 +30,10 @@ export default function BlockCreateForm({
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3.5">
       {state.message && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+          className={`rounded-2xl border px-3 py-2 text-sm font-medium ${
             state.ok
               ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
               : "border-orange-300/20 bg-orange-500/10 text-orange-100"
@@ -43,7 +43,7 @@ export default function BlockCreateForm({
         </div>
       )}
 
-      <form action={formAction} className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
+      <form action={formAction} className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
         {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
         <label className="space-y-2">
           <span className="block text-sm font-semibold text-white/80">
@@ -53,7 +53,7 @@ export default function BlockCreateForm({
             name="nombre"
             placeholder="Conjunto Central"
             defaultValue={initialValues?.nombre}
-            className="theme-input w-full rounded-2xl px-4 py-3"
+            className="theme-input w-full rounded-2xl px-3 py-2"
             required
           />
         </label>
@@ -66,12 +66,12 @@ export default function BlockCreateForm({
             name="codigo"
             placeholder="BLOQUE-01"
             defaultValue={initialValues?.codigo}
-            className="theme-input w-full rounded-2xl px-4 py-3 uppercase"
+            className="theme-input w-full rounded-2xl px-3 py-2 uppercase"
             required
           />
         </label>
 
-        <label className="flex items-end gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+        <label className="flex items-end gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
           <input
             type="checkbox"
             name="activo"

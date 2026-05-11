@@ -102,16 +102,16 @@ export default async function PagosPage() {
   ).length;
 
   return (
-    <main className="min-h-screen space-y-5 bg-[#324359] p-6 text-white">
+    <main className="min-h-screen space-y-3.5 bg-[#324359] p-6 text-white">
       <section className="overflow-hidden rounded-3xl bg-[#071426] shadow-2xl">
-        <div className="grid gap-5 p-5 md:grid-cols-[1.35fr_0.65fr] md:p-6">
+        <div className="grid gap-3 p-4 md:grid-cols-[1.35fr_0.65fr] md:p-6">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
               Cobros del bloque
             </p>
 
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-white md:text-3xl">
-              Historial de pagos
+            <h1 className="mt-2 text-xl font-bold tracking-tight text-white md:text-3xl">
+              Pagos registrados
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm text-slate-300">
@@ -119,19 +119,26 @@ export default async function PagosPage() {
               clara y ordenada.
             </p>
 
-            <div className="mt-4 flex flex-wrap gap-2.5">
+            <div className="mt-4 flex flex-wrap gap-2.5 md:grid md:w-full md:grid-cols-3 md:items-center">
               <Link
-                href="/admin/pagos/nuevo"
-                className="rounded-2xl bg-cyan-500 px-4 py-2 text-sm font-bold text-black transition hover:brightness-110"
+                href="/admin/confirmaciones"
+                className="rounded-2xl bg-[#EF4937] px-4 py-2 text-center text-sm font-bold text-white transition hover:brightness-110 md:justify-self-start"
               >
-                Registrar pago manual
+                Ver comprobantes
               </Link>
 
               <Link
-                href="/admin/confirmaciones"
-                className="rounded-2xl bg-[#EF4937] px-4 py-2 text-sm font-bold text-white transition hover:brightness-110"
+                href="/admin/pagos/nuevo"
+                className="rounded-2xl bg-cyan-500 px-4 py-2 text-center text-sm font-bold text-black transition hover:brightness-110 md:justify-self-center"
               >
-                Revisar comprobantes
+                Registrar pago
+              </Link>
+
+              <Link
+                href="/admin/pagos"
+                className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-center text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20 md:justify-self-end"
+              >
+                Historial de pagos
               </Link>
             </div>
           </div>
@@ -160,7 +167,7 @@ export default async function PagosPage() {
         </section>
       ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard title="Pagos registrados" value={String(totalPagos)} tone="orange" />
         <KpiCard title="Total cobrado" value={money(totalCobrado)} tone="cyan" />
         <KpiCard title="Pagos por QR" value={String(totalQr)} tone="sky" />
@@ -187,12 +194,12 @@ export default async function PagosPage() {
           <table className="min-w-full text-sm">
             <thead className="bg-[#16283c] text-left text-slate-300">
               <tr className="border-b border-white/10">
-                <th className="px-4 py-3 font-semibold">Fecha</th>
-                <th className="px-4 py-3 font-semibold">Depto</th>
-                <th className="px-4 py-3 font-semibold">Periodo</th>
-                <th className="px-4 py-3 font-semibold">Monto</th>
-                <th className="px-4 py-3 font-semibold">Método</th>
-                <th className="px-4 py-3 font-semibold">Referencia</th>
+                <th className="px-3 py-2 font-semibold">Fecha</th>
+                <th className="px-3 py-2 font-semibold">Depto</th>
+                <th className="px-3 py-2 font-semibold">Periodo</th>
+                <th className="px-3 py-2 font-semibold">Monto</th>
+                <th className="px-3 py-2 font-semibold">Método</th>
+                <th className="px-3 py-2 font-semibold">Referencia</th>
               </tr>
             </thead>
 
@@ -202,23 +209,23 @@ export default async function PagosPage() {
                   key={item.id}
                   className="border-b border-white/10 text-slate-200 transition hover:bg-white/5"
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">
+                  <td className="whitespace-nowrap px-3 py-2 text-slate-300">
                     {formatDate(item.fecha_pago)}
                   </td>
 
-                  <td className="whitespace-nowrap px-4 py-3 font-semibold text-white">
+                  <td className="whitespace-nowrap px-3 py-2 font-semibold text-white">
                     {getDepto(item.departamentos)}
                   </td>
 
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-300">
+                  <td className="whitespace-nowrap px-3 py-2 text-slate-300">
                     {getPeriodo(item.cuotas)}
                   </td>
 
-                  <td className="whitespace-nowrap px-4 py-3 font-bold text-white">
+                  <td className="whitespace-nowrap px-3 py-2 font-bold text-white">
                     {money(item.monto_pagado)}
                   </td>
 
-                  <td className="whitespace-nowrap px-4 py-3">
+                  <td className="whitespace-nowrap px-3 py-2">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${metodoClass(
                         item.metodo_pago
@@ -228,7 +235,7 @@ export default async function PagosPage() {
                     </span>
                   </td>
 
-                  <td className="max-w-[240px] px-4 py-3 text-slate-300">
+                  <td className="max-w-[240px] px-3 py-2 text-slate-300">
                     <span className="block truncate">
                       {item.referencia || "-"}
                     </span>
@@ -275,7 +282,7 @@ function KpiCard({
       <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
         {title}
       </p>
-      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-2 text-xl font-bold text-white">{value}</p>
     </div>
   );
 }

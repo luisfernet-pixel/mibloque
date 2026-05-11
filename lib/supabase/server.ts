@@ -12,7 +12,16 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll() {}
+        setAll(cookiesToSet) {
+          try {
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
+          } catch {
+            // In some Server Component contexts cookies are read-only.
+            // Returning silently keeps auth checks from crashing the page.
+          }
+        },
       },
     }
   );

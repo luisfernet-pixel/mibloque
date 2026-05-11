@@ -1,0 +1,22 @@
+
+> mibloque-app@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.6:3000
+- Environments: .env.local
+✓ Ready in 1183ms
+⚠ Slow filesystem detected. The benchmark took 319ms. If D:\aaa-sistemas y apps\MIBloque-app\.next/dev is a network drive, consider moving it to a local folder.
+See more: https://nextjs.org/docs/app/guides/local-development
+- Experiments (use with caution):
+  · serverActions
+
+○ Compiling /admin/vecinos-pagos ...
+ GET /admin/vecinos-pagos 307 in 7.3s (next.js: 6.5s, application-code: 815ms)
+ GET /admin 307 in 7.3s (next.js: 7.0s, application-code: 358ms)
+ GET /login 200 in 2.4s (next.js: 2.2s, application-code: 275ms)
+ GET /login 200 in 2.7s (next.js: 2.2s, application-code: 516ms)
+ GET /admin 200 in 2.6s (next.js: 7ms, application-code: 2.6s)
+ GET /admin/pagos/nuevo 200 in 1852ms (next.js: 498ms, application-code: 1354ms)
+[?25h

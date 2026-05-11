@@ -44,24 +44,24 @@ export default function TransparenciaPage() {
   return (
     <main className="min-h-screen bg-[#334b68] text-white">
       <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 lg:px-8">
-        <section className="mb-6 rounded-[32px] bg-gradient-to-r from-[#071426] via-[#031a38] to-[#0c2d4a] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="mb-6 rounded-[32px] bg-gradient-to-r from-[#071426] via-[#031a38] to-[#0c2d4a] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
+          <div className="grid gap-3 xl:grid-cols-[1.1fr_0.9fr]">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
                 Transparencia
               </p>
 
-              <h1 className="mt-3 text-3xl font-bold leading-tight md:text-5xl">
+              <h1 className="mt-3 text-xl font-bold leading-tight md:text-3xl">
                 Cuentas del bloque
               </h1>
 
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-200 md:text-lg">
+              <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
                 Aquí puedes ver de forma clara cuánto dinero entró, cuánto se
                 gastó y cuánto queda disponible en el bloque.
               </p>
             </div>
 
-            <div className="rounded-[30px] border border-white/25 bg-white/10 p-5 backdrop-blur-sm md:p-6">
+            <div className="rounded-[24px] border border-white/25 bg-white/10 p-4 backdrop-blur-sm md:p-6">
               <p className="text-sm font-semibold text-slate-200">
                 Estado general del mes
               </p>
@@ -73,7 +73,7 @@ export default function TransparenciaPage() {
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                   Saldo disponible
                 </p>
-                <p className="mt-2 text-4xl font-extrabold text-white md:text-5xl">
+                <p className="mt-2 text-3xl font-extrabold text-white md:text-3xl">
                   {money(saldoDisponible)}
                 </p>
               </div>
@@ -93,7 +93,7 @@ export default function TransparenciaPage() {
           </div>
         </section>
 
-        <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
           <ResumenCard
             titulo="Cobrado este mes"
             valor={money(cobradoMes)}
@@ -113,13 +113,13 @@ export default function TransparenciaPage() {
           />
         </section>
 
-        <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+        <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+          <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-6">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
                 Movimiento reciente
               </p>
-              <h2 className="mt-2 text-2xl font-bold text-white">
+              <h2 className="mt-2 text-xl font-bold text-white">
                 Gastos recientes del bloque
               </h2>
               <p className="mt-1 text-sm text-slate-300">
@@ -132,7 +132,7 @@ export default function TransparenciaPage() {
             </div>
           </div>
 
-          <div className="p-4 md:p-5">
+          <div className="p-4 md:p-4">
             {gastos.length === 0 ? (
               <div className="rounded-[24px] border border-dashed border-white/20 bg-white/5 px-5 py-10 text-center">
                 <p className="text-lg font-bold text-white">
@@ -140,11 +140,11 @@ export default function TransparenciaPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {gastos.map((item, index) => (
                   <div
                     key={index}
-                    className="grid gap-4 rounded-[24px] border border-white/20 bg-[#2d4a6c] p-4 md:grid-cols-[0.8fr_1fr_0.8fr] md:items-center md:p-5"
+                    className="grid gap-3 rounded-[22px] border border-white/20 bg-[#2d4a6c] p-3 md:grid-cols-[0.8fr_1fr_0.8fr] md:items-center md:p-4"
                   >
                     <div>
                       <p className="text-sm text-slate-300">Fecha</p>
@@ -194,14 +194,14 @@ function ResumenCard({
 }) {
   return (
     <div
-      className={`rounded-[28px] p-5 shadow-lg ring-1 ${
+      className={`rounded-[24px] p-4 shadow-lg ring-1 ${
         destacado
           ? "bg-[#426a95] ring-orange-300/30"
           : "bg-[#3b6189] ring-white/20"
       }`}
     >
       <p className="text-sm font-semibold text-slate-100">{titulo}</p>
-      <p className="mt-3 text-4xl font-extrabold leading-tight text-white">
+      <p className="mt-3 text-3xl font-extrabold leading-tight text-white">
         {valor}
       </p>
     </div>

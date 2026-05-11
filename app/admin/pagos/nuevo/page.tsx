@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getAuthUserSafe } from "@/lib/auth";
 
 type CuotaRow = {
   id: string;
@@ -215,10 +216,7 @@ async function registrarPagoManual(formData: FormData) {
 
 export default async function NuevoPagoPage() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
 
@@ -270,35 +268,35 @@ export default async function NuevoPagoPage() {
   const totalVencidas = grupos.reduce((acc, item) => acc + item.vencidas, 0);
 
   return (
-    <main className="min-h-screen bg-[#324359] p-6 text-white">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-3xl bg-[#071426] p-8 text-white">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+    <main className="min-h-screen bg-[#324359] p-4 text-white">
+      <div className="mx-auto max-w-7xl space-y-3">
+        <section className="rounded-3xl bg-[#071426] p-4 text-white">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="max-w-3xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
                 Cobros
               </p>
 
-              <h1 className="mt-2 text-3xl font-bold">Registrar pago manual</h1>
+              <h1 className="mt-2 text-xl font-bold">Registrar pago</h1>
 
-              <p className="mt-3 text-sm text-slate-300">
+              <p className="mt-2 text-sm text-slate-300">
                 El pago manual siempre se aplica desde la deuda mas antigua hacia adelante.
                 Si una cuota ya vencio, el sistema suma la mora automaticamente.
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href="/admin/pagos"
-                  className="rounded-2xl bg-white/10 px-5 py-3 font-semibold text-white transition hover:bg-white/15"
+                  className="rounded-xl bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   Volver a pagos
                 </Link>
 
                 <Link
                   href="/admin/confirmaciones"
-                  className="rounded-2xl bg-cyan-500 px-5 py-3 font-bold text-black transition hover:brightness-110"
+                  className="rounded-xl bg-cyan-500 px-3.5 py-2 text-sm font-bold text-black transition hover:brightness-110"
                 >
-                  Revisar comprobantes
+                  Ver comprobantes
                 </Link>
               </div>
             </div>
@@ -311,7 +309,7 @@ export default async function NuevoPagoPage() {
           </section>
         ) : null}
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <KpiCard title="Deptos con deuda" value={String(totalDepartamentosConDeuda)} tone="orange" />
           <KpiCard title="Meses adeudados" value={String(totalMesesAdeudados)} tone="blue" />
           <KpiCard title="Total adeudado hoy" value={money(totalAdeudado)} tone="cyan" />
@@ -319,8 +317,8 @@ export default async function NuevoPagoPage() {
         </section>
 
         {grupos.length === 0 && !error ? (
-          <section className="rounded-3xl bg-[#20354d] p-8 text-white">
-            <h2 className="text-xl font-bold">No hay deudas pendientes</h2>
+          <section className="rounded-3xl bg-[#20354d] p-4 text-white">
+            <h2 className="text-lg font-bold">No hay deudas pendientes</h2>
             <p className="mt-2 text-slate-300">
               En este momento no existen cuotas pendientes o vencidas en este bloque.
             </p>
@@ -328,21 +326,21 @@ export default async function NuevoPagoPage() {
         ) : null}
 
         {grupos.length > 0 ? (
-          <section className="rounded-3xl bg-[#20354d] p-5 text-white">
-            <div className="border-b border-white/10 pb-4">
+          <section className="rounded-3xl bg-[#20354d] p-2.5 text-white">
+            <div className="border-b border-white/10 pb-2.5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
                 Deuda por departamento
               </p>
-              <h2 className="mt-1 text-2xl font-bold">
-                Departamentos con pagos pendientes
+              <h2 className="mt-1 text-lg font-bold">
+                Vecinos con pagos pendientes
               </h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-1.5 text-xs text-slate-300">
                 El administrador elige hasta que mes pago el vecino. El sistema
                 siempre cobra primero los meses mas antiguos.
               </p>
             </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="mt-2.5 space-y-2">
               {grupos.map((grupo) => {
                 const opciones = construirOpcionesPago(grupo.cuotas);
                 const pagoMinimo = grupo.cuotas[0] ? montoCobrarCuota(grupo.cuotas[0]) : 0;
@@ -350,54 +348,57 @@ export default async function NuevoPagoPage() {
                 return (
                   <details
                     key={grupo.departamentoId}
-                    className="rounded-3xl border border-white/10 bg-[#2a425c] p-5"
+                    className="rounded-3xl border border-white/10 bg-[#2a425c] p-2"
                   >
-                    <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-3 rounded-2xl bg-[#1b3148] p-4">
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-2xl bg-[#1b3148] p-2">
                       <div>
-                        <p className="text-sm text-slate-300">Departamento</p>
-                        <p className="text-3xl font-bold text-white">{grupo.numero}</p>
+                        <p className="text-xs text-slate-300">Departamento</p>
+                        <p className="text-lg font-bold leading-tight text-white">{grupo.numero}</p>
                       </div>
 
-                      <div className="grid gap-2 text-right sm:grid-cols-3 sm:items-center sm:text-left">
+                      <div className="grid gap-1.5 text-right sm:grid-cols-3 sm:items-center sm:text-left">
                         <div>
                           <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Meses</p>
-                          <p className="text-lg font-bold text-white">{grupo.mesesAdeudados}</p>
+                          <p className="text-xs font-bold text-white">{grupo.mesesAdeudados}</p>
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Deuda total</p>
-                          <p className="text-lg font-bold text-white">{money(grupo.totalAdeudado)}</p>
+                          <p className="text-xs font-bold text-white">{money(grupo.totalAdeudado)}</p>
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Pago minimo</p>
-                          <p className="text-lg font-bold text-white">{money(pagoMinimo)}</p>
+                          <p className="text-xs font-bold text-white">{money(pagoMinimo)}</p>
                         </div>
                       </div>
 
-                      <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/15 px-4 py-2 text-sm font-semibold text-cyan-200">
-                        Entrar a pagar
+                      <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-500/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-200">
+                        Registrar pago
                       </span>
                     </summary>
 
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
-                      <div className="space-y-4">
-                        <div className="grid gap-3 sm:grid-cols-3">
+                    <form
+                      action={registrarPagoManual}
+                      className="mt-2.5 grid gap-2.5 xl:grid-cols-[1fr_1.2fr]"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="grid gap-1.5 sm:grid-cols-3">
                           <InfoBox label="Meses adeudados" value={String(grupo.mesesAdeudados)} />
                           <InfoBox label="Total adeudado hoy" value={money(grupo.totalAdeudado)} />
                           <InfoBox label="Pago minimo" value={money(pagoMinimo)} />
                         </div>
 
-                        <div className="rounded-2xl bg-[#1b3148] p-4">
-                          <p className="text-sm font-semibold text-white">
+                        <div className="rounded-2xl bg-[#1b3148] p-2.5">
+                          <p className="text-xs font-semibold text-white">
                             Periodos adeudados
                           </p>
 
-                          <div className="mt-3 flex flex-wrap gap-2">
+                          <div className="mt-2 flex flex-wrap gap-1.5">
                             {grupo.cuotas.map((cuota) => {
                               const vencida = cuotaEstaVencida(cuota.fecha_vencimiento);
                               return (
                                 <span
                                   key={cuota.id}
-                                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                                     vencida
                                       ? "border border-[#EF4937]/30 bg-[#EF4937]/10 text-[#ffb0a7]"
                                       : "border border-cyan-400/20 bg-cyan-500/10 text-cyan-300"
@@ -409,12 +410,35 @@ export default async function NuevoPagoPage() {
                             })}
                           </div>
                         </div>
+
+                        <div className="rounded-2xl bg-[#1b3148] p-2.5">
+                          <label className="mb-1.5 block text-xs font-medium text-slate-300">
+                            Aclaracion o referencia
+                          </label>
+
+                          <input
+                            type="text"
+                            name="referencia"
+                            placeholder="Opcional: recibo, nota, observacion"
+                            className="w-full rounded-2xl border border-white/10 bg-[#0f2135] px-3 py-2 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#EF4937]/50"
+                          />
+
+                          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-xs text-slate-400">
+                              La mora se aplica automaticamente si ya vencio la cuota.
+                            </p>
+
+                            <button
+                              type="submit"
+                              className="rounded-xl bg-[#EF4937] px-3.5 py-2 text-sm font-bold text-white transition hover:brightness-110"
+                            >
+                              Entrar a pagar
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <form
-                        action={registrarPagoManual}
-                        className="rounded-2xl bg-[#1b3148] p-4"
-                      >
+                      <div className="rounded-2xl bg-[#1b3148] p-2.5">
                         <input
                           type="hidden"
                           name="departamento_id"
@@ -422,15 +446,15 @@ export default async function NuevoPagoPage() {
                         />
 
                         <div>
-                          <label className="mb-3 block text-sm font-medium text-slate-300">
+                          <label className="mb-2 block text-xs font-medium text-slate-300">
                             Elige hasta que mes pago
                           </label>
 
-                          <div className="space-y-3">
+                          <div className="space-y-2">
                             {opciones.map((opcion, opcionIndex) => (
                               <label
                                 key={opcion.cantidad}
-                                className="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-[#0f2135] p-4 transition hover:border-[#EF4937]/40"
+                                className="flex cursor-pointer items-start gap-2 rounded-2xl border border-white/10 bg-[#0f2135] p-2.5 transition hover:border-[#EF4937]/40"
                               >
                                 <input
                                   type="radio"
@@ -443,24 +467,24 @@ export default async function NuevoPagoPage() {
                                 <div className="min-w-0 flex-1">
                                   <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
-                                      <p className="font-semibold text-white">
+                                      <p className="text-sm font-semibold text-white">
                                         Pagar {opcion.cantidad} mes(es)
                                       </p>
-                                      <p className="text-sm text-slate-300">
+                                      <p className="text-xs text-slate-300">
                                         Desde {opcion.desde} hasta {opcion.hasta}
                                       </p>
                                     </div>
 
-                                    <div className="rounded-xl bg-[#EF4937] px-3 py-2 text-sm font-bold text-white">
+                                    <div className="rounded-xl bg-[#EF4937] px-2.5 py-1.5 text-xs font-bold text-white">
                                       {money(opcion.total)}
                                     </div>
                                   </div>
 
-                                  <div className="mt-3 flex flex-wrap gap-2">
+                                  <div className="mt-2 flex flex-wrap gap-1.5">
                                     {opcion.detalle.map((linea) => (
                                       <span
                                         key={linea}
-                                        className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300"
+                                        className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-slate-300"
                                       >
                                         {linea}
                                       </span>
@@ -472,33 +496,8 @@ export default async function NuevoPagoPage() {
                           </div>
                         </div>
 
-                        <div className="mt-4">
-                          <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Aclaracion o referencia
-                          </label>
-
-                          <input
-                            type="text"
-                            name="referencia"
-                            placeholder="Opcional: recibo, nota, observacion"
-                            className="w-full rounded-2xl border border-white/10 bg-[#0f2135] px-4 py-3 text-white placeholder:text-slate-400 outline-none transition focus:border-[#EF4937]/50"
-                          />
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                          <p className="text-xs text-slate-400">
-                            La mora se aplica automaticamente si ya vencio la cuota.
-                          </p>
-
-                          <button
-                            type="submit"
-                            className="rounded-2xl bg-[#EF4937] px-5 py-3 font-bold text-white transition hover:brightness-110"
-                          >
-                            Entrar a pagar
-                          </button>
-                        </div>
-                      </form>
-                    </div>
+                      </div>
+                    </form>
                   </details>
                 );
               })}
@@ -527,9 +526,9 @@ function KpiCard({
   };
 
   return (
-    <div className={`rounded-3xl border p-5 text-white ${tones[tone]}`}>
-      <p className="text-sm text-slate-300">{title}</p>
-      <p className="mt-3 text-3xl font-bold">{value}</p>
+    <div className={`rounded-3xl border p-3 text-white ${tones[tone]}`}>
+      <p className="text-xs text-slate-300">{title}</p>
+      <p className="mt-1.5 text-[1.7rem] font-bold leading-none">{value}</p>
     </div>
   );
 }
@@ -542,9 +541,9 @@ function InfoBox({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white/5 p-4">
-      <p className="text-sm text-slate-300">{label}</p>
-      <p className="mt-2 text-xl font-bold text-white">{value}</p>
+    <div className="rounded-2xl bg-white/5 p-2.5">
+      <p className="text-xs text-slate-300">{label}</p>
+      <p className="mt-1 text-base font-bold text-white">{value}</p>
     </div>
   );
 }

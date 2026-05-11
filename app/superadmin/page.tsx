@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
 import { deleteBlockActionForm } from "@/app/superadmin/actions";
+import { getAuthUserSafe } from "@/lib/auth";
 
 type AdminBrief = {
   id: string;
@@ -31,10 +32,7 @@ function extractDeptoNumero(username: string) {
 
 export default async function SuperadminPage() {
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUserSafe(supabase);
 
   if (!user) {
     redirect("/login");
@@ -107,10 +105,10 @@ export default async function SuperadminPage() {
 
   return (
     <main className="min-h-screen bg-[#324359] p-6">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-7xl space-y-3">
         <section className="rounded-2xl border border-white/10 bg-[#071426] p-4 md:hidden">
           <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">Panel maestro</p>
-          <h1 className="mt-2 text-2xl font-bold text-white">SuperAdmin MiBloque</h1>
+          <h1 className="mt-2 text-xl font-bold text-white">SuperAdmin MiBloque</h1>
           <p className="mt-2 text-sm text-slate-300">
             Bloques {totalBloques} - Departamentos {totalDeptos}
           </p>
@@ -165,7 +163,7 @@ export default async function SuperadminPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-3 md:grid-cols-2">
           <Card titulo="Bloques" valor={String(totalBloques)} />
           <Card titulo="Departamentos" valor={String(totalDeptos)} />
         </section>
@@ -174,7 +172,7 @@ export default async function SuperadminPage() {
           <div className="flex items-center justify-between px-6 py-5">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-300">BLOQUES REGISTRADOS</p>
-              <h2 className="text-2xl font-bold text-white">Lista operativa</h2>
+              <h2 className="text-xl font-bold text-white">Lista operativa</h2>
             </div>
 
             <Link
@@ -185,7 +183,7 @@ export default async function SuperadminPage() {
             </Link>
           </div>
 
-          <div className="space-y-4 p-4 md:p-5">
+          <div className="space-y-3 p-4 md:p-4">
             {bloquesOrdenados.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-5 py-10 text-center text-slate-300">
                 No hay bloques registrados todavia.
@@ -209,7 +207,7 @@ export default async function SuperadminPage() {
                 return (
                   <details
                     key={item.id}
-                    className="group rounded-2xl border border-white/15 bg-[#2d4a6c] p-4 md:p-5"
+                    className="group rounded-2xl border border-white/15 bg-[#2d4a6c] p-4 md:p-4"
                   >
                     <summary className="list-none cursor-pointer">
                       <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:items-end">
@@ -268,7 +266,7 @@ export default async function SuperadminPage() {
                         ) : null}
                       </div>
 
-                      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                           <p className="text-sm font-bold text-white">
                             Admins del bloque ({adminsDelBloque.length})
@@ -335,7 +333,7 @@ export default async function SuperadminPage() {
 
 function Card({ titulo, valor }: { titulo: string; valor: string }) {
   return (
-    <div className="rounded-3xl border border-cyan-400/20 bg-[#20354d] p-5">
+    <div className="rounded-3xl border border-cyan-400/20 bg-[#20354d] p-4">
       <p className="text-xs uppercase tracking-[0.3em] text-slate-300">{titulo}</p>
       <p className="mt-3 text-4xl font-bold text-white">{valor}</p>
     </div>

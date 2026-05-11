@@ -34,18 +34,18 @@ export default async function NuevoAdminPage({ searchParams }: Props) {
   );
 
   return (
-    <main className="space-y-6">
-      <section className="theme-hero rounded-[30px] p-6 shadow-2xl ring-1 ring-white/10 md:p-8">
+    <main className="space-y-3">
+      <section className="theme-hero rounded-[24px] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
-        <h1 className="mt-3 text-3xl font-bold text-white md:text-5xl">Crear nuevo admin</h1>
+        <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Crear nuevo admin</h1>
         <p className="mt-4 max-w-2xl text-slate-200">
           Crea la cuenta en Auth y su perfil interno en una sola operación.
         </p>
       </section>
 
-      <section className="theme-panel rounded-[30px] p-6 shadow-xl ring-1 ring-white/10">
+      <section className="theme-panel rounded-[24px] p-6 shadow-xl ring-1 ring-white/10">
         {bloquesDisponibles.length === 0 ? (
-          <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-50">
+          <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-50">
             Todos los bloques ya tienen un admin activo. Para crear uno nuevo,
             primero borra el admin actual del bloque.
           </div>

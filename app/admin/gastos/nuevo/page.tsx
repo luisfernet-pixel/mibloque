@@ -182,7 +182,7 @@ export default async function NuevoGastoPage({
                 </p>
 
                 <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
-                  Nuevo gasto
+                  Registrar gasto
                 </h1>
               </div>
 
@@ -191,7 +191,7 @@ export default async function NuevoGastoPage({
                   href="/admin/gastos"
                   className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 text-xs font-bold text-white transition hover:bg-white/10"
                 >
-                  Volver a gastos
+                  Volver
                 </Link>
 
                 <Link
@@ -205,7 +205,7 @@ export default async function NuevoGastoPage({
           </div>
 
           <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
-            <p className="text-sm font-semibold text-white">Recomendaciones</p>
+            <p className="text-sm font-semibold text-white">Antes de guardar</p>
             <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
               Antes de guardar
             </p>
@@ -234,7 +234,7 @@ export default async function NuevoGastoPage({
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="border-b border-white/10 px-4 py-3 md:px-4">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Formulario
+            Registrar ahora
           </p>
           <h2 className="mt-1.5 text-lg font-bold text-white">Registrar gasto</h2>
         </div>

@@ -127,10 +127,10 @@ export default function UserCreateForm({
     state.message.includes("SUPABASE_SERVICE_ROLE_KEY");
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3.5">
       {state.message && !isServiceRoleError && (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm font-medium ${
+          className={`rounded-2xl border px-3 py-2 text-sm font-medium ${
             state.ok
               ? "border-emerald-300/20 bg-emerald-500/10 text-emerald-100"
               : "border-orange-300/20 bg-orange-500/10 text-orange-100"
@@ -141,7 +141,7 @@ export default function UserCreateForm({
       )}
 
       {authWarning && (
-        <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-4 py-3 text-sm font-medium text-amber-50">
+        <div className="rounded-2xl border border-amber-300/20 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-50">
           Falta <span className="font-bold">SUPABASE_SERVICE_ROLE_KEY</span> en
           tu <span className="font-bold">.env.local</span>. Sin esa clave no
           podemos crear admins ni departamentos sin que Supabase intente enviar
@@ -149,12 +149,12 @@ export default function UserCreateForm({
         </div>
       )}
 
-      <form action={formAction} className="space-y-4">
+      <form action={formAction} className="space-y-3">
         {initialValues?.id ? (
           <input type="hidden" name="id" value={initialValues.id} />
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-2 md:col-span-2">
             <span className="block text-sm font-semibold text-white/80">
               Bloque
@@ -166,7 +166,7 @@ export default function UserCreateForm({
                 setSelectedBlockId(e.target.value);
                 setDepartmentNumber("");
               }}
-              className="theme-input w-full rounded-2xl px-4 py-3"
+              className="theme-input w-full rounded-2xl px-3 py-2"
               required
             >
               <option value="">Selecciona un bloque</option>
@@ -184,7 +184,7 @@ export default function UserCreateForm({
                 <span className="block text-sm font-semibold text-white/80">
                   Email
                 </span>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200">
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200">
                   {adminEmailPreview || "Selecciona un bloque para generar el correo"}
                 </div>
                 <input type="hidden" name="email" value={adminEmailPreview} />
@@ -216,7 +216,7 @@ export default function UserCreateForm({
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <Field
             label={mode === "admin" ? "Nombre del admin" : "Nombre del residente"}
             name="nombre"
@@ -239,7 +239,7 @@ export default function UserCreateForm({
           </>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           {allowPassword ? (
             <Field
               label="Contraseña"
@@ -272,7 +272,7 @@ export default function UserCreateForm({
         </div>
 
         {showActive && (
-          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
             <input
               type="checkbox"
               name="activo"
@@ -330,7 +330,7 @@ function Field({
         defaultValue={!controlled ? defaultValue : undefined}
         onChange={controlled ? (e) => onChange?.(e.target.value) : undefined}
         placeholder={placeholder}
-        className="theme-input w-full rounded-2xl px-4 py-3"
+        className="theme-input w-full rounded-2xl px-3 py-2"
         required={required}
       />
     </label>

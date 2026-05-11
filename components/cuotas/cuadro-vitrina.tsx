@@ -57,16 +57,16 @@ export default function CuadroVitrina({
   highlightDepartamentoId?: string | null;
 }) {
   return (
-    <section className="overflow-hidden rounded-[30px] bg-[#213b59] shadow-xl ring-1 ring-white/10 print:rounded-none print:bg-white print:shadow-none print:ring-0">
+    <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 print:rounded-none print:bg-white print:shadow-none print:ring-0">
       <div className="border-b border-white/10 px-5 py-4 md:px-6 print:border-slate-300 print:px-0 print:py-3">
         <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300 print:text-slate-600">
           Control de mantenimiento
         </p>
-        <h2 className="mt-2 text-2xl font-bold text-white print:text-black">{title}</h2>
+        <h2 className="mt-2 text-xl font-bold text-white print:text-black">{title}</h2>
         <p className="mt-1 text-sm text-slate-300 print:text-slate-700">{subtitle}</p>
       </div>
 
-      <div className="hide-scrollbar overflow-x-auto p-4 md:p-5 print:overflow-visible print:p-0">
+      <div className="hide-scrollbar overflow-x-auto p-4 md:p-4 print:overflow-visible print:p-0">
         <table className="min-w-[980px] table-fixed border-separate border-spacing-0 print:min-w-0 print:w-full">
           <thead>
             <tr>
