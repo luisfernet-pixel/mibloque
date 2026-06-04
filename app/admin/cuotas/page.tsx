@@ -2,15 +2,28 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
+import { getCuotaEstadoVigente, getCuotaMontoVigente } from "@/lib/cuotas";
+import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { formatPeriodoLabel } from "@/lib/periodo";
+import CuotasMesesInteractivos, { type MesPagoItem } from "@/components/admin/cuotas-meses-interactivos";
 
 type CuotaRow = {
   id: string;
   periodo: string;
+  monto_base?: number | null;
+  mora_acumulada?: number | null;
   monto_total: number;
   estado: string;
   anio: number;
   mes: number;
   departamento_id: string;
+  fecha_vencimiento?: string | null;
+  created_at?: string | null;
+};
+
+type ConfigRow = {
+  dia_vencimiento: number | null;
+  valor_mora: number | null;
 };
 
 function bs(n: number) {
@@ -31,9 +44,10 @@ export default async function CuotasPage() {
   if (!usuario) redirect("/login");
 
   const supabase = createAdminClient();
+  await ensureCurrentMonthCuotas(supabase);
   const bloqueId = usuario.perfil.bloque_id;
 
-  const [{ data: departamentosData }, { data }] = await Promise.all([
+  const [{ data: departamentosData }, { data }, { data: config }] = await Promise.all([
     supabase
       .from("departamentos")
       .select("id, numero")
@@ -48,14 +62,27 @@ export default async function CuotasPage() {
       estado,
       anio,
       mes,
-      departamento_id
+      departamento_id,
+      monto_base,
+      mora_acumulada,
+      fecha_vencimiento,
+      created_at
     `
     )
     .eq("bloque_id", bloqueId)
     .order("periodo", { ascending: false }),
+    supabase
+      .from("configuracion_bloque")
+      .select("dia_vencimiento, valor_mora")
+      .eq("bloque_id", bloqueId)
+      .maybeSingle(),
   ]);
 
-  const cuotas = (data ?? []) as CuotaRow[];
+  const cuotas = ((data ?? []) as CuotaRow[]).map((item) => ({
+    ...item,
+    monto_total: getCuotaMontoVigente(item, config as ConfigRow | null),
+    estado: getCuotaEstadoVigente(item, config as ConfigRow | null),
+  }));
   const departamentos =
     (departamentosData ?? []) as Array<{ id: string; numero: string | null }>;
 
@@ -151,14 +178,14 @@ export default async function CuotasPage() {
               </Link>
 
               <Link
-                href="/admin/pagos/nuevo"
+                href="/admin/pagos/registrar"
                 className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-bold text-white transition hover:bg-white/15 md:justify-self-center"
               >
                 Registrar pago
               </Link>
 
               <Link
-                href="/admin/pagos"
+                href="/admin/pagos/historial"
                 className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-bold text-cyan-200 transition hover:bg-cyan-500/20 md:justify-self-end"
               >
                 Ver historial
@@ -277,29 +304,44 @@ export default async function CuotasPage() {
                           Sin cuotas registradas para este departamento.
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          {grupo.cuotas.map((item) => (
-                            <div
-                              key={item.id}
-                              className="grid gap-3 rounded-2xl border border-white/10 bg-[#264465] px-3 py-2 md:grid-cols-[1fr_auto_auto] md:items-center"
-                            >
-                              <div>
-                                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
-                                  Periodo
-                                </p>
-                                <p className="mt-1 text-base font-bold text-white">
-                                  {item.periodo}
-                                </p>
-                              </div>
+                        (() => {
+                          const cuotasAsc = [...grupo.cuotas].sort((a, b) => {
+                            if (a.anio !== b.anio) return a.anio - b.anio;
+                            return a.mes - b.mes;
+                          });
+                          const primeraAdeudada = cuotasAsc.find(
+                            (x) => x.estado === "pendiente" || x.estado === "vencido"
+                          );
+                          const primeraAdeudadaPeriodo = primeraAdeudada?.periodo || null;
 
-                              <p className="text-lg font-bold text-white">
-                                {bs(item.monto_total)}
+                          const items: MesPagoItem[] = grupo.cuotas.map((item) => ({
+                            id: item.id,
+                            periodo: item.periodo,
+                            monto: item.monto_total,
+                            estado:
+                              item.estado === "pagado"
+                                ? "pagado"
+                                : item.estado === "vencido"
+                                ? "vencido"
+                                : "pendiente",
+                            esHabilitado:
+                              (item.estado === "pendiente" || item.estado === "vencido") &&
+                              item.periodo === primeraAdeudadaPeriodo,
+                            mensajeBloqueo:
+                              primeraAdeudadaPeriodo && item.periodo !== primeraAdeudadaPeriodo
+                                ? `No puedes pagar ${formatPeriodoLabel(item.periodo)} hasta pagar primero ${formatPeriodoLabel(primeraAdeudadaPeriodo)}.`
+                                : null,
+                          }));
+
+                          return (
+                            <div>
+                              <CuotasMesesInteractivos departamento={grupo.departamento} items={items} />
+                              <p className="mt-2 text-xs text-slate-300">
+                                El pago manual solo deja avanzar desde el mes mas antiguo pendiente.
                               </p>
-
-                              <EstadoCuota estado={item.estado} />
                             </div>
-                          ))}
-                        </div>
+                          );
+                        })()
                       )}
                     </div>
                   </div>
@@ -345,25 +387,3 @@ function Mini({
   );
 }
 
-function EstadoCuota({ estado }: { estado: string }) {
-  const normalizado = (estado || "").toLowerCase();
-
-  const estilo =
-    normalizado === "pagado"
-      ? "border-cyan-400/30 bg-cyan-500/15 text-cyan-200"
-      : normalizado === "vencido"
-      ? "border-red-400/30 bg-red-500/10 text-red-200"
-      : "border-orange-400/30 bg-orange-500/10 text-orange-200";
-
-  return (
-    <span
-      className={`inline-flex rounded-full border px-3 py-2 text-sm font-bold capitalize ${estilo}`}
-    >
-      {normalizado === "pagado"
-        ? "Pagada"
-        : normalizado === "vencido"
-        ? "Vencida"
-        : "Pendiente"}
-    </span>
-  );
-}
