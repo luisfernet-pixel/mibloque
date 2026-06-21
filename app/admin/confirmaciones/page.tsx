@@ -7,6 +7,8 @@ import { formatPeriodoLabel } from "@/lib/periodo";
 
 type ConfirmacionRow = {
   id: string;
+  departamento_id: string | null;
+  cuota_id: string | null;
   referencia: string | null;
   monto_reportado: number | null;
   comprobante_path: string | null;
@@ -22,6 +24,20 @@ type ConfirmacionRow = {
 };
 
 type ConfigRow = { dia_vencimiento: number | null; valor_mora: number | null };
+
+type DepartamentoRow = { id: string; numero: string | number | null };
+type CuotaRow = {
+  id: string;
+  periodo: string | null;
+  monto_base?: number | null;
+  mora_acumulada?: number | null;
+  monto_total: number | null;
+  estado?: string | null;
+  anio?: number | null;
+  mes?: number | null;
+  fecha_vencimiento?: string | null;
+  created_at?: string | null;
+};
 
 function money(value: number | null | undefined) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -58,12 +74,47 @@ export default async function AdminConfirmacionesPage({
   const supabase = createAdminClient();
   const bloqueId = usuario.perfil.bloque_id;
 
-  const [{ data }, { data: config }] = await Promise.all([
-    supabase.from("confirmaciones_pago").select(`id, referencia, monto_reportado, comprobante_path, comprobante_url, estado, created_at, revisado_at, departamentos:departamento_id (numero), cuotas:cuota_id (periodo, monto_base, mora_acumulada, monto_total, estado, anio, mes, fecha_vencimiento, created_at)`).eq("bloque_id", bloqueId).order("created_at", { ascending: false }),
+  const [{ data: confirmacionesData }, { data: config }] = await Promise.all([
+    supabase
+      .from("confirmaciones_pago")
+      .select("id, departamento_id, cuota_id, referencia, monto_reportado, comprobante_path, comprobante_url, estado, created_at, revisado_at")
+      .eq("bloque_id", bloqueId)
+      .order("created_at", { ascending: false }),
     supabase.from("configuracion_bloque").select("dia_vencimiento, valor_mora").eq("bloque_id", bloqueId).maybeSingle(),
   ]);
 
-  const rows = (data ?? []) as ConfirmacionRow[];
+  const baseRows = (confirmacionesData ?? []) as Omit<ConfirmacionRow, "departamentos" | "cuotas">[];
+  const departamentoIds = Array.from(new Set(baseRows.map((item) => item.departamento_id).filter(Boolean))) as string[];
+  const cuotaIds = Array.from(new Set(baseRows.map((item) => item.cuota_id).filter(Boolean))) as string[];
+
+  const [{ data: departamentosData }, { data: cuotasData }] = await Promise.all([
+    departamentoIds.length
+      ? supabase.from("departamentos").select("id, numero").eq("bloque_id", bloqueId).in("id", departamentoIds)
+      : Promise.resolve({ data: [] as DepartamentoRow[] }),
+    cuotaIds.length
+      ? supabase
+          .from("cuotas")
+          .select("id, periodo, monto_base, mora_acumulada, monto_total, estado, anio, mes, fecha_vencimiento, created_at")
+          .eq("bloque_id", bloqueId)
+          .in("id", cuotaIds)
+      : Promise.resolve({ data: [] as CuotaRow[] }),
+  ]);
+
+  const departamentosById = new Map(
+    ((departamentosData ?? []) as DepartamentoRow[]).map((item) => [item.id, { numero: item.numero }])
+  );
+  const cuotasById = new Map(
+    ((cuotasData ?? []) as CuotaRow[]).map((item) => {
+      const { id: cuotaRowId, ...cuota } = item;
+      return [cuotaRowId, cuota];
+    })
+  );
+
+  const rows = baseRows.map((item) => ({
+    ...item,
+    departamentos: item.departamento_id ? departamentosById.get(item.departamento_id) ?? null : null,
+    cuotas: item.cuota_id ? cuotasById.get(item.cuota_id) ?? null : null,
+  })) as ConfirmacionRow[];
   const pendientes = rows.filter((item) => String(item.estado || "").toLowerCase() === "pendiente");
   const aprobadas = rows.filter((item) => String(item.estado || "").toLowerCase() === "aprobado");
   const rechazadas = rows.filter((item) => String(item.estado || "").toLowerCase() === "rechazado");
