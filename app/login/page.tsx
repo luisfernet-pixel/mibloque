@@ -29,7 +29,28 @@ function withTimeout<T extends PromiseLike<unknown>>(
     );
   });
 }
+async function resolveLoginEmail(identifier: string) {
+  const response = await fetch("/api/auth/resolve-login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ identifier }),
+  });
 
+  if (!response.ok) {
+    throw new Error("No se pudo verificar el usuario.");
+  }
+
+  const data = (await response.json()) as { email?: unknown };
+  const email = typeof data.email === "string" ? data.email.trim() : "";
+
+  if (!email) {
+    throw new Error("No se pudo verificar el usuario.");
+  }
+
+  return email;
+}
 export default function LoginPage() {
   const router = useRouter();
 
@@ -125,9 +146,10 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
+      const emailParaLogin = await resolveLoginEmail(adminEmail);
 
       const { error: authError } = await supabase.auth.signInWithPassword({
-        email: adminEmail.trim(),
+        email: emailParaLogin,
         password: adminPassword,
       });
 
@@ -186,27 +208,7 @@ export default function LoginPage() {
         throw new Error("Escribe tu contrasena.");
       }
 
-      let emailParaLogin = "";
-
-      const { data: perfilPorUsername } = await supabase
-        .from("usuarios")
-        .select("email, rol, activo")
-        .eq("username", username)
-        .maybeSingle();
-
-      if (perfilPorUsername?.email) {
-        if (perfilPorUsername.rol !== "vecino") {
-          throw new Error("No es cuenta de vecino.");
-        }
-
-        if (perfilPorUsername.activo === false) {
-          throw new Error("Cuenta inactiva.");
-        }
-
-        emailParaLogin = perfilPorUsername.email;
-      } else {
-        emailParaLogin = `${username}@${INTERNAL_EMAIL_DOMAIN}`;
-      }
+      const emailParaLogin = await resolveLoginEmail(username);
 
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: emailParaLogin,
@@ -299,10 +301,10 @@ export default function LoginPage() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white/80">Email</label>
+                  <label className="mb-2 block text-sm font-medium text-white/80">Email o usuario</label>
                   <input
-                    type="email"
-                    name="admin_email_kubo"
+                    type="text"
+                    name="admin_identifier_kubo"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
@@ -392,3 +394,4 @@ export default function LoginPage() {
     </main>
   );
 }
+
