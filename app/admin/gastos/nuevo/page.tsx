@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { extname } from "node:path";
-import { requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin } from "@/lib/auth";
 import ComprobanteImageInput from "../_components/comprobante-image-input";
 
 type CategoriaRow = {
@@ -60,6 +60,7 @@ async function crearGasto(formData: FormData) {
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/nuevo?error=servicio_suspendido");
 
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
@@ -154,6 +155,7 @@ export default async function NuevoGastoPage({
 }) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/nuevo?error=servicio_suspendido");
   const params = (await searchParams) ?? {};
 
   const supabase = await createClient();
@@ -263,8 +265,8 @@ export default async function NuevoGastoPage({
 
                 <select
                   name="categoria"
-                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
                   defaultValue="Otros"
+                  className="w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
                 >
                   <option value="Otros">Otros</option>
                   {categoriasSinOtros.map((categoria) => (
@@ -367,3 +369,5 @@ export default async function NuevoGastoPage({
     </main>
   );
 }
+
+

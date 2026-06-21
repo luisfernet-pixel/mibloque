@@ -1,4 +1,4 @@
-const ingresos = [
+﻿const ingresos = [
   { concepto: "Cuotas cobradas", monto: "Bs 18,540.00" },
   { concepto: "Saldo inicial", monto: "Bs 3,200.00" },
 ];
@@ -14,7 +14,7 @@ export default function DemoTransparenciaPage() {
     <main className="space-y-3">
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="p-4 md:p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Transparencia</p>
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Cuentas del bloque</p>
           <h1 className="mt-2 text-xl font-bold text-white">Resumen financiero del bloque</h1>
           <p className="mt-2 text-sm text-slate-300">
             Vista de ejemplo para mostrar ingresos, gastos y saldo disponible.
@@ -65,3 +65,5 @@ function Card({ title, value }: { title: string; value: string }) {
     </div>
   );
 }
+
+

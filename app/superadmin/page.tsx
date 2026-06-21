@@ -2,7 +2,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
-import { deleteBlockActionForm } from "@/app/superadmin/actions";
+import {
+  activateBlockActionForm,
+  deleteBlockActionForm,
+  duplicateBlockActionForm,
+  purgeBlockActionForm,
+} from "@/app/superadmin/actions";
 import { getAuthUserSafe } from "@/lib/auth";
 
 type AdminBrief = {
@@ -13,24 +18,48 @@ type AdminBrief = {
   activo: boolean;
 };
 
-type DeptoBrief = {
+type DepartamentoBrief = {
+  id: string;
+  numero: string;
+  bloque_id: string;
+  activo: boolean;
+};
+
+type VecinoBrief = {
   id: string;
   nombre: string;
   username: string;
   email: string;
   bloque_id: string;
+  departamento_id: string | null;
   activo: boolean;
 };
 
-function extractDeptoNumero(username: string) {
-  const raw = String(username || "").trim();
-  const segmento = raw.includes("-") ? raw.split("-").pop() ?? "" : raw;
-  const limpio = segmento.trim();
-  const numero = Number(limpio);
-  return Number.isFinite(numero) ? numero : null;
+function deptoSortValue(value: string) {
+  const raw = String(value || "").trim();
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric)) return numeric;
+  const digits = raw.match(/\d+/g)?.join("");
+  const parsedDigits = Number(digits || "");
+  if (Number.isFinite(parsedDigits) && digits) return parsedDigits;
+  return Number.MAX_SAFE_INTEGER;
 }
 
-export default async function SuperadminPage() {
+export default async function SuperadminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ blockok?: string | string[]; blockmsg?: string | string[] }>;
+}) {
+  const params = (await searchParams) ?? {};
+  const blockokRaw = Array.isArray(params.blockok)
+    ? String(params.blockok[0] || "")
+    : String(params.blockok || "");
+  const blockmsg = Array.isArray(params.blockmsg)
+    ? String(params.blockmsg[0] || "")
+    : String(params.blockmsg || "");
+  const showBlockMsg = blockmsg.trim().length > 0;
+  const isBlockOk = blockokRaw === "1";
+
   const supabase = await createClient();
   const user = await getAuthUserSafe(supabase);
 
@@ -48,42 +77,33 @@ export default async function SuperadminPage() {
     redirect("/login");
   }
 
-  const [{ data: bloques }, { data: departamentos }, { data: adminsData }, { data: deptosData }] =
+  const [{ data: bloques }, { data: departamentosData }, { data: adminsData }, { data: vecinosData }] =
     await Promise.all([
       supabase.from("bloques").select("id, nombre, codigo, activo, created_at"),
-      supabase.from("departamentos").select("id"),
+      supabase.from("departamentos").select("id, numero, bloque_id, activo"),
       supabase
         .from("usuarios")
         .select("id, nombre, email, bloque_id, activo")
         .eq("rol", "admin"),
       supabase
         .from("usuarios")
-        .select("id, nombre, username, email, bloque_id, activo")
+        .select("id, nombre, username, email, bloque_id, departamento_id, activo")
         .eq("rol", "vecino"),
     ]);
 
   const totalBloques = bloques?.length || 0;
-  const totalDeptos = departamentos?.length || 0;
+  const totalBloquesActivos = (bloques ?? []).filter((item) => item.activo).length;
+  const totalDeptos = departamentosData?.length || 0;
   const admins = (adminsData ?? []) as AdminBrief[];
-  const deptos = (deptosData ?? []) as DeptoBrief[];
+  const departamentos = (departamentosData ?? []) as DepartamentoBrief[];
+  const vecinos = (vecinosData ?? []) as VecinoBrief[];
 
-  const bloquesOrdenados = [...(bloques ?? [])].sort((a, b) => {
-    const codigoA = String(a.codigo ?? "").trim();
-    const codigoB = String(b.codigo ?? "").trim();
-    const numeroA = Number(codigoA);
-    const numeroB = Number(codigoB);
-    const esNumeroA = codigoA !== "" && Number.isFinite(numeroA);
-    const esNumeroB = codigoB !== "" && Number.isFinite(numeroB);
-
-    if (esNumeroA && esNumeroB) return numeroA - numeroB;
-    if (esNumeroA) return -1;
-    if (esNumeroB) return 1;
-
-    return codigoA.localeCompare(codigoB, "es", {
+  const bloquesOrdenados = [...(bloques ?? [])].sort((a, b) =>
+    String(a.nombre ?? "").localeCompare(String(b.nombre ?? ""), "es", {
       numeric: true,
       sensitivity: "base",
-    });
-  });
+    })
+  );
 
   const adminsPorBloque = new Map<string, AdminBrief[]>();
   for (const admin of admins) {
@@ -94,8 +114,8 @@ export default async function SuperadminPage() {
     adminsPorBloque.set(key, list);
   }
 
-  const deptosPorBloque = new Map<string, DeptoBrief[]>();
-  for (const depto of deptos) {
+  const deptosPorBloque = new Map<string, DepartamentoBrief[]>();
+  for (const depto of departamentos) {
     const key = String(depto.bloque_id || "");
     if (!key) continue;
     const list = deptosPorBloque.get(key) ?? [];
@@ -103,12 +123,30 @@ export default async function SuperadminPage() {
     deptosPorBloque.set(key, list);
   }
 
+  const vecinoPorDepartamento = new Map<string, VecinoBrief>();
+  for (const vecino of vecinos) {
+    const key = String(vecino.departamento_id || "");
+    if (!key || vecinoPorDepartamento.has(key)) continue;
+    vecinoPorDepartamento.set(key, vecino);
+  }
+
   return (
     <main className="min-h-screen bg-[#324359] p-6">
       <div className="mx-auto max-w-7xl space-y-3">
+        {showBlockMsg ? (
+          <section
+            className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+              isBlockOk
+                ? "border-emerald-300/30 bg-emerald-500/10 text-emerald-100"
+                : "border-orange-300/30 bg-orange-500/10 text-orange-100"
+            }`}
+          >
+            {blockmsg}
+          </section>
+        ) : null}
         <section className="rounded-2xl border border-white/10 bg-[#071426] p-4 md:hidden">
           <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">Panel maestro</p>
-          <h1 className="mt-2 text-xl font-bold text-white">SuperAdmin MiBloque</h1>
+          <h1 className="mt-2 text-xl font-bold text-white">SuperAdmin KUBO</h1>
           <p className="mt-2 text-sm text-slate-300">
             Bloques {totalBloques} - Departamentos {totalDeptos}
           </p>
@@ -148,16 +186,15 @@ export default async function SuperadminPage() {
           <div className="grid items-center gap-6 lg:grid-cols-2">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">PANEL MAESTRO</p>
-              <h1 className="mt-3 text-4xl font-bold text-white">SuperAdmin MiBloque</h1>
+              <h1 className="mt-3 text-4xl font-bold text-white">SuperAdmin KUBO</h1>
               <p className="mt-4 max-w-2xl text-slate-300">
-                Control total de bloques, administradores y crecimiento comercial de la
-                plataforma.
+                Control total de bloques, administradores y crecimiento comercial de la plataforma.
               </p>
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
               <p className="text-xs uppercase tracking-[0.35em] text-slate-300">Estado general</p>
-              <div className="mt-4 text-4xl font-bold text-white">{totalBloques}</div>
+              <div className="mt-4 text-4xl font-bold text-white">{totalBloquesActivos}</div>
               <p className="text-slate-300">Bloques activos en sistema</p>
             </div>
           </div>
@@ -192,17 +229,9 @@ export default async function SuperadminPage() {
               bloquesOrdenados.map((item) => {
                 const adminsDelBloque = adminsPorBloque.get(item.id) ?? [];
                 const deptosDelBloque = deptosPorBloque.get(item.id) ?? [];
-                const deptosOrdenados = [...deptosDelBloque].sort((a, b) => {
-                  const numA = extractDeptoNumero(a.username);
-                  const numB = extractDeptoNumero(b.username);
-                  if (numA !== null && numB !== null) return numB - numA;
-                  if (numA !== null) return -1;
-                  if (numB !== null) return 1;
-                  return String(a.username).localeCompare(String(b.username), "es", {
-                    numeric: true,
-                    sensitivity: "base",
-                  });
-                });
+                const deptosOrdenados = [...deptosDelBloque].sort(
+                  (a, b) => deptoSortValue(String(b.numero || "")) - deptoSortValue(String(a.numero || ""))
+                );
 
                 return (
                   <details
@@ -210,11 +239,65 @@ export default async function SuperadminPage() {
                     className="group rounded-2xl border border-white/15 bg-[#2d4a6c] p-4 md:p-4"
                   >
                     <summary className="list-none cursor-pointer">
-                      <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto_auto] md:items-end">
+                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] md:items-end">
                         <div>
                           <p className="text-sm text-slate-300">Bloque</p>
                           <p className="mt-1 text-xl font-bold text-white">{item.nombre}</p>
-                          <p className="text-sm text-slate-300">Codigo: {item.codigo}</p>
+                          <p className="text-sm text-slate-300">
+                            Admin: {adminsDelBloque[0]?.nombre ?? "Sin admin"}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 md:justify-self-start">
+                          {item.activo ? (
+                            <form action={deleteBlockActionForm}>
+                              <input type="hidden" name="id" value={item.id} />
+                              <input type="hidden" name="return_to" value="/superadmin" />
+                              <ConfirmActionButton
+                                confirmText="Desactivar este bloque? Dejara de aparecer para vecinos y admins."
+                                className="rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+                              >
+                                Desactivar
+                              </ConfirmActionButton>
+                            </form>
+                          ) : (
+                            <form action={activateBlockActionForm}>
+                              <input type="hidden" name="id" value={item.id} />
+                              <input type="hidden" name="return_to" value="/superadmin" />
+                              <ConfirmActionButton
+                                confirmText="Activar este bloque? Volvera a aparecer para vecinos y admins."
+                                className="rounded-xl border border-emerald-300/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/20"
+                              >
+                                Activar
+                              </ConfirmActionButton>
+                            </form>
+                          )}
+                          <Link
+                            href={`/superadmin/bloques/${item.id}`}
+                            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+                          >
+                            Editar
+                          </Link>
+                          <form action={duplicateBlockActionForm}>
+                            <input type="hidden" name="id" value={item.id} />
+                            <input type="hidden" name="return_to" value="/superadmin" />
+                            <ConfirmActionButton
+                              confirmText="Duplicar este bloque? Se creara un bloque nuevo con la misma numeracion de departamentos, pero sin vecinos ni datos de vecinos."
+                              className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
+                            >
+                              Duplicar
+                            </ConfirmActionButton>
+                          </form>
+                          <form action={purgeBlockActionForm}>
+                            <input type="hidden" name="id" value={item.id} />
+                            <input type="hidden" name="return_to" value="/superadmin" />
+                            <ConfirmActionButton
+                              confirmText="Eliminar este bloque y borrar todos sus datos (vecinos, admins, departamentos, cuotas, pagos y avisos). Esta accion no se puede deshacer. Continuar?"
+                              className="rounded-xl border border-red-200/30 bg-[#ff5a3d]/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-[#ff5a3d]/20"
+                            >
+                              Eliminar
+                            </ConfirmActionButton>
+                          </form>
                         </div>
 
                         <div>
@@ -246,27 +329,7 @@ export default async function SuperadminPage() {
                     </summary>
 
                     <div className="mt-4 border-t border-white/10 pt-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Link
-                          href={`/superadmin/bloques/${item.id}`}
-                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                        >
-                          Editar bloque
-                        </Link>
-                        {item.activo ? (
-                          <form action={deleteBlockActionForm}>
-                            <input type="hidden" name="id" value={item.id} />
-                            <ConfirmActionButton
-                              confirmText="Borrar este bloque? Esta accion lo dejara inactivo."
-                              className="rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
-                            >
-                              Borrar bloque
-                            </ConfirmActionButton>
-                          </form>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                      <div className="grid gap-3 lg:grid-cols-2">
                         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                           <p className="text-sm font-bold text-white">
                             Admins del bloque ({adminsDelBloque.length})
@@ -276,13 +339,14 @@ export default async function SuperadminPage() {
                               <p className="text-sm text-slate-300">Sin admins registrados.</p>
                             ) : (
                               adminsDelBloque.map((admin) => (
-                                <div
+                                <Link
                                   key={admin.id}
-                                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
+                                  href={`/superadmin/admins/${admin.id}`}
+                                  className="block rounded-xl border border-white/10 bg-white/5 px-3 py-2 transition hover:bg-white/10"
                                 >
                                   <p className="text-sm font-semibold text-white">{admin.nombre}</p>
                                   <p className="text-xs text-slate-300">{admin.email}</p>
-                                </div>
+                                </Link>
                               ))
                             )}
                           </div>
@@ -297,23 +361,35 @@ export default async function SuperadminPage() {
                               <p className="text-sm text-slate-300">Sin departamentos registrados.</p>
                             ) : (
                               deptosOrdenados.map((depto) => {
-                                const numeroDepto = depto.username.includes("-")
-                                  ? depto.username.split("-").pop()
-                                  : depto.username;
+                                const vecinoAsignado = vecinoPorDepartamento.get(depto.id);
+
+                                if (vecinoAsignado) {
+                                  return (
+                                    <Link
+                                      key={depto.id}
+                                      href={`/superadmin/vecinos/${vecinoAsignado.id}`}
+                                      className="block rounded-xl border border-white/10 bg-white/5 px-3 py-2 transition hover:bg-white/10"
+                                    >
+                                      <p className="text-lg font-extrabold text-cyan-200">Depto {depto.numero}</p>
+                                      <p className="text-sm text-white/90">{vecinoAsignado.nombre}</p>
+                                      <p className="text-xs text-slate-300">
+                                        {vecinoAsignado.username} - {vecinoAsignado.email}
+                                      </p>
+                                    </Link>
+                                  );
+                                }
+
                                 return (
-                                <div
-                                  key={depto.id}
-                                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2"
-                                >
-                                  <p className="text-lg font-extrabold text-cyan-200">
-                                    Depto {numeroDepto}
-                                  </p>
-                                  <p className="text-sm text-white/90">{depto.nombre}</p>
-                                  <p className="text-xs text-slate-300">
-                                    {depto.username} - {depto.email}
-                                  </p>
-                                </div>
-                              );
+                                  <Link
+                                    key={depto.id}
+                                    href={`/superadmin/departamentos/${depto.id}`}
+                                    className="block rounded-xl border border-dashed border-white/15 bg-white/5 px-3 py-2 transition hover:bg-white/10"
+                                  >
+                                    <p className="text-lg font-extrabold text-cyan-200">Depto {depto.numero}</p>
+                                    <p className="text-sm text-white/90">Sin vecino asignado</p>
+                                    <p className="text-xs text-slate-300">Abrir estructura del depto.</p>
+                                  </Link>
+                                );
                               })
                             )}
                           </div>
@@ -339,4 +415,3 @@ function Card({ titulo, valor }: { titulo: string; valor: string }) {
     </div>
   );
 }
-

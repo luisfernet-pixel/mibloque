@@ -1,4 +1,4 @@
-import "./globals.css";
+﻿import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,11 +6,11 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   ),
   title: {
-    default: "MiBloque",
-    template: "%s | MiBloque",
+    default: "KUBO",
+    template: "%s | KUBO",
   },
   description:
-    "Plataforma para administrar bloques y condominios con cuotas, pagos, gastos, avisos y transparencia para vecinos.",
+    "Plataforma para administrar bloques y condominios con cuotas, pagos, gastos, avisos y cuentas del bloque para vecinos.",
 };
 
 export default function RootLayout({
@@ -26,3 +26,4 @@ export default function RootLayout({
     </html>
   );
 }
+

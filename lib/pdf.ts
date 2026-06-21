@@ -233,7 +233,7 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
     fill: NAVY_900,
   });
 
-  addText(ops, "MIBLOQUE", margin + 14, yTop(31), 14.5, true, WHITE);
+  addText(ops, "KUBO", margin + 14, yTop(31), 14.5, true, WHITE);
   addText(ops, "Recibo oficial de pago", margin + 14, yTop(48), 10, false, SLATE_200);
   addText(ops, "Nro", PAGE_WIDTH - margin - 132, yTop(34), 8.5, true, SLATE_200);
   addText(ops, receiptNumber, PAGE_WIDTH - margin - 106, yTop(34), 13.5, true, WHITE);
@@ -332,7 +332,7 @@ export function buildReceiptPdf(data: ReceiptPdfData) {
     false,
     SLATE_600
   );
-  addText(ops, "MiBloque", PAGE_WIDTH - margin - 52, footerY + 8, 8, true, NAVY_700);
+  addText(ops, "KUBO", PAGE_WIDTH - margin - 52, footerY + 8, 8, true, NAVY_700);
 
   // Accent marks
   ops.push({

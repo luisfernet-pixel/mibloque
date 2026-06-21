@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --bg-app: #eef4fb;
@@ -504,7 +504,7 @@ a[class*="from-orange-500"] {
   color: inherit;
 }
 
-/* TEXTOS SEMÁNTICOS */
+/* TEXTOS SEMÃNTICOS */
 .title-dark {
   color: var(--text-on-dark);
 }
@@ -806,7 +806,7 @@ tbody tr:hover {
   color: #e11d48;
 }
 
-/* TARJETAS MÁS LIMPIAS */
+/* TARJETAS MÃS LIMPIAS */
 .rounded-3xl.bg-white,
 .rounded-2xl.bg-white,
 [class*="ring-slate-200"].bg-white,
@@ -814,7 +814,7 @@ tbody tr:hover {
   box-shadow: var(--shadow-card);
 }
 
-/* CONTENEDORES OSCUROS MÁS PRO */
+/* CONTENEDORES OSCUROS MÃS PRO */
 .bg-\[\#071426\] {
   background:
     radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%),
@@ -851,7 +851,7 @@ tbody tr:hover {
   border-color: rgba(203, 213, 225, 0.78);
 }
 
-/* IMPRESIÓN */
+/* IMPRESIÃ“N */
 @media print {
   @page {
     size: A4 landscape;
@@ -1078,7 +1078,7 @@ details > summary::-webkit-details-marker {
 }
 
 details > summary::before {
-  content: "▸";
+  content: "â–¸";
   position: absolute;
   left: 0.25rem;
   top: 50%;
@@ -1090,37 +1090,37 @@ details > summary::before {
 }
 
 details[open] > summary::before {
-  content: "▾";
+  content: "â–¾";
 }
 
 /* RESPONSIVE COMPACT MODE (tablet + mobile) */
 @media (max-width: 1024px) {
   .text-5xl {
-    font-size: 2.5rem !important;
+    font-size: 2.35rem !important;
     line-height: 1.08 !important;
   }
 
   .text-4xl {
-    font-size: 2rem !important;
+    font-size: 1.9rem !important;
     line-height: 1.15 !important;
   }
 
   .text-3xl {
-    font-size: 1.625rem !important;
+    font-size: 1.5rem !important;
     line-height: 1.2 !important;
   }
 
   .text-2xl {
-    font-size: 1.375rem !important;
+    font-size: 1.25rem !important;
     line-height: 1.25 !important;
   }
 
   .p-8 {
-    padding: 1.5rem !important;
+    padding: 1rem !important;
   }
 
   .p-6 {
-    padding: 1.25rem !important;
+    padding: 1rem !important;
   }
 
   .px-6 {
@@ -1181,7 +1181,7 @@ details[open] > summary::before {
   }
 
   .min-h-\[48px\] {
-    min-height: 44px !important;
+    min-height: 38px !important;
   }
 
   .min-h-\[40px\] {
@@ -1227,6 +1227,7 @@ details[open] > summary::before {
 
   .min-h-\[52px\],
   .min-h-\[48px\] {
-    min-height: 44px !important;
+    min-height: 38px !important;
   }
 }
+

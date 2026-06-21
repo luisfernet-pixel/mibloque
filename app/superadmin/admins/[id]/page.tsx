@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import UserCreateForm from "@/app/superadmin/_components/user-create-form";
 import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
 import { deleteAdminActionForm, updateAdminAction } from "@/app/superadmin/actions";
+import { parseAdminPaymentDetails } from "@/lib/admin-payment";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -22,14 +23,17 @@ export default async function EditAdminPage({ params }: Props) {
   const [{ data: admin }, { data: bloques }] = await Promise.all([
     supabase
       .from("usuarios")
-      .select("id, nombre, email, bloque_id, activo")
+      .select("id, nombre, email, telefono, username, bloque_id, activo")
       .eq("id", id)
       .eq("rol", "admin")
       .single(),
-    supabase.from("bloques").select("id, nombre, codigo"),
+    supabase
+      .from("bloques")
+      .select("id, nombre, codigo"),
   ]);
 
   if (!admin) notFound();
+  const payment = parseAdminPaymentDetails(admin.username);
 
   return (
     <main className="space-y-3">
@@ -51,12 +55,17 @@ export default async function EditAdminPage({ params }: Props) {
           initialValues={{
             id: admin.id,
             nombre: admin.nombre,
+            telefono: admin.telefono ?? "",
             email: admin.email,
             bloque_id: admin.bloque_id,
+            banco: payment.banco,
+            numero_cuenta: payment.numeroCuenta,
+            qr_url: payment.qrUrl,
             activo: admin.activo,
           }}
           showActive
           allowPassword
+          autoGenerateAdminEmail
           serviceRoleAvailable={serviceRoleAvailable}
         />
 
@@ -81,3 +90,5 @@ export default async function EditAdminPage({ params }: Props) {
     </main>
   );
 }
+
+

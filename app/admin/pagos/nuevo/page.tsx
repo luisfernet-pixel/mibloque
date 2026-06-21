@@ -1,7 +1,16 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { getAuthUserSafe } from "@/lib/auth";
+import { getAuthUserSafe, isBloqueActivo } from "@/lib/auth";
+import PagoDepartamentoSelector from "@/components/admin/pago-departamento-selector";
+import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { formatPeriodoLabel } from "@/lib/periodo";
+import {
+  getCuotaEstadoVigente,
+  getCuotaMontoVigente,
+  getCuotaMoraVigente,
+} from "@/lib/cuotas";
 
 type CuotaRow = {
   id: string;
@@ -19,6 +28,11 @@ type CuotaRow = {
   departamentos: { numero: string } | { numero: string }[] | null;
 };
 
+type ConfigRow = {
+  dia_vencimiento: number | null;
+  valor_mora: number | null;
+};
+
 type GrupoDepto = {
   departamentoId: string;
   numero: string;
@@ -27,14 +41,6 @@ type GrupoDepto = {
   mesesAdeudados: number;
   pendientes: number;
   vencidas: number;
-};
-
-type OpcionPago = {
-  cantidad: number;
-  desde: string;
-  hasta: string;
-  total: number;
-  detalle: string[];
 };
 
 function money(value: number) {
@@ -46,27 +52,18 @@ function getDeptoNumero(value: CuotaRow["departamentos"]) {
   return Array.isArray(value) ? value[0]?.numero ?? "-" : value.numero;
 }
 
-function normalizarFechaSoloDia(value: string) {
-  const d = new Date(value);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+function getDeptoSortValue(value: string) {
+  const raw = String(value || "").trim();
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) ? numeric : -1;
 }
 
-function hoySoloDia() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function cuotaEstaVencida(fechaVencimiento: string) {
-  return hoySoloDia().getTime() > normalizarFechaSoloDia(fechaVencimiento).getTime();
+function cuotaEstaVencida(cuota: CuotaRow) {
+  return String(cuota.estado || "").toLowerCase() === "vencido";
 }
 
 function montoCobrarCuota(cuota: CuotaRow) {
-  const base = Number(cuota.monto_base || 0);
-  const mora = Number(cuota.mora_acumulada || 0);
-
-  if (cuota.estado === "pagado") return Number(cuota.monto_total || base);
-
-  return cuotaEstaVencida(cuota.fecha_vencimiento) ? base + mora : base;
+  return Number(cuota.monto_total || cuota.monto_base || 0);
 }
 
 function agruparPorDepartamento(cuotas: CuotaRow[]): GrupoDepto[] {
@@ -103,54 +100,57 @@ function agruparPorDepartamento(cuotas: CuotaRow[]): GrupoDepto[] {
       (acc, cuota) => acc + montoCobrarCuota(cuota),
       0
     );
-    grupo.vencidas = grupo.cuotas.filter((cuota) =>
-      cuotaEstaVencida(cuota.fecha_vencimiento)
-    ).length;
+    grupo.vencidas = grupo.cuotas.filter((cuota) => cuotaEstaVencida(cuota)).length;
     grupo.pendientes = grupo.cuotas.length - grupo.vencidas;
   }
 
   return Array.from(mapa.values()).sort((a, b) => {
-    if (b.mesesAdeudados !== a.mesesAdeudados) {
-      return b.mesesAdeudados - a.mesesAdeudados;
-    }
-    return a.numero.localeCompare(b.numero);
+    return getDeptoSortValue(b.numero) - getDeptoSortValue(a.numero);
   });
-}
-
-function construirOpcionesPago(cuotas: CuotaRow[]): OpcionPago[] {
-  const opciones: OpcionPago[] = [];
-
-  for (let i = 0; i < cuotas.length; i++) {
-    const subset = cuotas.slice(0, i + 1);
-    const total = subset.reduce((acc, cuota) => acc + montoCobrarCuota(cuota), 0);
-
-    opciones.push({
-      cantidad: i + 1,
-      desde: subset[0].periodo,
-      hasta: subset[subset.length - 1].periodo,
-      total,
-      detalle: subset.map((cuota) => {
-        const monto = montoCobrarCuota(cuota);
-        const vencida = cuotaEstaVencida(cuota.fecha_vencimiento);
-        return `${cuota.periodo} - ${money(monto)}${vencida ? " (con mora)" : ""}`;
-      }),
-    });
-  }
-
-  return opciones;
 }
 
 async function registrarPagoManual(formData: FormData) {
   "use server";
 
   const supabase = await createClient();
+  const user = await getAuthUserSafe(supabase);
 
   const departamentoId = String(formData.get("departamento_id") || "");
   const cantidadMeses = Number(formData.get("cantidad_meses") || 1);
   const referencia = String(formData.get("referencia") || "").trim();
 
+  if (!user) redirect("/login");
+
+  const { data: perfil } = await supabase
+    .from("usuarios")
+    .select("rol, bloque_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!perfil) redirect("/login");
+  if (perfil.rol === "superadmin") redirect("/superadmin");
+  if (perfil.rol !== "admin") redirect("/login");
+
+  const bloqueId = String(perfil.bloque_id || "");
+  if (!bloqueId) redirect("/login");
   if (!departamentoId) return;
   if (!cantidadMeses || cantidadMeses < 1) return;
+  if (!(await isBloqueActivo(bloqueId, supabase))) return;
+
+  const { data: departamento } = await supabase
+    .from("departamentos")
+    .select("id")
+    .eq("id", departamentoId)
+    .eq("bloque_id", bloqueId)
+    .maybeSingle();
+
+  if (!departamento) return;
+
+  const { data: config } = await supabase
+    .from("configuracion_bloque")
+    .select("dia_vencimiento, valor_mora")
+    .eq("bloque_id", bloqueId)
+    .maybeSingle();
 
   const { data: cuotas, error: cuotasError } = await supabase
     .from("cuotas")
@@ -170,6 +170,7 @@ async function registrarPagoManual(formData: FormData) {
     `
     )
     .eq("departamento_id", departamentoId)
+    .eq("bloque_id", bloqueId)
     .in("estado", ["pendiente", "vencido"])
     .order("anio", { ascending: true })
     .order("mes", { ascending: true });
@@ -178,13 +179,20 @@ async function registrarPagoManual(formData: FormData) {
     throw new Error("No se encontraron cuotas pendientes para este departamento.");
   }
 
-  const cuotasOrdenadas = (cuotas as CuotaRow[]).slice(0, cantidadMeses);
+  const cuotasOrdenadas = (cuotas as CuotaRow[])
+    .map((cuota) => ({
+      ...cuota,
+      mora_acumulada: getCuotaMoraVigente(cuota, config as ConfigRow | null),
+      monto_total: getCuotaMontoVigente(cuota, config as ConfigRow | null),
+      estado: getCuotaEstadoVigente(cuota, config as ConfigRow | null),
+    }))
+    .slice(0, cantidadMeses);
 
   for (const cuota of cuotasOrdenadas) {
     const montoPagado = montoCobrarCuota(cuota);
 
     const { error: pagoError } = await supabase.from("pagos").insert({
-      bloque_id: cuota.bloque_id,
+      bloque_id: bloqueId,
       departamento_id: cuota.departamento_id,
       cuota_id: cuota.id,
       monto_pagado: montoPagado,
@@ -204,18 +212,30 @@ async function registrarPagoManual(formData: FormData) {
         pagada_en: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", cuota.id);
+      .eq("id", cuota.id)
+      .eq("bloque_id", bloqueId)
+      .eq("departamento_id", departamentoId);
 
     if (updateError) {
       throw new Error(`Error actualizando cuota: ${updateError.message}`);
     }
   }
 
-  redirect("/admin/pagos");
+  redirect("/admin/pagos/historial");
 }
 
-export default async function NuevoPagoPage() {
+export default async function NuevoPagoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ departamento?: string; periodo?: string }>;
+}) {
+  const query = (await searchParams) ?? {};
+  const targetDepartamento = String(query.departamento || "").trim();
+  const targetPeriodo = String(query.periodo || "").trim();
+
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  await ensureCurrentMonthCuotas(adminSupabase);
   const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
@@ -233,33 +253,45 @@ export default async function NuevoPagoPage() {
   const bloqueId = perfil.bloque_id;
   if (!bloqueId) redirect("/login");
 
-  const { data, error } = await supabase
-    .from("cuotas")
-    .select(
+  const [{ data, error }, { data: config }] = await Promise.all([
+    supabase
+      .from("cuotas")
+      .select(
+        `
+        id,
+        bloque_id,
+        departamento_id,
+        anio,
+        mes,
+        periodo,
+        monto_base,
+        mora_acumulada,
+        monto_total,
+        fecha_vencimiento,
+        estado,
+        created_at,
+        departamentos:departamento_id (
+          numero
+        )
       `
-      id,
-      bloque_id,
-      departamento_id,
-      anio,
-      mes,
-      periodo,
-      monto_base,
-      mora_acumulada,
-      monto_total,
-      fecha_vencimiento,
-      estado,
-      created_at,
-      departamentos:departamento_id (
-        numero
       )
-    `
-    )
-    .eq("bloque_id", bloqueId)
-    .in("estado", ["pendiente", "vencido"])
-    .order("anio", { ascending: true })
-    .order("mes", { ascending: true });
+      .eq("bloque_id", bloqueId)
+      .in("estado", ["pendiente", "vencido"])
+      .order("anio", { ascending: true })
+      .order("mes", { ascending: true }),
+    supabase
+      .from("configuracion_bloque")
+      .select("dia_vencimiento, valor_mora")
+      .eq("bloque_id", bloqueId)
+      .maybeSingle(),
+  ]);
 
-  const cuotas = (data ?? []) as CuotaRow[];
+  const cuotas = ((data ?? []) as CuotaRow[]).map((cuota) => ({
+    ...cuota,
+    mora_acumulada: getCuotaMoraVigente(cuota, config as ConfigRow | null),
+    monto_total: getCuotaMontoVigente(cuota, config as ConfigRow | null),
+    estado: getCuotaEstadoVigente(cuota, config as ConfigRow | null),
+  }));
   const grupos = agruparPorDepartamento(cuotas);
 
   const totalDepartamentosConDeuda = grupos.length;
@@ -286,7 +318,7 @@ export default async function NuevoPagoPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
-                  href="/admin/pagos"
+                  href="/admin/pagos/historial"
                   className="rounded-xl bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   Volver a pagos
@@ -342,8 +374,28 @@ export default async function NuevoPagoPage() {
 
             <div className="mt-2.5 space-y-2">
               {grupos.map((grupo) => {
-                const opciones = construirOpcionesPago(grupo.cuotas);
                 const pagoMinimo = grupo.cuotas[0] ? montoCobrarCuota(grupo.cuotas[0]) : 0;
+                const cuotasDetalle = grupo.cuotas.map((cuota) => {
+                  const montoBase = Number(cuota.monto_base || 0);
+                  const total = montoCobrarCuota(cuota);
+                  return {
+                    id: cuota.id,
+                    periodo: cuota.periodo,
+                    montoBase,
+                    multa: Math.max(0, total - montoBase),
+                    total,
+                    vencida: cuotaEstaVencida(cuota),
+                  };
+                });
+                const selectedIndexByPeriodo = targetPeriodo
+                  ? grupo.cuotas.findIndex((cuota) => String(cuota.periodo) === targetPeriodo)
+                  : -1;
+                const initialCantidadMeses =
+                  selectedIndexByPeriodo >= 0
+                    ? selectedIndexByPeriodo + 1
+                    : targetDepartamento && String(grupo.numero) === targetDepartamento
+                    ? 1
+                    : 1;
 
                 return (
                   <details
@@ -378,13 +430,13 @@ export default async function NuevoPagoPage() {
 
                     <form
                       action={registrarPagoManual}
-                      className="mt-2.5 grid gap-2.5 xl:grid-cols-[1fr_1.2fr]"
+                      className="mt-2.5 grid gap-2.5 xl:grid-cols-[0.9fr_1.1fr]"
                     >
                       <div className="space-y-2.5">
-                        <div className="grid gap-1.5 sm:grid-cols-3">
-                          <InfoBox label="Meses adeudados" value={String(grupo.mesesAdeudados)} />
-                          <InfoBox label="Total adeudado hoy" value={money(grupo.totalAdeudado)} />
-                          <InfoBox label="Pago minimo" value={money(pagoMinimo)} />
+                        <div className="rounded-2xl bg-white/5 p-2.5">
+                          <p className="text-sm font-semibold text-white">
+                            Departamento {grupo.numero} · {grupo.mesesAdeudados} meses adeudados · Deuda total {money(grupo.totalAdeudado)} · Pago mínimo {money(pagoMinimo)}
+                          </p>
                         </div>
 
                         <div className="rounded-2xl bg-[#1b3148] p-2.5">
@@ -394,7 +446,7 @@ export default async function NuevoPagoPage() {
 
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {grupo.cuotas.map((cuota) => {
-                              const vencida = cuotaEstaVencida(cuota.fecha_vencimiento);
+                              const vencida = cuotaEstaVencida(cuota);
                               return (
                                 <span
                                   key={cuota.id}
@@ -404,11 +456,24 @@ export default async function NuevoPagoPage() {
                                       : "border border-cyan-400/20 bg-cyan-500/10 text-cyan-300"
                                   }`}
                                 >
-                                  {cuota.periodo} - {money(montoCobrarCuota(cuota))}
+                                  {formatPeriodoLabel(cuota.periodo)} - {money(montoCobrarCuota(cuota))}
                                 </span>
                               );
                             })}
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <div className="rounded-2xl bg-[#1b3148] p-2.5">
+                        <input
+                          type="hidden"
+                          name="departamento_id"
+                          value={grupo.departamentoId}
+                        />
+                        <input type="hidden" name="bloque_id" value={bloqueId} />
+
+                          <PagoDepartamentoSelector cuotas={cuotasDetalle} initialCantidadMeses={initialCantidadMeses} />
                         </div>
 
                         <div className="rounded-2xl bg-[#1b3148] p-2.5">
@@ -423,11 +488,7 @@ export default async function NuevoPagoPage() {
                             className="w-full rounded-2xl border border-white/10 bg-[#0f2135] px-3 py-2 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-[#EF4937]/50"
                           />
 
-                          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs text-slate-400">
-                              La mora se aplica automaticamente si ya vencio la cuota.
-                            </p>
-
+                          <div className="mt-2.5 flex flex-wrap items-center justify-end gap-2">
                             <button
                               type="submit"
                               className="rounded-xl bg-[#EF4937] px-3.5 py-2 text-sm font-bold text-white transition hover:brightness-110"
@@ -436,66 +497,6 @@ export default async function NuevoPagoPage() {
                             </button>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-[#1b3148] p-2.5">
-                        <input
-                          type="hidden"
-                          name="departamento_id"
-                          value={grupo.departamentoId}
-                        />
-
-                        <div>
-                          <label className="mb-2 block text-xs font-medium text-slate-300">
-                            Elige hasta que mes pago
-                          </label>
-
-                          <div className="space-y-2">
-                            {opciones.map((opcion, opcionIndex) => (
-                              <label
-                                key={opcion.cantidad}
-                                className="flex cursor-pointer items-start gap-2 rounded-2xl border border-white/10 bg-[#0f2135] p-2.5 transition hover:border-[#EF4937]/40"
-                              >
-                                <input
-                                  type="radio"
-                                  name="cantidad_meses"
-                                  value={opcion.cantidad}
-                                  defaultChecked={opcionIndex === 0}
-                                  className="mt-1 h-4 w-4 accent-[#EF4937]"
-                                />
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <div>
-                                      <p className="text-sm font-semibold text-white">
-                                        Pagar {opcion.cantidad} mes(es)
-                                      </p>
-                                      <p className="text-xs text-slate-300">
-                                        Desde {opcion.desde} hasta {opcion.hasta}
-                                      </p>
-                                    </div>
-
-                                    <div className="rounded-xl bg-[#EF4937] px-2.5 py-1.5 text-xs font-bold text-white">
-                                      {money(opcion.total)}
-                                    </div>
-                                  </div>
-
-                                  <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {opcion.detalle.map((linea) => (
-                                      <span
-                                        key={linea}
-                                        className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[11px] text-slate-300"
-                                      >
-                                        {linea}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-
                       </div>
                     </form>
                   </details>
@@ -547,4 +548,5 @@ function InfoBox({
     </div>
   );
 }
+
 

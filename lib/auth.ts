@@ -67,3 +67,19 @@ export async function requireVecino() {
 
   return null;
 }
+
+export async function isBloqueActivo(
+  bloqueId: string | null | undefined,
+  supabase?: SupabaseServerClient
+) {
+  if (!bloqueId) return false;
+  const client = supabase ?? (await createClient());
+  const { data, error } = await client
+    .from("bloques")
+    .select("activo")
+    .eq("id", bloqueId)
+    .maybeSingle();
+
+  if (error) return false;
+  return data?.activo !== false;
+}

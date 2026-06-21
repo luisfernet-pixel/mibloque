@@ -2,10 +2,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin } from "@/lib/auth";
+import {
+  formatBoliviaDate,
+  formatBoliviaMonthLabel,
+  getBoliviaDateParts,
+  getCurrentBoliviaYearMonth,
+  isDateInBoliviaMonth,
+} from "@/lib/bolivia-time";
 import { extname } from "node:path";
 import ConfirmDeleteButton from "./_components/confirm-delete-button";
 import ComprobanteImageInput from "./_components/comprobante-image-input";
+import ConfirmMonthLockButton from "./_components/confirm-month-lock-button";
 
 type GastoRow = {
   id: string;
@@ -27,27 +35,22 @@ function money(value: number) {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("es-BO");
+  return formatBoliviaDate(value);
 }
 
 function esDelMesActual(fecha: string) {
-  const f = new Date(fecha);
-  const hoy = new Date();
-
-  return f.getFullYear() === hoy.getFullYear() && f.getMonth() === hoy.getMonth();
+  const periodoActual = getCurrentBoliviaYearMonth();
+  return isDateInBoliviaMonth(fecha, periodoActual.year, periodoActual.month);
 }
 
 function monthKey(fecha: string) {
-  const f = new Date(fecha);
-  const y = f.getFullYear();
-  const m = String(f.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
+  const parts = getBoliviaDateParts(fecha);
+  if (!parts) return "0000-00";
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}`;
 }
 
 function monthLabel(fecha: string) {
-  const f = new Date(fecha);
-  const label = f.toLocaleDateString("es-BO", { month: "long", year: "numeric" });
-  return label.charAt(0).toUpperCase() + label.slice(1);
+  return formatBoliviaMonthLabel(fecha);
 }
 
 function parseMonthKey(key: string) {
@@ -114,6 +117,7 @@ async function editarGasto(formData: FormData) {
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
   const id = String(formData.get("id") || "");
   const fecha_gasto = String(formData.get("fecha_gasto") || "");
@@ -214,6 +218,7 @@ async function eliminarGasto(formData: FormData) {
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
   const id = String(formData.get("id") || "");
   if (!id) redirect("/admin/gastos");
@@ -254,6 +259,7 @@ async function toggleMesBloqueado(formData: FormData) {
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
   const month_key = String(formData.get("month_key") || "");
   const parsed = parseMonthKey(month_key);
@@ -290,6 +296,7 @@ export default async function GastosPage({
 }) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
   const params = (await searchParams) ?? {};
   const editarId = params.editar || "";
@@ -454,20 +461,21 @@ export default async function GastosPage({
                     <p className="text-sm font-bold text-cyan-200">Total: {money(grupo.total)}</p>
                   </summary>
 
-                  <div className="flex items-center justify-end border-t border-white/10 px-3 py-2">
+                  <div className="flex flex-col items-end gap-1.5 border-t border-white/10 px-3 py-2">
                     <form action={toggleMesBloqueado}>
                       <input type="hidden" name="month_key" value={grupo.key} />
-                      <button
-                        type="submit"
+                      <ConfirmMonthLockButton
+                        locked={locked}
                         className={`rounded-lg border px-2.5 py-1 text-[11px] font-semibold transition ${
                           locked
                             ? "border-amber-300/40 bg-amber-400/15 text-amber-100 hover:bg-amber-400/25"
                             : "border-white/20 bg-white/10 text-white hover:bg-white/20"
                         }`}
-                      >
-                        {locked ? "Desbloquear mes" : "Bloquear mes"}
-                      </button>
+                      />
                     </form>
+                    <p className="text-[11px] text-slate-300">
+                      Una vez cerrado no se podran editar los gastos de este mes.
+                    </p>
                   </div>
 
                   <div className="space-y-2 border-t border-white/10 px-3 py-2">
@@ -725,3 +733,5 @@ function KpiCard({
     </div>
   );
 }
+
+

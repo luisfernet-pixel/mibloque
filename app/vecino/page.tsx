@@ -1,12 +1,18 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUserSafe } from "@/lib/auth";
+import MesesEstadoList from "@/components/vecino/meses-estado-list";
+import ComprobanteUploadForm from "@/components/vecino/comprobante-upload-form";
+import { getCuotaEstadoVigente, getCuotaMontoVigente } from "@/lib/cuotas";
+import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { formatPeriodoLabel } from "@/lib/periodo";
+import { parseAdminPaymentDetails } from "@/lib/admin-payment";
 
 type SearchParams = {
-  sent?: string;
+  sent?: string | string[];
   error?: string;
   detalle?: string;
 };
@@ -14,10 +20,14 @@ type SearchParams = {
 type CuotaRow = {
   id: string;
   periodo: string | null;
+  monto_base?: number | null;
+  mora_acumulada?: number | null;
   monto_total: number | null;
   estado: string | null;
   anio: number | null;
   mes: number | null;
+  fecha_vencimiento?: string | null;
+  created_at?: string | null;
 };
 
 type ConfirmacionRow = {
@@ -41,11 +51,25 @@ type NotificacionVecinoRow = {
   leida: boolean | null;
 };
 
-type AvisoBloqueRow = {
-  id: string;
-  titulo: string | null;
-  mensaje: string | null;
-  created_at: string | null;
+
+type ConfigRow = {
+  dia_vencimiento: number | null;
+  valor_mora: number | null;
+  nombre_administracion?: string | null;
+};
+
+type AdminPagoRow = {
+  nombre: string | null;
+  telefono: string | null;
+  username: string | null;
+  activo?: boolean | null;
+  created_at?: string | null;
+};
+
+type BloquePagoRow = {
+  pago_banco: string | null;
+  pago_numero_cuenta: string | null;
+  pago_qr_url: string | null;
 };
 
 type EstadoFila = "pendiente" | "en_revision" | "pagado";
@@ -57,20 +81,10 @@ function money(value: number | null | undefined) {
   })}`;
 }
 
-function estadoLabel(value: EstadoFila) {
-  if (value === "pagado") return "Pagado";
-  if (value === "en_revision") return "En revision";
-  return "Pendiente";
-}
-
-function estadoClass(value: EstadoFila) {
-  if (value === "pagado") {
-    return "border-cyan-400/30 bg-cyan-500/15 text-cyan-100";
-  }
-  if (value === "en_revision") {
-    return "border-yellow-400/40 bg-yellow-500/10 text-yellow-100";
-  }
-  return "border-orange-400/30 bg-orange-500/10 text-orange-100";
+function firstName(value: string | null | undefined) {
+  const raw = String(value || "").trim();
+  if (!raw) return "vecino";
+  return raw.split(/\s+/)[0] || "vecino";
 }
 
 function detailForError(error: string, detalle: string) {
@@ -80,19 +94,38 @@ function detailForError(error: string, detalle: string) {
   if (error === "enrevision") return "Ese mes ya tiene un comprobante en revision.";
   if (error === "upload") return `No se pudo subir el archivo${detalle ? `: ${detalle}` : "."}`;
   if (error === "confirmacion") return "No se pudo registrar la confirmacion.";
+  if (error === "servicio_suspendido") return "El servicio de este edificio se encuentra temporalmente suspendido por estado de facturacion.";
   return "No se pudo completar el envio.";
 }
+
+function isRecentWithinDays(value: string | null | undefined, days: number) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return Date.now() - date.getTime() <= days * 24 * 60 * 60 * 1000;
+}
+
+function getParamValue(value: string | string[] | undefined) {
+  if (!value) return "";
+  return Array.isArray(value) ? String(value[0] || "") : String(value);
+}
+
 
 export default async function VecinoPage({
   searchParams,
 }: {
   searchParams?: Promise<SearchParams>;
 }) {
-  const adminQrPath = "/qr-pago-admin.png";
-
   const params = (await searchParams) ?? {};
+  const sentValue = getParamValue(params.sent);
+  const cookieStore = await cookies();
+  const sentCookie = cookieStore.get("vecino_comprobante_sent")?.value || "";
+  const avisosVistosAt = cookieStore.get("vecino_avisos_vistos_at")?.value || null;
+  const avisosVistosDate = avisosVistosAt ? new Date(avisosVistosAt) : null;
+  const avisosVistosIso = avisosVistosDate && !Number.isNaN(avisosVistosDate.getTime()) ? avisosVistosDate.toISOString() : "1970-01-01T00:00:00.000Z";
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
+  await ensureCurrentMonthCuotas(adminSupabase);
   const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
@@ -111,13 +144,16 @@ export default async function VecinoPage({
     { data: cuotas },
     { data: confirmaciones },
     { data: pagos },
-    { data: notificaciones },
     { data: avisosBloque },
+    { data: respuestasPendientes },
+    { data: config },
+    { data: adminsBloque },
+    { data: bloquePago },
   ] =
     await Promise.all([
       supabase
         .from("cuotas")
-        .select("id, periodo, monto_total, estado, anio, mes")
+        .select("id, periodo, monto_base, mora_acumulada, monto_total, estado, anio, mes, fecha_vencimiento, created_at")
         .eq("departamento_id", perfil.departamento_id)
         .order("anio", { ascending: false })
         .order("mes", { ascending: false }),
@@ -132,39 +168,68 @@ export default async function VecinoPage({
         .eq("departamento_id", perfil.departamento_id)
         .order("fecha_pago", { ascending: false }),
       adminSupabase
-        .from("notificaciones_vecino")
-        .select("id, tipo, titulo, mensaje, created_at, leida")
-        .eq("bloque_id", perfil.bloque_id)
-        .eq("departamento_id", perfil.departamento_id)
-        .eq("leida", false)
-        .order("created_at", { ascending: false })
-        .limit(3),
-      adminSupabase
         .from("avisos")
         .select("id, titulo, mensaje, created_at")
         .eq("bloque_id", perfil.bloque_id)
         .eq("publicado", true)
+        .gt("created_at", avisosVistosIso)
         .order("created_at", { ascending: false })
-        .limit(3),
+        .limit(20),
+      adminSupabase
+        .from("buzon_sugerencias")
+        .select("id")
+        .eq("vecino_id", perfil.id)
+        .eq("estado", "respondido")
+        .eq("respuesta_leida", false),
+      adminSupabase
+        .from("configuracion_bloque")
+        .select("dia_vencimiento, valor_mora, nombre_administracion")
+        .eq("bloque_id", perfil.bloque_id)
+        .maybeSingle(),
+      adminSupabase
+        .from("usuarios")
+        .select("nombre, telefono, username, activo, created_at")
+        .eq("rol", "admin")
+        .eq("bloque_id", perfil.bloque_id)
+        .order("created_at", { ascending: false }),
+      adminSupabase
+        .from("bloques")
+        .select("pago_banco, pago_numero_cuenta, pago_qr_url")
+        .eq("id", perfil.bloque_id)
+        .maybeSingle(),
     ]);
 
-  const cuotasRows = (cuotas ?? []) as CuotaRow[];
+  const cuotasRows = ((cuotas ?? []) as CuotaRow[]).map((item) => ({
+    ...item,
+    monto_total: getCuotaMontoVigente(item, config as ConfigRow | null),
+    estado: getCuotaEstadoVigente(item, config as ConfigRow | null),
+  }));
   const confirmacionesRows = (confirmaciones ?? []) as ConfirmacionRow[];
   const pagosRows = (pagos ?? []) as PagoRow[];
-  const notificacionesRows = (notificaciones ?? []) as NotificacionVecinoRow[];
-  const avisosBloqueRows = (avisosBloque ?? []) as AvisoBloqueRow[];
-  const avisosInicio =
-    notificacionesRows.length > 0
-      ? notificacionesRows.map((item) => ({
-          id: `notif-${item.id}`,
-          titulo: item.titulo || "Aviso importante",
-          mensaje: item.mensaje || "",
-        }))
-      : avisosBloqueRows.map((item) => ({
-          id: `aviso-${item.id}`,
-          titulo: item.titulo || "Aviso del bloque",
-          mensaje: item.mensaje || "",
-        }));
+  const avisosNuevos = (avisosBloque ?? []) as NotificacionVecinoRow[];
+  const respuestasNuevas = respuestasPendientes?.length ?? 0;
+  const totalNovedades = avisosNuevos.length + respuestasNuevas;
+  const configRow = (config ?? null) as ConfigRow | null;
+  const adminsPagoRows = (adminsBloque ?? []) as AdminPagoRow[];
+  const bloquePagoRow = (bloquePago ?? null) as BloquePagoRow | null;
+  const adminPago =
+    adminsPagoRows.find((item) => item.activo !== false) ??
+    adminsPagoRows[0] ??
+    null;
+  const paymentFromAdmin = parseAdminPaymentDetails(adminPago?.username);
+  const adminQrPath = String(
+    bloquePagoRow?.pago_qr_url || paymentFromAdmin.qrUrl || "/qr-pago-admin.png"
+  );
+  const adminNombreCompleto = String(
+    adminPago?.nombre || configRow?.nombre_administracion || "Administrador del bloque"
+  );
+  const adminCelular = String(adminPago?.telefono || "-");
+  const bancoPago = String(bloquePagoRow?.pago_banco || paymentFromAdmin.banco || "-");
+  const cuentaPago = String(
+    bloquePagoRow?.pago_numero_cuenta || paymentFromAdmin.numeroCuenta || "-"
+  );
+  const mostrarAvisoDirecto = respuestasNuevas === 0 && avisosNuevos.length === 1;
+  const avisoDirecto = mostrarAvisoDirecto ? avisosNuevos[0] : null;
 
   const pendingConfirmacionByCuota = new Map<string, ConfirmacionRow>();
   for (const item of confirmacionesRows) {
@@ -202,7 +267,15 @@ export default async function VecinoPage({
 
   const filasPendientes = filas.filter((item) => item.status === "pendiente");
   const filasEnRevision = filas.filter((item) => item.status === "en_revision");
-  const filasPagadas = filas.filter((item) => item.status === "pagado");
+  const estaAlDia = filasPendientes.length === 0 && filasEnRevision.length === 0;
+  const montoPendienteTotal = filasPendientes.reduce(
+    (total, item) => total + Number(item.monto_total || 0),
+    0
+  );
+  const estadoResumenBoxes = [
+    { label: "Meses pendientes", value: String(filasPendientes.length) },
+    { label: "Monto total pendiente", value: money(montoPendienteTotal) },
+  ];
 
   const filasPendientesOrdenadas = [...filasPendientes].sort((a, b) => {
     const anioA = Number(a.anio || 0);
@@ -212,12 +285,145 @@ export default async function VecinoPage({
   });
   const cuotaHabilitada = filasPendientesOrdenadas[0] ?? null;
 
-  const sent = params.sent === "1";
+  const sent =
+    sentValue === "1" ||
+    sentValue.toLowerCase() === "true" ||
+    sentValue.toLowerCase() === "ok" ||
+    sentCookie === "1";
   const error = params.error || "";
   const detalle = params.detalle || "";
 
   return (
     <main className="space-y-2.5 md:space-y-3">
+      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
+        <div className="space-y-2.5 p-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-300">
+            Pagos del vecino
+          </p>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-lg font-bold leading-tight text-white">Estado de cuotas</h1>
+            <Link
+              href="#subir-comprobante"
+              className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-[#ff5a3d] px-3 text-[11px] font-bold text-white transition hover:brightness-110"
+            >
+              Ir a subir comprobante
+            </Link>
+          </div>
+          {estaAlDia ? (
+            <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-3">
+              <p className="text-lg font-bold text-cyan-100">OK Estas al dia</p>
+              <p className="mt-1 text-xs text-cyan-50">Todos tus pagos estan registrados.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-1.5">
+              <InfoBox label="Meses pendientes" value={String(filasPendientes.length)} />
+              <InfoBox label="Monto total pendiente" value={money(montoPendienteTotal)} />
+            </div>
+          )}
+
+        </div>
+      </section>
+
+      <section className="hidden overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
+        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
+              Hola {firstName(perfil.nombre)},
+            </p>
+            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
+              Que quieres hacer ahora?
+            </h1>
+            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
+              Este es tu estado de cuentas.
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
+            {estaAlDia ? (
+              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/10 p-4">
+                <p className="text-2xl font-bold text-cyan-100">OK Estas al dia</p>
+                <p className="mt-1 text-sm text-cyan-50">Todos tus pagos estan registrados.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {estadoResumenBoxes.map((item) => (
+                  <InfoBox key={item.label} label={item.label} value={item.value} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {sent ? (
+        <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
+          Se subio el comprobante con exito. El admin lo revisara antes de aprobarlo.
+        </section>
+      ) : null}
+
+      {error ? (
+        <section className="rounded-2xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
+          {detailForError(error, detalle)}
+        </section>
+      ) : null}
+
+      {totalNovedades > 0 ? (
+        mostrarAvisoDirecto && avisoDirecto ? (
+          <div className="rounded-2xl border-2 border-orange-300/50 bg-orange-500/10 px-3 py-3 text-orange-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 md:text-xs md:tracking-[0.22em]">
+              Aviso del bloque
+            </p>
+            <p className="mt-1 text-sm font-bold text-orange-50">
+              {avisoDirecto.titulo || "Nuevo aviso"}
+            </p>
+            <p className="mt-1 text-sm text-orange-100">
+              {avisoDirecto.mensaje || "Tienes un nuevo aviso para revisar."}
+            </p>
+          </div>
+        ) : (
+          <Link
+            href="/vecino/comunicacion/abrir"
+            className="block rounded-2xl border-2 border-orange-300/50 bg-orange-500/10 px-3 py-3 text-orange-100 ring-1 ring-white/10 transition hover:bg-orange-500/15 md:rounded-[24px] md:px-5 md:py-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-200 md:text-xs md:tracking-[0.22em]">
+                  Avisos para ti
+                </p>
+                <p className="mt-1 text-sm font-semibold text-orange-50">
+                  Tienes novedades de anuncios o mensajes para revisar.
+                </p>
+              </div>
+              <span className="rounded-full border border-orange-200/50 bg-orange-500/20 px-2.5 py-1 text-[10px] font-bold text-orange-50 md:text-[11px]">
+                {totalNovedades} nuevo(s)
+              </span>
+            </div>
+          </Link>
+        )
+      ) : null}
+
+      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[24px]">
+        <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-2 md:gap-3 md:px-6 md:py-4">
+          <div>
+            <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Meses y estado</h2>
+          </div>
+        </div>
+
+        <div className="p-4 md:p-4">
+          {filas.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
+              <p className="text-lg font-bold text-white">No hay cuotas registradas</p>
+            </div>
+          ) : (
+            <MesesEstadoList
+              filas={filas}
+              cuotaHabilitadaId={cuotaHabilitada?.id || null}
+              cuotaHabilitadaPeriodo={cuotaHabilitada?.periodo || null}
+            />
+          )}
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#0f2d48] via-[#1c4569] to-[#245b84] shadow-xl ring-1 ring-white/10 md:rounded-[24px]">
         <div className="grid items-center gap-3 p-3 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-6">
           <div>
@@ -232,27 +438,24 @@ export default async function VecinoPage({
 
             <div className="mt-2 grid gap-1 text-xs text-cyan-50 md:mt-4 md:gap-2 md:text-sm">
               <p>
-                <span className="font-semibold text-cyan-100">Banco:</span> Union
+                <span className="font-semibold text-cyan-100">Admin:</span> {adminNombreCompleto}
               </p>
               <p>
-                <span className="font-semibold text-cyan-100">Titular:</span> Administracion
-                Edificio Central
+                <span className="font-semibold text-cyan-100">Celular:</span> {adminCelular}
               </p>
               <p>
-                <span className="font-semibold text-cyan-100">Cuenta:</span> 123-4567890
+                <span className="font-semibold text-cyan-100">Banco:</span> {bancoPago}
+              </p>
+              <p>
+                <span className="font-semibold text-cyan-100">Cuenta:</span> {cuentaPago}
               </p>
             </div>
           </div>
 
           <div className="mx-auto w-full max-w-[180px] rounded-2xl bg-white p-2.5 shadow-2xl shadow-black/25 md:max-w-[250px] md:rounded-3xl md:p-3">
-            <Image
+            <img
               src={adminQrPath}
               alt="QR para pago del admin"
-              width={420}
-              height={420}
-              sizes="(max-width: 768px) 220px, 250px"
-              quality={90}
-              preload
               className="h-auto w-full rounded-xl md:rounded-2xl"
             />
             <a
@@ -268,270 +471,6 @@ export default async function VecinoPage({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:hidden">
-        <div className="space-y-2.5 p-3">
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-300">
-            Pagos del vecino
-          </p>
-          <h1 className="text-lg font-bold leading-tight text-white">Estado de cuotas</h1>
-          <p className="text-xs text-slate-200">
-            Pendientes {filasPendientes.length} - En revision {filasEnRevision.length} - Pagados{" "}
-            {filasPagadas.length}
-          </p>
-
-          <details className="group rounded-xl border border-white/15 bg-white/5 p-2.5">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-cyan-100">
-              Ver detalle
-              <span className="inline-flex rounded-full border border-cyan-300/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] group-open:hidden">
-                Abrir
-              </span>
-              <span className="hidden rounded-full border border-white/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] group-open:inline-flex">
-                Cerrar
-              </span>
-            </summary>
-
-            <p className="mt-2 text-xs text-slate-200">
-              Revisa tus meses pendientes y sube el comprobante solo del mes habilitado.
-            </p>
-
-            <div className="mt-2 grid grid-cols-2 gap-1.5">
-              <InfoBox label="Pendientes" value={String(filasPendientes.length)} />
-              <InfoBox label="En revision" value={String(filasEnRevision.length)} />
-              <InfoBox label="Pagados" value={String(filasPagadas.length)} />
-              <InfoBox label="Total meses" value={String(filas.length)} />
-            </div>
-
-            <div className="mt-2">
-              <Link
-                href="#subir-comprobante"
-                className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-[#ff5a3d] px-3 text-[11px] font-bold text-white transition hover:brightness-110"
-              >
-                Ir a subir comprobante
-              </Link>
-            </div>
-          </details>
-        </div>
-      </section>
-
-      <section className="hidden overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10 md:block">
-        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Pagos del vecino
-            </p>
-            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
-              Estado de cuotas por mes
-            </h1>
-            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              Revisa que meses estan pendientes, cuales estan en revision y cuales
-              ya fueron aprobados.
-            </p>
-          </div>
-
-          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <InfoBox label="Pendientes" value={String(filasPendientes.length)} />
-              <InfoBox label="En revision" value={String(filasEnRevision.length)} />
-              <InfoBox label="Pagados" value={String(filasPagadas.length)} />
-              <InfoBox label="Total meses" value={String(filas.length)} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {sent ? (
-        <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
-          Comprobante enviado. El admin lo revisara antes de aprobarlo.
-        </section>
-      ) : null}
-
-      {error ? (
-        <section className="rounded-2xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
-          {detailForError(error, detalle)}
-        </section>
-      ) : null}
-
-      {avisosInicio.length > 0 ? (
-        <section className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-amber-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
-          <details className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200 md:text-xs md:tracking-[0.22em]">
-                Avisos para ti
-              </p>
-              <span className="rounded-full border border-amber-200/30 bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-50 md:text-[11px]">
-                {avisosInicio.length} nuevo(s)
-              </span>
-            </summary>
-
-            <div className="mt-3 space-y-3">
-              {avisosInicio.map((item) => (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-amber-200/20 bg-black/10 p-3"
-                >
-                  <p className="text-sm font-bold text-amber-50">{item.titulo}</p>
-                  <p className="mt-1 text-sm text-amber-100">{item.mensaje}</p>
-                </article>
-              ))}
-            </div>
-
-            <div className="mt-3">
-              <Link
-                href="/vecino/avisos"
-                className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-amber-300/40 bg-amber-400/10 px-3 text-[11px] font-bold text-amber-100 transition hover:bg-amber-400/20 md:min-h-[44px] md:px-4 md:text-xs"
-              >
-                Ver todos los avisos
-              </Link>
-            </div>
-          </details>
-        </section>
-      ) : null}
-
-      <section className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[24px]">
-        <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-2 md:gap-3 md:px-6 md:py-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300 md:text-xs md:tracking-[0.3em]">
-              Tabla unica
-            </p>
-            <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Meses y estado</h2>
-          </div>
-        </div>
-
-        <div className="p-4 md:p-4">
-          {filas.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
-              <p className="text-lg font-bold text-white">No hay cuotas registradas</p>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-2 md:hidden">
-                {filas.map((item) => (
-                  <article key={item.id} className="rounded-xl border border-white/10 bg-[#2d4a6c] p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-bold text-white">{item.periodo || "Sin periodo"}</p>
-                      <span
-                        className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-bold ${estadoClass(
-                          item.status
-                        )}`}
-                      >
-                        {estadoLabel(item.status)}
-                      </span>
-                    </div>
-
-                    <p className="mt-1.5 text-xs text-slate-200">Monto: {money(item.monto_total)}</p>
-
-                    <div className="mt-2">
-                      {item.status === "pendiente" ? (
-                        cuotaHabilitada?.id === item.id ? (
-                          <Link
-                            href="#subir-comprobante"
-                            className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-[#ff5a3d] px-3 text-[11px] font-bold text-white transition hover:brightness-110"
-                          >
-                            Subir comprobante
-                          </Link>
-                        ) : (
-                          <span className="text-xs font-semibold text-orange-100">
-                            Debes pagar primero {cuotaHabilitada?.periodo || "mes anterior"}
-                          </span>
-                        )
-                      ) : null}
-
-                      {item.status === "en_revision" ? (
-                        <span className="text-xs font-semibold text-yellow-100">
-                          Esperando validacion admin
-                        </span>
-                      ) : null}
-
-                      {item.status === "pagado" ? (
-                        item.reciboPagoId ? (
-                          <Link
-                            href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
-                            target="_blank"
-                            className="inline-flex min-h-[36px] items-center justify-center rounded-xl bg-cyan-500 px-3 text-[11px] font-bold text-white transition hover:bg-cyan-400"
-                          >
-                            Descargar recibo
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-cyan-100">Pago aprobado</span>
-                        )
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
-
-              <div className="hidden overflow-x-auto md:block">
-                <table className="min-w-full overflow-hidden rounded-2xl border border-white/10">
-                  <thead className="bg-[#1f3d5f] text-left text-xs uppercase tracking-[0.2em] text-slate-300">
-                    <tr>
-                      <th className="px-3 py-2">Mes</th>
-                      <th className="px-3 py-2">Monto</th>
-                      <th className="px-3 py-2">Estado</th>
-                      <th className="px-3 py-2">Accion</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filas.map((item) => (
-                      <tr key={item.id} className="border-t border-white/10 bg-[#2d4a6c]">
-                        <td className="px-4 py-4 font-semibold text-white">
-                          {item.periodo || "Sin periodo"}
-                        </td>
-                        <td className="px-4 py-4 text-slate-100">{money(item.monto_total)}</td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-2 text-sm font-bold ${estadoClass(
-                              item.status
-                            )}`}
-                          >
-                            {estadoLabel(item.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          {item.status === "pendiente" ? (
-                            cuotaHabilitada?.id === item.id ? (
-                              <Link
-                                href="#subir-comprobante"
-                                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
-                              >
-                                Subir comprobante
-                              </Link>
-                            ) : (
-                              <span className="text-sm font-semibold text-orange-100">
-                                Debes pagar primero {cuotaHabilitada?.periodo || "mes anterior"}
-                              </span>
-                            )
-                          ) : null}
-
-                          {item.status === "en_revision" ? (
-                            <span className="text-sm font-semibold text-yellow-100">
-                              Esperando validacion admin
-                            </span>
-                          ) : null}
-
-                          {item.status === "pagado" ? (
-                            item.reciboPagoId ? (
-                              <Link
-                                href={`/vecino/recibos/${item.reciboPagoId}/pdf`}
-                                target="_blank"
-                                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-sm font-bold text-white transition hover:bg-cyan-400"
-                              >
-                                Descargar recibo
-                              </Link>
-                            ) : (
-                              <span className="text-sm text-cyan-100">Pago aprobado</span>
-                            )
-                          ) : null}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
-
       <section
         id="subir-comprobante"
         className="overflow-hidden rounded-2xl bg-[#213b59] shadow-xl ring-1 ring-white/10 md:rounded-[24px]"
@@ -544,6 +483,12 @@ export default async function VecinoPage({
         </div>
 
         <div className="p-3 md:p-4">
+          {sent ? (
+            <div className="mb-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 ring-1 ring-white/10">
+              Se subio el comprobante con exito. El admin lo revisara antes de aprobarlo.
+            </div>
+          ) : null}
+
           {filasPendientes.length === 0 ? (
             <div className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-8 text-center">
               <p className="text-lg font-bold text-cyan-100">
@@ -554,61 +499,11 @@ export default async function VecinoPage({
               </p>
             </div>
           ) : (
-            <form
-              action="/api/vecino/reportar-pago"
-              method="POST"
-              encType="multipart/form-data"
-              className="grid gap-3 xl:grid-cols-[1fr_1fr] md:gap-3"
-            >
-              <div className="space-y-2 xl:col-span-2">
-                <label className="text-sm font-semibold text-white">
-                  Mes habilitado para pagar
-                </label>
-                <div className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
-                  <p className="text-sm font-bold text-cyan-100">
-                    {cuotaHabilitada?.periodo || "Sin periodo"}
-                  </p>
-                  <p className="mt-1 text-xs text-cyan-50">
-                    Monto: {money(cuotaHabilitada?.monto_total)}
-                  </p>
-                </div>
-                <input type="hidden" name="cuota_id" value={cuotaHabilitada?.id || ""} />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-white">
-                  Referencia o detalle
-                </label>
-                <input
-                  type="text"
-                  name="referencia"
-                  placeholder="Ej: transferencia BNB o QR"
-                  required
-                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-3 py-2 text-white outline-none transition placeholder:text-slate-400 focus:border-cyan-400/40"
-                />
-              </div>
-
-              <div className="space-y-2 xl:col-span-2">
-                <label className="text-sm font-semibold text-white">
-                  Archivo del comprobante
-                </label>
-                <input
-                  type="file"
-                  name="archivo"
-                  required
-                  className="w-full rounded-2xl border border-white/15 bg-[#173454] px-3 py-2 text-slate-200 outline-none transition file:mr-4 file:rounded-xl file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-cyan-400"
-                />
-              </div>
-
-              <div className="xl:col-span-2">
-                <button
-                  type="submit"
-                  className="inline-flex min-h-[42px] items-center justify-center rounded-xl bg-[#ff5a3d] px-4 text-xs font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
-                >
-                  Enviar comprobante
-                </button>
-              </div>
-            </form>
+            <ComprobanteUploadForm
+              cuotaId={cuotaHabilitada?.id || ""}
+              periodoLabel={formatPeriodoLabel(cuotaHabilitada?.periodo)}
+              montoLabel={money(cuotaHabilitada?.monto_total)}
+            />
           )}
         </div>
       </section>
@@ -630,4 +525,7 @@ function InfoBox({
     </div>
   );
 }
+
+
+
 

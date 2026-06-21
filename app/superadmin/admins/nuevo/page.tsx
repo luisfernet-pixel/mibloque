@@ -17,7 +17,10 @@ export default async function NuevoAdminPage({ searchParams }: Props) {
   const serviceRoleAvailable = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   const [{ data: bloques }, { data: adminsActivos }] = await Promise.all([
-    supabase.from("bloques").select("id, nombre, codigo").order("nombre", { ascending: true }),
+    supabase
+      .from("bloques")
+      .select("*")
+      .order("nombre", { ascending: true }),
     supabase
       .from("usuarios")
       .select("bloque_id")
@@ -39,7 +42,7 @@ export default async function NuevoAdminPage({ searchParams }: Props) {
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
         <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Crear nuevo admin</h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Crea la cuenta en Auth y su perfil interno en una sola operación.
+          Crea la cuenta en Auth y su perfil interno en una sola operacion.
         </p>
       </section>
 
@@ -64,3 +67,4 @@ export default async function NuevoAdminPage({ searchParams }: Props) {
     </main>
   );
 }
+

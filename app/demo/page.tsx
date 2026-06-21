@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export default function DemoIndexPage() {
   return (
@@ -40,10 +40,11 @@ export default function DemoIndexPage() {
           </p>
           <h2 className="mt-3 text-xl font-bold text-white">Vecino</h2>
           <p className="mt-3 text-sm text-slate-200">
-            Explora cuotas, estados y transparencia financiera en modo de demostracion.
+            Explora cuotas, estados y cuentas del bloque en modo de demostracion.
           </p>
         </Link>
       </section>
     </main>
   );
 }
+

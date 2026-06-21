@@ -1,4 +1,4 @@
-import { ImageResponse } from "next/og";
+﻿import { ImageResponse } from "next/og";
 
 export const size = {
   width: 1200,
@@ -40,7 +40,7 @@ export default function OpenGraphImage() {
               fontWeight: 800,
             }}
           >
-            MB
+            K
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div
@@ -52,10 +52,7 @@ export default function OpenGraphImage() {
                 color: "#a5f3fc",
               }}
             >
-              MiBloque
-            </div>
-            <div style={{ fontSize: 18 }}>
-              Software para bloques y condominios
+              KUBO
             </div>
           </div>
         </div>
@@ -81,12 +78,12 @@ export default function OpenGraphImage() {
             }}
           >
             Una experiencia clara para administracion, vecinos y superadmin
-            con foco en orden, transparencia y cierre comercial.
+            con foco en orden, cuentas del bloque y cierre comercial.
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {["Cobros", "Pagos", "Gastos", "Avisos", "Transparencia"].map(
+          {["Cobros", "Pagos", "Gastos", "Avisos", "Cuentas del bloque"].map(
             (item) => (
               <div
                 key={item}
@@ -108,3 +105,4 @@ export default function OpenGraphImage() {
     )
   );
 }
+

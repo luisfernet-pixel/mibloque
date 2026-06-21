@@ -1,4 +1,4 @@
-# MiBloque App
+# KUBO App
 
 Aplicacion web para administracion de bloques/condominios con paneles para `superadmin`, `admin` y `vecino`.
 
@@ -48,4 +48,3 @@ Notas:
 1. `npm run lint`
 2. `npm run build`
 3. Revisar que `.env.local` no tenga secretos de prueba
-

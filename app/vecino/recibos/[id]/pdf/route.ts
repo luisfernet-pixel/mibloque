@@ -92,6 +92,7 @@ export async function GET(
     `
     )
     .eq("id", id)
+    .eq("bloque_id", perfil.bloque_id)
     .eq("departamento_id", perfil.departamento_id)
     .single();
 

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin } from "@/lib/auth";
 
 async function crearCategoria(formData: FormData) {
   "use server";
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 
   const nombre = String(formData.get("nombre") || "").trim();
   if (!nombre) redirect("/admin/gastos/categorias");
@@ -36,6 +37,7 @@ async function editarCategoria(formData: FormData) {
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 
   const id = String(formData.get("id") || "");
   const nombre = String(formData.get("nombre") || "").trim();
@@ -61,6 +63,7 @@ async function eliminarCategoria(formData: FormData) {
 
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 
   const id = String(formData.get("id") || "");
   if (!id) redirect("/admin/gastos/categorias");
@@ -89,6 +92,7 @@ export default async function CategoriasGastoPage({
 }) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 
   const params = (await searchParams) ?? {};
   const editarId = params.editar || "";
@@ -279,3 +283,5 @@ function InfoBox({
     </div>
   );
 }
+
+

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
@@ -48,17 +48,38 @@ export default async function VecinosPage() {
                 <th className="px-5 py-4">Email</th>
                 <th className="px-5 py-4">Bloque</th>
                 <th className="px-5 py-4">Estado</th>
+
                 <th className="px-5 py-4">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {vecinos?.map((item) => (
-                <tr key={item.id} className="border-t border-white/10 text-white">
-                  <td className="px-5 py-4">{item.nombre}</td>
-                  <td className="px-5 py-4">{item.username}</td>
-                  <td className="px-5 py-4">{item.email}</td>
-                  <td className="px-5 py-4">{bloqueMap.get(item.bloque_id) ?? "-"}</td>
-                  <td className="px-5 py-4">{item.activo ? "Activo" : "Desactivado"}</td>
+                <tr key={item.id} className="border-t border-white/10 text-white transition hover:bg-white/5">
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/vecinos/${item.id}`} className="block w-full py-1">
+                      {item.nombre}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/vecinos/${item.id}`} className="block w-full py-1">
+                      {item.username}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/vecinos/${item.id}`} className="block w-full py-1">
+                      {item.email}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/vecinos/${item.id}`} className="block w-full py-1">
+                      {bloqueMap.get(item.bloque_id) ?? "-"}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/vecinos/${item.id}`} className="block w-full py-1">
+                      {item.activo ? "Activo" : "Desactivado"}
+                    </Link>
+                  </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
                       <Link
@@ -98,3 +119,9 @@ export default async function VecinosPage() {
     </main>
   );
 }
+
+
+
+
+
+

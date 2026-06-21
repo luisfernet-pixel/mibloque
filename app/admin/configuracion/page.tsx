@@ -1,6 +1,7 @@
+﻿import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin } from "@/lib/auth";
 
 function money(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", {
@@ -25,16 +26,15 @@ async function guardarConfiguracion(formData: FormData) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
 
-  const nombreAdministracion = String(
-    formData.get("nombre_administracion") || ""
-  ).trim();
+  const supabase = await createClient();
+  if (!(await isBloqueActivo(usuario.perfil.bloque_id, supabase))) {
+    redirect("/admin/configuracion?error=servicio_suspendido");
+  }
 
   const cuotaMensual = parseNumericInput(formData.get("cuota_mensual"), 0);
   const diaVencimiento = parseNumericInput(formData.get("dia_vencimiento"), 15);
   const valorMora = parseNumericInput(formData.get("valor_mora"), 0);
   const saldoInicial = parseNumericInput(formData.get("saldo_inicial"), 0);
-
-  const supabase = await createClient();
 
   const { data: existente } = await supabase
     .from("configuracion_bloque")
@@ -43,7 +43,6 @@ async function guardarConfiguracion(formData: FormData) {
     .maybeSingle();
 
   const payload = {
-    nombre_administracion: nombreAdministracion,
     moneda: "BOB",
     cuota_mensual: cuotaMensual,
     dia_vencimiento: diaVencimiento,
@@ -88,7 +87,6 @@ export default async function ConfiguracionPage({
   const errorHint = errorRaw.toLowerCase().includes("saldo_inicial")
     ? "Falta la migracion de base de datos para saldo_inicial."
     : "";
-
   const supabase = await createClient();
 
   const { data: config } = await supabase
@@ -129,8 +127,8 @@ export default async function ConfiguracionPage({
             </p>
 
             <div className="mt-5 space-y-3">
-              <TipBox text="Cambiar la cuota afecta solo cuotas nuevas." />
-              <TipBox text="Las cuotas antiguas mantienen su valor historico." />
+              <TipBox text="Cambiar la cuota aplica para el siguiente mes." />
+              <TipBox text="La mora y el vencimiento actualizan las cuotas impagas mes a mes." />
               <TipBox text="Si no cobran multa, coloca mora en 0." />
               <TipBox text="Saldo inicial: dinero con el que parte el bloque al entrar al sistema." />
             </div>
@@ -139,36 +137,38 @@ export default async function ConfiguracionPage({
       </section>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <InfoCard
-          title="Cuota actual"
-          value={money(Number(config?.cuota_mensual ?? 0))}
-          tone="orange"
-        />
-        <InfoCard
-          title="Vence el dia"
-          value={String(config?.dia_vencimiento ?? 15)}
-          tone="cyan"
-        />
-        <InfoCard
-          title="Mora"
-          value={money(Number(config?.valor_mora ?? 0))}
-          tone="orangeSoft"
-        />
-        <InfoCard
-          title="Saldo inicial"
-          value={money(Number(config?.saldo_inicial ?? 0))}
-          tone="cyan"
-        />
+        <InfoCard title="Cuota actual" value={money(Number(config?.cuota_mensual ?? 0))} tone="orange" />
+        <InfoCard title="Vence el dia" value={String(config?.dia_vencimiento ?? 15)} tone="cyan" />
+        <InfoCard title="Mora" value={money(Number(config?.valor_mora ?? 0))} tone="orangeSoft" />
+        <InfoCard title="Saldo inicial" value={money(Number(config?.saldo_inicial ?? 0))} tone="cyan" />
       </section>
 
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
         <div className="border-b border-white/10 px-4 py-3 md:px-4">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Datos del bloque
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Carga inicial</p>
+          <h2 className="mt-2 text-xl font-bold text-white">Deudas antiguas de departamentos</h2>
+          <p className="mt-1 text-sm text-slate-300">
+            Usalo una sola vez por bloque cuando empieces con un edificio que ya trae meses atrasados.
           </p>
-          <h2 className="mt-2 text-xl font-bold text-white">
-            Cobro, vencimiento y base inicial
-          </h2>
+        </div>
+
+        <div className="p-4 md:p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+
+            <Link
+              href="/admin/departamentos"
+              className="inline-flex items-center justify-center rounded-2xl border border-orange-300/30 bg-orange-500/15 px-4 py-2.5 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/25 hover:text-white"
+            >
+              Abrir carga de deuda
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
+        <div className="border-b border-white/10 px-4 py-3 md:px-4">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">Datos del bloque</p>
+          <h2 className="mt-2 text-xl font-bold text-white">Cobro, vencimiento y base inicial</h2>
           <p className="mt-1 text-sm text-slate-300">
             Mantener estos datos bien definidos mejora reportes y proyecciones.
           </p>
@@ -178,29 +178,9 @@ export default async function ConfiguracionPage({
           <form action={guardarConfiguracion} className="space-y-3.5">
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-100">
-                  Nombre del administrador
-                </label>
-
-                <input
-                  type="text"
-                  name="nombre_administracion"
-                  defaultValue={config?.nombre_administracion ?? ""}
-                  required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-100">
-                  Cuota mensual
-                </label>
-
+                <label className="mb-2 block text-sm font-medium text-slate-100">Cuota mensual</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
-                    Bs
-                  </span>
-
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">Bs</span>
                   <input
                     type="number"
                     name="cuota_mensual"
@@ -213,31 +193,9 @@ export default async function ConfiguracionPage({
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-100">
-                  Dia de vencimiento
-                </label>
-
-                <input
-                  type="number"
-                  name="dia_vencimiento"
-                  min={1}
-                  max={28}
-                  defaultValue={config?.dia_vencimiento ?? 15}
-                  required
-                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-slate-100">
-                  Mora mensual
-                </label>
-
+                <label className="mb-2 block text-sm font-medium text-slate-100">Mora mensual</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
-                    Bs
-                  </span>
-
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">Bs</span>
                   <input
                     type="number"
                     name="valor_mora"
@@ -250,15 +208,22 @@ export default async function ConfiguracionPage({
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-100">
-                  Saldo inicial
-                </label>
+                <label className="mb-2 block text-sm font-medium text-slate-100">Dia de vencimiento</label>
+                <input
+                  type="number"
+                  name="dia_vencimiento"
+                  min={1}
+                  max={28}
+                  defaultValue={config?.dia_vencimiento ?? 15}
+                  required
+                  className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
+                />
+              </div>
 
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-100">Saldo inicial</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">
-                    Bs
-                  </span>
-
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">Bs</span>
                   <input
                     type="number"
                     name="saldo_inicial"
@@ -271,28 +236,12 @@ export default async function ConfiguracionPage({
               </div>
             </div>
 
-            <div className="rounded-2xl bg-[#2d4a6c] p-4 ring-1 ring-white/10">
-              <p className="text-sm font-semibold text-white">Como funciona</p>
-
-              <p className="mt-2 text-sm text-slate-300">
-                La cuota puede pagarse hasta el dia configurado. Despues de esa
-                fecha se suma la mora mensual. El saldo inicial se usa como base
-                para el saldo acumulado en reportes.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
-              <p className="text-sm text-slate-300">
-                Guardar no modifica cuotas antiguas.
-              </p>
-
-              <button
-                type="submit"
-                className="rounded-2xl bg-[#ff5a3d] px-6 py-3 font-bold text-white transition hover:brightness-110"
-              >
-                Guardar configuracion
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="btn-primary inline-flex min-h-[48px] items-center justify-center rounded-2xl px-5 font-bold"
+            >
+              Guardar configuracion
+            </button>
           </form>
         </div>
       </section>
@@ -302,8 +251,8 @@ export default async function ConfiguracionPage({
 
 function TipBox({ text }: { text: string }) {
   return (
-    <div className="rounded-2xl bg-[#3a5879] p-4 ring-1 ring-white/10">
-      <p className="text-sm text-slate-100">{text}</p>
+    <div className="rounded-[18px] border border-white/10 bg-white/5 px-3 py-3 text-sm leading-6 text-slate-200">
+      {text}
     </div>
   );
 }
@@ -317,16 +266,22 @@ function InfoCard({
   value: string;
   tone: "orange" | "cyan" | "orangeSoft";
 }) {
-  const tones = {
-    orange: "border-orange-400/30 bg-orange-500/10",
-    cyan: "border-cyan-500/20 bg-cyan-500/10",
-    orangeSoft: "border-orange-300/20 bg-orange-500/5",
-  };
+  const toneClasses = {
+    orange: "border-orange-400/20 bg-gradient-to-br from-orange-500/15 to-transparent text-orange-100",
+    cyan: "border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-transparent text-cyan-100",
+    orangeSoft: "border-orange-300/20 bg-gradient-to-br from-orange-400/10 to-transparent text-orange-50",
+  } as const;
 
   return (
-    <div className={`rounded-[24px] border p-4 text-white shadow-xl ${tones[tone]}`}>
-      <p className="text-sm text-slate-200">{title}</p>
-      <p className="mt-3 text-xl font-bold text-white">{value}</p>
-    </div>
+    <article className={`rounded-[24px] border px-4 py-4 shadow-xl ring-1 ring-white/10 ${toneClasses[tone]}`}>
+      <p className="text-xs uppercase tracking-[0.24em] text-slate-300">{title}</p>
+      <p className="mt-3 text-2xl font-bold text-white md:text-3xl">{value}</p>
+    </article>
   );
 }
+
+
+
+
+
+

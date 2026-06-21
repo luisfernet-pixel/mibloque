@@ -1,305 +1,188 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth";
 
-type PagoRow = {
-  id: string;
-  fecha_pago: string;
-  monto_pagado: number;
-  metodo_pago: string;
-  referencia: string | null;
-  cuotas: { periodo: string } | { periodo: string }[] | null;
-  departamentos: { numero: string } | { numero: string }[] | null;
-};
-
-function money(value: number) {
-  return `Bs ${Number(value || 0).toLocaleString("es-BO")}`;
-}
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("es-BO");
-}
-
-function metodoLabel(value: string) {
-  const v = (value || "").toLowerCase();
-
-  if (v === "transferencia") return "Transferencia";
-  if (v === "qr") return "QR";
-  if (v === "efectivo") return "Efectivo";
-  if (v === "deposito") return "Depósito";
-
-  return value || "-";
-}
-
-function metodoClass(value: string) {
-  const v = (value || "").toLowerCase();
-
-  if (v === "qr") {
-    return "border border-cyan-400/20 bg-cyan-500/10 text-cyan-300";
-  }
-
-  if (v === "transferencia" || v === "deposito") {
-    return "border border-[#EF4937]/20 bg-[#EF4937]/10 text-[#ff9d92]";
-  }
-
-  if (v === "efectivo") {
-    return "border border-amber-400/20 bg-amber-500/10 text-amber-300";
-  }
-
-  return "border border-slate-400/20 bg-slate-500/10 text-slate-300";
-}
+export const dynamic = "force-dynamic";
 
 export default async function PagosPage() {
-  const supabase = await createClient();
+  const usuario = await requireAdmin();
+  if (!usuario) redirect("/login");
 
-  const { data, error } = await supabase
-    .from("pagos")
-    .select(
-      `
-      id,
-      fecha_pago,
-      monto_pagado,
-      metodo_pago,
-      referencia,
-      cuotas:cuota_id (
-        periodo
-      ),
-      departamentos:departamento_id (
-        numero
-      )
-    `
-    )
-    .order("fecha_pago", { ascending: false });
+  const supabase = createAdminClient();
+  const { data: pendientesRes } = await supabase
+    .from("confirmaciones_pago")
+    .select("id")
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("estado", "pendiente");
 
-  const pagos = (data ?? []) as PagoRow[];
-
-  function getPeriodo(value: PagoRow["cuotas"]) {
-    if (!value) return "-";
-    return Array.isArray(value) ? value[0]?.periodo ?? "-" : value.periodo;
-  }
-
-  function getDepto(value: PagoRow["departamentos"]) {
-    if (!value) return "-";
-    return Array.isArray(value) ? value[0]?.numero ?? "-" : value.numero;
-  }
-
-  const totalPagos = pagos.length;
-  const totalCobrado = pagos.reduce(
-    (acc, item) => acc + Number(item.monto_pagado || 0),
-    0
-  );
-
-  const totalQr = pagos.filter(
-    (item) => item.metodo_pago?.toLowerCase() === "qr"
-  ).length;
-
-  const totalTransferencia = pagos.filter((item) => {
-    const metodo = item.metodo_pago?.toLowerCase();
-    return metodo === "transferencia" || metodo === "deposito";
-  }).length;
-
-  const totalEfectivo = pagos.filter(
-    (item) => item.metodo_pago?.toLowerCase() === "efectivo"
-  ).length;
+  const comprobantesPendientes = pendientesRes?.length ?? 0;
 
   return (
-    <main className="min-h-screen space-y-3.5 bg-[#324359] p-6 text-white">
-      <section className="overflow-hidden rounded-3xl bg-[#071426] shadow-2xl">
-        <div className="grid gap-3 p-4 md:grid-cols-[1.35fr_0.65fr] md:p-6">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
-              Cobros del bloque
-            </p>
-
-            <h1 className="mt-2 text-xl font-bold tracking-tight text-white md:text-3xl">
-              Pagos registrados
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm text-slate-300">
-              Aquí puedes revisar todos los pagos registrados del bloque de forma
-              clara y ordenada.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2.5 md:grid md:w-full md:grid-cols-3 md:items-center">
-              <Link
-                href="/admin/confirmaciones"
-                className="rounded-2xl bg-[#EF4937] px-4 py-2 text-center text-sm font-bold text-white transition hover:brightness-110 md:justify-self-start"
-              >
-                Ver comprobantes
-              </Link>
-
-              <Link
-                href="/admin/pagos/nuevo"
-                className="rounded-2xl bg-cyan-500 px-4 py-2 text-center text-sm font-bold text-black transition hover:brightness-110 md:justify-self-center"
-              >
-                Registrar pago
-              </Link>
-
-              <Link
-                href="/admin/pagos"
-                className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-center text-sm font-bold text-cyan-200 transition hover:bg-cyan-500/20 md:justify-self-end"
-              >
-                Historial de pagos
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Resumen rápido
-            </p>
-
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <StatMini label="Pagos registrados" value={String(totalPagos)} />
-              <StatMini label="Total cobrado" value={money(totalCobrado)} />
-              <StatMini label="Pagos por QR" value={String(totalQr)} />
-              <StatMini
-                label="Transferencias"
-                value={String(totalTransferencia)}
-              />
-            </div>
-          </div>
-        </div>
+    <main className="space-y-6 md:space-y-8">
+      <section className="space-y-2">
+        <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
+          Pagos
+        </h1>
+        <p className="text-lg text-slate-300 md:text-xl">
+          Elige lo que necesitas hacer con cobros, deudas y comprobantes.
+        </p>
       </section>
 
-      {error ? (
-        <section className="rounded-2xl border border-[#EF4937]/30 bg-[#EF4937]/10 p-4 text-sm text-[#ffb1a8]">
-          Error cargando pagos: {error.message}
-        </section>
-      ) : null}
-
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard title="Pagos registrados" value={String(totalPagos)} tone="orange" />
-        <KpiCard title="Total cobrado" value={money(totalCobrado)} tone="cyan" />
-        <KpiCard title="Pagos por QR" value={String(totalQr)} tone="sky" />
-        <KpiCard title="Pagos en efectivo" value={String(totalEfectivo)} tone="amber" />
-      </section>
-
-      <section className="overflow-hidden rounded-3xl bg-[#20354d] shadow-xl">
-        <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
-              Registro detallado
-            </p>
-            <h2 className="mt-1 text-lg font-bold text-white">
-              Pagos guardados
-            </h2>
-          </div>
-
-          <div className="text-sm text-slate-300">
-            {totalPagos} pago(s) registrados
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-[#16283c] text-left text-slate-300">
-              <tr className="border-b border-white/10">
-                <th className="px-3 py-2 font-semibold">Fecha</th>
-                <th className="px-3 py-2 font-semibold">Depto</th>
-                <th className="px-3 py-2 font-semibold">Periodo</th>
-                <th className="px-3 py-2 font-semibold">Monto</th>
-                <th className="px-3 py-2 font-semibold">Método</th>
-                <th className="px-3 py-2 font-semibold">Referencia</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {pagos.map((item) => (
-                <tr
-                  key={item.id}
-                  className="border-b border-white/10 text-slate-200 transition hover:bg-white/5"
-                >
-                  <td className="whitespace-nowrap px-3 py-2 text-slate-300">
-                    {formatDate(item.fecha_pago)}
-                  </td>
-
-                  <td className="whitespace-nowrap px-3 py-2 font-semibold text-white">
-                    {getDepto(item.departamentos)}
-                  </td>
-
-                  <td className="whitespace-nowrap px-3 py-2 text-slate-300">
-                    {getPeriodo(item.cuotas)}
-                  </td>
-
-                  <td className="whitespace-nowrap px-3 py-2 font-bold text-white">
-                    {money(item.monto_pagado)}
-                  </td>
-
-                  <td className="whitespace-nowrap px-3 py-2">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${metodoClass(
-                        item.metodo_pago
-                      )}`}
-                    >
-                      {metodoLabel(item.metodo_pago)}
-                    </span>
-                  </td>
-
-                  <td className="max-w-[240px] px-3 py-2 text-slate-300">
-                    <span className="block truncate">
-                      {item.referencia || "-"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-
-              {pagos.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-8 text-center text-sm text-slate-400"
-                  >
-                    Todavía no hay pagos registrados.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
+      <section className="grid gap-4 md:grid-cols-2 xl:gap-5">
+        <HubCard
+          href="/admin/pagos/registrar"
+          title="Registrar pago"
+          description="Anota un pago cuando un vecino paga en efectivo, QR o transferencia."
+          icon={<CashIcon />}
+        />
+        <HubCard
+          href="/admin/pagos/deudas"
+          title="Ver quien debe"
+          description="Revisa cuotas pendientes, mora y estado general de cobro."
+          icon={<BookIcon />}
+        />
+        <HubCard
+          href="/admin/pagos/comprobantes"
+          title="Revisar comprobantes"
+          description="Aprueba o rechaza comprobantes enviados por los vecinos."
+          icon={<ClipIcon />}
+          highlight={comprobantesPendientes > 0}
+          badgeCount={comprobantesPendientes}
+        />
+        <HubCard
+          href="/admin/pagos/historial"
+          title="Historial de pagos"
+          description="Consulta pagos ya registrados y busca movimientos anteriores."
+          icon={<ClockIcon />}
+        />
       </section>
     </main>
   );
 }
 
-function KpiCard({
+function HubCard({
+  href,
   title,
-  value,
-  tone,
+  description,
+  icon,
+  highlight,
+  badgeCount,
 }: {
+  href: string;
   title: string;
-  value: string;
-  tone: "orange" | "cyan" | "sky" | "amber";
+  description: string;
+  icon: React.ReactNode;
+  highlight?: boolean;
+  badgeCount?: number;
 }) {
-  const tones = {
-    orange: "border-[#EF4937]/25 bg-[#EF4937]/10 text-[#ff9d92]",
-    cyan: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
-    sky: "border-sky-500/20 bg-sky-500/10 text-sky-300",
-    amber: "border-amber-500/20 bg-amber-500/10 text-amber-300",
-  };
-
+  const badge = Number(badgeCount || 0);
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${tones[tone]}`}>
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
-        {title}
-      </p>
-      <p className="mt-2 text-xl font-bold text-white">{value}</p>
-    </div>
+    <Link
+      href={href}
+      className={`rounded-[28px] border p-5 shadow-xl transition md:p-7 ${
+        highlight
+          ? "border-orange-400/55 bg-orange-500/10 hover:bg-orange-500/15 hover:border-orange-400/75"
+          : "border-white/15 bg-[#213b59] hover:bg-[#29425f]"
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <span
+          className={`inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl shadow-inner ${
+            highlight
+              ? "bg-orange-500/15 text-orange-200"
+              : "bg-white/10 text-blue-300"
+          }`}
+        >
+          {icon}
+        </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="text-2xl font-bold text-white md:text-3xl">{title}</p>
+            {highlight && badge > 0 ? (
+              <span className="rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+                {badge}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-2 text-base leading-7 text-slate-200 md:text-lg">
+            {description}
+          </p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
-function StatMini({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function CashIcon() {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 text-lg font-bold text-white">{value}</p>
-    </div>
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-cyan-300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="6" width="18" height="12" rx="2.5" />
+      <circle cx="12" cy="12" r="2.7" />
+      <path d="M7 9h.01M17 15h.01" />
+    </svg>
+  );
+}
+
+function BookIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-[#ff8a6b]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v17H7.5A2.5 2.5 0 0 0 5 21.5v-17Z" />
+      <path d="M7.5 2A2.5 2.5 0 0 0 5 4.5V19" />
+      <path d="M9 7h6M9 11h6" />
+    </svg>
+  );
+}
+
+function ClipIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m21.44 11.05-8.49 8.49a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.5 3.5 0 1 1 4.95 4.95l-9.19 9.2a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-7 w-7 text-sky-300"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
   );
 }

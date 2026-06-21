@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 const cuotas = [
   { periodo: "Febrero 2026", monto: "Bs 240.00", estado: "Pendiente" },
@@ -26,7 +26,7 @@ export default function DemoVecinoPage() {
                 href="/demo/vecino/transparencia"
                 className="rounded-2xl bg-cyan-500 px-3.5 py-2 text-sm font-bold text-white"
               >
-                Ver transparencia
+                Ver cuentas del bloque
               </Link>
             </div>
           </div>
@@ -77,3 +77,4 @@ function InfoBox({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+

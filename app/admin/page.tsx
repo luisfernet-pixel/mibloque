@@ -3,21 +3,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUserSafe } from "@/lib/auth";
+import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import {
+  compareYearMonth,
+  getBoliviaDateParts,
+  getCurrentBoliviaYearMonth,
+  isDateInBoliviaMonth,
+} from "@/lib/bolivia-time";
 
 function bs(n: number) {
   return `Bs ${Number(n || 0).toLocaleString("es-BO")}`;
-}
-
-function esDelMesActual(fecha?: string | null) {
-  if (!fecha) return false;
-
-  const f = new Date(fecha);
-  const hoy = new Date();
-
-  return (
-    f.getFullYear() === hoy.getFullYear() &&
-    f.getMonth() === hoy.getMonth()
-  );
 }
 
 function getPrimerNombre(value: string | null | undefined) {
@@ -29,13 +24,15 @@ function getPrimerNombre(value: string | null | undefined) {
 type AdminCuotaRow = {
   monto_total: number | null;
   estado: string | null;
+  anio: number | null;
+  mes: number | null;
   created_at: string | null;
   departamento_id: string | null;
 };
 
 type AdminGastoRow = {
   monto: number | null;
-  created_at: string | null;
+  fecha_gasto: string | null;
 };
 
 type AdminPagoRow = {
@@ -50,6 +47,7 @@ type AdminDepartamentoRow = {
 export default async function AdminPage() {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
+  await ensureCurrentMonthCuotas(adminSupabase);
   const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
@@ -71,12 +69,12 @@ export default async function AdminPage() {
     await Promise.all([
       adminSupabase
         .from("cuotas")
-        .select("monto_total, estado, created_at, departamento_id")
+        .select("monto_total, estado, anio, mes, created_at, departamento_id")
         .eq("bloque_id", bloqueId),
 
       adminSupabase
         .from("gastos")
-        .select("monto, created_at")
+        .select("monto, fecha_gasto")
         .eq("bloque_id", bloqueId),
 
       adminSupabase
@@ -100,13 +98,22 @@ export default async function AdminPage() {
   const gastos = (gastosRes.data ?? []) as AdminGastoRow[];
   const pagos = (pagosRes.data ?? []) as AdminPagoRow[];
   const departamentos = (departamentosRes.data ?? []) as AdminDepartamentoRow[];
+  const periodoActual = getCurrentBoliviaYearMonth();
+  const cuotaPeriodoRelacion = (cuota: AdminCuotaRow) => {
+    const relation = compareYearMonth(cuota.anio, cuota.mes, periodoActual.year, periodoActual.month);
+    if (relation !== null) return relation;
+
+    const parts = getBoliviaDateParts(cuota.created_at);
+    if (!parts) return null;
+    return compareYearMonth(parts.year, parts.month, periodoActual.year, periodoActual.month);
+  };
 
   const cobradoDelMes = pagos
-    .filter((x) => esDelMesActual(x.fecha_pago))
+    .filter((x) => isDateInBoliviaMonth(x.fecha_pago, periodoActual.year, periodoActual.month))
     .reduce((a, x) => a + Number(x.monto_pagado || 0), 0);
 
   const gastosDelMes = gastos
-    .filter((x) => esDelMesActual(x.created_at))
+    .filter((x) => isDateInBoliviaMonth(x.fecha_gasto, periodoActual.year, periodoActual.month))
     .reduce((a, x) => a + Number(x.monto || 0), 0);
 
   const saldoDelMes = cobradoDelMes - gastosDelMes;
@@ -117,7 +124,10 @@ export default async function AdminPage() {
     cuotas
       .filter((x) => {
         const estado = String(x.estado || "").toLowerCase();
-        return estadosDeuda.has(estado) && esDelMesActual(x.created_at);
+        return (
+          estadosDeuda.has(estado) &&
+          cuotaPeriodoRelacion(x) === 0
+        );
       })
       .map((x) => x.departamento_id)
       .filter(Boolean)
@@ -127,7 +137,10 @@ export default async function AdminPage() {
     cuotas
       .filter((x) => {
         const estado = String(x.estado || "").toLowerCase();
-        return estadosDeuda.has(estado) && !esDelMesActual(x.created_at);
+        return (
+          estadosDeuda.has(estado) &&
+          cuotaPeriodoRelacion(x) === -1
+        );
       })
       .map((x) => x.departamento_id)
       .filter(Boolean)
@@ -146,7 +159,7 @@ export default async function AdminPage() {
   const primerNombre = getPrimerNombre(perfil.nombre);
 
   return (
-    <main className="space-y-6 md:space-y-8">
+    <main className="space-y-4 md:space-y-5">
       <section className="space-y-2">
         <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
           Hola, {primerNombre}
@@ -156,23 +169,23 @@ export default async function AdminPage() {
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:gap-5">
+      <section className="grid gap-3 md:grid-cols-2 xl:gap-3.5">
         <ActionCard
-          href="/admin/pagos/nuevo"
+          href="/admin/pagos/registrar"
           title="Registrar pago"
           description="Cuando un vecino paga en efectivo, QR o transferencia."
           tone="cyan"
           icon={<CashIcon />}
         />
         <ActionCard
-          href="/admin/vecinos-pagos"
+          href="/admin/pagos/deudas"
           title="Ver quien debe"
           description="Revisa vecinos con cuotas pendientes o mora."
           tone="orange"
           icon={<BookIcon />}
         />
         <ActionCard
-          href="/admin/gastos/nuevo"
+          href="/admin/gastos/registrar"
           title="Registrar gasto"
           description="Anota pagos de limpieza, jardinero, luz, agua o reparaciones."
           tone="blue"
@@ -187,17 +200,26 @@ export default async function AdminPage() {
         />
       </section>
 
-      <section className="rounded-[28px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10 md:p-7">
-        <div className="flex flex-col gap-1">
-          <p className="text-2xl font-bold text-white md:text-3xl">
-            Resumen del mes
-          </p>
-          <p className="text-sm text-slate-300 md:text-base">
-            Lo mas importante del dinero este mes.
-          </p>
+      <section className="rounded-[22px] bg-[#213b59] p-3.5 shadow-xl ring-1 ring-white/10 md:p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-xl font-bold text-white md:text-2xl">
+              Resumen del mes
+            </p>
+            <p className="text-sm text-slate-300 md:text-base">
+              Lo mas importante del dinero este mes.
+            </p>
+          </div>
+
+          <Link
+            href="/admin/reportes"
+            className="mt-0.5 whitespace-nowrap rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition duration-200 hover:border-sky-400/30 hover:bg-white/20 hover:text-white active:scale-[0.98] md:rounded-2xl md:px-4 md:py-2 md:text-sm"
+          >
+            Ver reportes
+          </Link>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-3 grid gap-2.5 md:grid-cols-3">
           <SummaryTile
             label="Cobre"
             value={bs(cobradoDelMes)}
@@ -212,19 +234,29 @@ export default async function AdminPage() {
             label="Saldo"
             value={bs(saldoDelMes)}
             valueClassName="text-white"
+            note={saldoDelMes < 0 ? "Incluye cuotas pendientes por cobrar." : undefined}
           />
         </div>
       </section>
 
-      <section className="rounded-[28px] bg-[#213b59] p-5 shadow-xl ring-1 ring-white/10 md:p-7">
-        <div className="flex flex-col gap-1">
-          <p className="text-2xl font-bold text-white md:text-3xl">Vecinos</p>
-          <p className="text-sm text-slate-300 md:text-base">
-            Una vista rapida para saber como esta el bloque.
-          </p>
+      <section className="rounded-[22px] bg-[#213b59] p-3.5 shadow-xl ring-1 ring-white/10 md:p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <p className="text-xl font-bold text-white md:text-2xl">Vecinos</p>
+            <p className="text-sm text-slate-300 md:text-base">
+              Una vista rapida para saber como esta el bloque.
+            </p>
+          </div>
+
+          <Link
+            href="/admin/pagos/deudas"
+            className="mt-0.5 whitespace-nowrap rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition duration-200 hover:border-sky-400/30 hover:bg-white/20 hover:text-white active:scale-[0.98] md:rounded-2xl md:px-4 md:py-2 md:text-sm"
+          >
+            Ver detalles
+          </Link>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Al dia" value={String(deptosAlDia)} />
           <StatCard label="Deben este mes" value={String(deptosConDeudaMes)} />
           <StatCard
@@ -264,15 +296,15 @@ function ActionCard({
   return (
     <Link
       href={href}
-      className={`rounded-[28px] border bg-[#213b59] p-5 shadow-xl transition hover:bg-[#29425f] md:p-7 ${tones[tone]}`}
+      className={`rounded-[24px] border bg-[#213b59] p-4 shadow-xl transition hover:bg-[#29425f] md:p-5 ${tones[tone]}`}
     >
       <div className="flex items-start gap-4">
-        <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
+        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
           {icon}
         </span>
         <div className="min-w-0">
-          <p className="text-2xl font-bold text-white md:text-3xl">{title}</p>
-          <p className="mt-2 text-base leading-7 text-slate-200 md:text-lg">
+          <p className="text-xl font-bold text-white md:text-2xl">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-200 md:mt-1.5 md:text-base">
             {description}
           </p>
         </div>
@@ -285,17 +317,20 @@ function SummaryTile({
   label,
   value,
   valueClassName,
+  note,
 }: {
   label: string;
   value: string;
   valueClassName?: string;
+  note?: string;
 }) {
   return (
-    <div className="rounded-[22px] bg-[#2d4a6c] px-4 py-4">
-      <p className="text-base text-slate-300">{label}</p>
-      <p className={`mt-2 text-3xl font-bold ${valueClassName || "text-white"}`}>
+    <div className="rounded-[18px] bg-[#2d4a6c] px-3.5 py-3">
+      <p className="text-sm text-slate-300 md:text-base">{label}</p>
+      <p className={`mt-1.5 text-2xl font-bold md:mt-2 md:text-3xl ${valueClassName || "text-white"}`}>
         {value}
       </p>
+      {note ? <p className="mt-1 text-xs text-slate-300">{note}</p> : null}
     </div>
   );
 }
@@ -308,9 +343,11 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[22px] bg-[#2d4a6c] px-4 py-4">
+    <div className="rounded-[18px] bg-[#2d4a6c] px-3.5 py-3">
       <p className="text-sm text-slate-300 md:text-base">{label}</p>
-      <p className="mt-2 text-3xl font-bold text-white">{value}</p>
+      <p className="mt-1.5 text-2xl font-bold text-white md:mt-2 md:text-3xl">
+        {value}
+      </p>
     </div>
   );
 }
@@ -389,3 +426,5 @@ function MegaphoneIcon() {
     </svg>
   );
 }
+
+

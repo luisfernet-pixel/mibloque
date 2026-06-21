@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
+import { getCurrentBoliviaYearMonth } from "@/lib/bolivia-time";
 import { createClient } from "@/lib/supabase/server";
+
+// ─── Utilidades ────────────────────────────────────────────────────────────────
 
 function formatBs(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", {
@@ -26,19 +29,14 @@ function parseMes(value: string, fallbackMonth: number) {
     const month = Number(legacy[2]);
     if (month >= 1 && month <= 12) return month;
   }
-
   const month = Number(raw);
-  if (!Number.isFinite(month) || month < 1 || month > 12) {
-    return fallbackMonth;
-  }
+  if (!Number.isFinite(month) || month < 1 || month > 12) return fallbackMonth;
   return month;
 }
 
 function parseAnio(value: string, fallbackYear: number) {
   const year = Number(value || fallbackYear);
-  if (!Number.isFinite(year) || year < 2000 || year > 2100) {
-    return fallbackYear;
-  }
+  if (!Number.isFinite(year) || year < 2000 || year > 2100) return fallbackYear;
   return year;
 }
 
@@ -56,7 +54,6 @@ function getRangoPeriodo(
     const inicio = new Date(Date.UTC(year, 0, 1));
     const finExclusivo = new Date(Date.UTC(year + 1, 0, 1));
     const finVisible = new Date(Date.UTC(year, 11, 31));
-
     return {
       modo,
       mesValue: String(fallbackMonth).padStart(2, "0"),
@@ -65,7 +62,7 @@ function getRangoPeriodo(
       finIso: finExclusivo.toISOString(),
       inicioDate: inicio.toISOString().split("T")[0],
       finDateExclusiva: finExclusivo.toISOString().split("T")[0],
-      periodoTitulo: `Gestion ${year}`,
+      periodoTitulo: `Gestión ${year}`,
       periodoDetalle: `Del ${formatDateLong(inicio)} al ${formatDateLong(finVisible)}`,
     };
   }
@@ -75,7 +72,6 @@ function getRangoPeriodo(
   const inicio = new Date(Date.UTC(year, month - 1, 1));
   const finExclusivo = new Date(Date.UTC(year, month, 1));
   const finVisible = new Date(Date.UTC(year, month, 0));
-
   const periodoTitulo = new Intl.DateTimeFormat("es-BO", {
     month: "long",
     year: "numeric",
@@ -95,33 +91,16 @@ function getRangoPeriodo(
   };
 }
 
-type SearchParams = Promise<{
-  modo?: string;
-  mes?: string;
-  anio?: string;
-}>;
+// ─── Tipos ─────────────────────────────────────────────────────────────────────
 
-type PagoAgg = {
-  monto_pagado: number | null;
-};
+type SearchParams = Promise<{ modo?: string; mes?: string; anio?: string }>;
+type PagoAgg = { monto_pagado: number | null };
+type GastoAgg = { monto: number | null };
+type DepartamentoRow = { id: string; numero: string };
+type CuotaEstadoRow = { departamento_id: string; estado: string };
+type ConfigRow = { saldo_inicial: number | null };
 
-type GastoAgg = {
-  monto: number | null;
-};
-
-type DepartamentoRow = {
-  id: string;
-  numero: string;
-};
-
-type CuotaEstadoRow = {
-  departamento_id: string;
-  estado: string;
-};
-
-type ConfigRow = {
-  saldo_inicial: number | null;
-};
+// ─── Página principal ──────────────────────────────────────────────────────────
 
 export default async function ReportesPage({
   searchParams,
@@ -135,14 +114,14 @@ export default async function ReportesPage({
   const supabase = await createClient();
   const bloqueId = usuario.perfil.bloque_id;
   const now = new Date();
+  const { year: currentYear } = getCurrentBoliviaYearMonth(now);
+  const availableYears = Array.from(
+    { length: currentYear - 2024 + 2 },
+    (_, index) => String(2024 + index)
+  );
 
   const modo = params?.modo === "anual" ? "anual" : "mensual";
-  const rango = getRangoPeriodo(
-    modo,
-    params?.mes || "",
-    params?.anio || "",
-    now
-  );
+  const rango = getRangoPeriodo(modo, params?.mes || "", params?.anio || "", now);
 
   const [
     pagosPeriodoRes,
@@ -153,47 +132,13 @@ export default async function ReportesPage({
     pagosAcumuladosRes,
     gastosAcumuladosRes,
   ] = await Promise.all([
-    supabase
-      .from("pagos")
-      .select("monto_pagado")
-      .eq("bloque_id", bloqueId)
-      .gte("fecha_pago", rango.inicioIso)
-      .lt("fecha_pago", rango.finIso),
-
-    supabase
-      .from("gastos")
-      .select("monto")
-      .eq("bloque_id", bloqueId)
-      .gte("fecha_gasto", rango.inicioDate)
-      .lt("fecha_gasto", rango.finDateExclusiva),
-
-    supabase
-      .from("departamentos")
-      .select("id, numero")
-      .eq("bloque_id", bloqueId),
-
-    supabase
-      .from("cuotas")
-      .select("departamento_id, estado")
-      .eq("bloque_id", bloqueId),
-
-    supabase
-      .from("configuracion_bloque")
-      .select("saldo_inicial")
-      .eq("bloque_id", bloqueId)
-      .maybeSingle(),
-
-    supabase
-      .from("pagos")
-      .select("monto_pagado")
-      .eq("bloque_id", bloqueId)
-      .lt("fecha_pago", rango.finIso),
-
-    supabase
-      .from("gastos")
-      .select("monto")
-      .eq("bloque_id", bloqueId)
-      .lt("fecha_gasto", rango.finDateExclusiva),
+    supabase.from("pagos").select("monto_pagado").eq("bloque_id", bloqueId).gte("fecha_pago", rango.inicioIso).lt("fecha_pago", rango.finIso),
+    supabase.from("gastos").select("monto").eq("bloque_id", bloqueId).gte("fecha_gasto", rango.inicioDate).lt("fecha_gasto", rango.finDateExclusiva),
+    supabase.from("departamentos").select("id, numero").eq("bloque_id", bloqueId),
+    supabase.from("cuotas").select("departamento_id, estado").eq("bloque_id", bloqueId),
+    supabase.from("configuracion_bloque").select("saldo_inicial").eq("bloque_id", bloqueId).maybeSingle(),
+    supabase.from("pagos").select("monto_pagado").eq("bloque_id", bloqueId).lt("fecha_pago", rango.finIso),
+    supabase.from("gastos").select("monto").eq("bloque_id", bloqueId).lt("fecha_gasto", rango.finDateExclusiva),
   ]);
 
   const pagosPeriodo = (pagosPeriodoRes.data ?? []) as PagoAgg[];
@@ -204,245 +149,455 @@ export default async function ReportesPage({
   const pagosAcumulados = (pagosAcumuladosRes.data ?? []) as PagoAgg[];
   const gastosAcumuladosRows = (gastosAcumuladosRes.data ?? []) as GastoAgg[];
 
-  const ingresos = pagosPeriodo.reduce(
-    (acc, item) => acc + Number(item.monto_pagado || 0),
-    0
-  );
-
-  const gastos = gastosPeriodo.reduce(
-    (acc, item) => acc + Number(item.monto || 0),
-    0
-  );
-
-  const ingresosAcumulados = pagosAcumulados.reduce(
-    (acc, item) => acc + Number(item.monto_pagado || 0),
-    0
-  );
-  const gastosAcumulados = gastosAcumuladosRows.reduce(
-    (acc, item) => acc + Number(item.monto || 0),
-    0
-  );
-
+  const ingresos = pagosPeriodo.reduce((acc, item) => acc + Number(item.monto_pagado || 0), 0);
+  const gastos = gastosPeriodo.reduce((acc, item) => acc + Number(item.monto || 0), 0);
+  const ingresosAcumulados = pagosAcumulados.reduce((acc, item) => acc + Number(item.monto_pagado || 0), 0);
+  const gastosAcumulados = gastosAcumuladosRows.reduce((acc, item) => acc + Number(item.monto || 0), 0);
   const saldoInicial = Number(config?.saldo_inicial || 0);
   const balancePeriodo = ingresos - gastos;
-  const saldoFinalPeriodo = saldoInicial + balancePeriodo;
   const saldoAcumuladoHistorico = saldoInicial + ingresosAcumulados - gastosAcumulados;
+  const saldoInicioPeriodo = saldoAcumuladoHistorico - balancePeriodo;
+  const saldoFinalPeriodo = saldoAcumuladoHistorico;
 
   const estadosDeuda = new Set(["pendiente", "vencido"]);
-
   let departamentosAlDia = 0;
   let morosos = 0;
-
   for (const depto of departamentos) {
     const tieneDeuda = cuotas.some(
-      (c) =>
-        c.departamento_id === depto.id &&
-        estadosDeuda.has(String(c.estado || "").toLowerCase())
+      (c) => c.departamento_id === depto.id && estadosDeuda.has(String(c.estado || "").toLowerCase())
     );
-
     if (tieneDeuda) morosos++;
     else departamentosAlDia++;
   }
 
+  const tasaCumplimiento =
+    departamentos.length > 0
+      ? Math.round((departamentosAlDia / departamentos.length) * 100)
+      : 0;
+
+  const fechaEmision = new Intl.DateTimeFormat("es-BO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "America/La_Paz",
+  }).format(now);
+
   return (
-    <main className="space-y-3">
-      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
-              Reportes
-            </p>
+    <main className="space-y-4 print:space-y-6">
 
-            <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
-              Como va el bloque
+      {/* ── Encabezado del informe ─────────────────────────────────────────── */}
+      <section className="overflow-hidden rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 print:rounded-none print:ring-0 print:bg-white">
+        <div className="grid gap-0 md:grid-cols-[1fr_auto]">
+
+          {/* Título */}
+          <div className="p-6 md:p-8 print:p-0 print:pb-4 print:border-b print:border-slate-300">
+            <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-cyan-400 print:text-slate-500">
+              Informe Financiero · {rango.modo === "anual" ? "Gestión Anual" : "Período Mensual"}
+            </p>
+            <h1 className="mt-3 text-2xl font-bold text-white md:text-4xl print:text-slate-900 print:text-3xl">
+              Estado de Cuentas
             </h1>
-
-            <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              Aqui puedes ver como va el bloque en dinero y abrir reportes mas
-              detallados cuando los necesites.
+            <p className="mt-1 text-lg text-cyan-200 font-medium print:text-slate-600 print:text-base">
+              {rango.periodoTitulo}
             </p>
-
-            <div className="mt-6 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-                Periodo elegido
-              </p>
-              <p className="mt-1 text-lg font-bold text-white">{rango.periodoTitulo}</p>
-              <p className="mt-1 text-sm text-cyan-100">{rango.periodoDetalle}</p>
-            </div>
+            <p className="mt-1 text-sm text-slate-400 print:text-slate-500">
+              {rango.periodoDetalle}
+            </p>
+            <p className="mt-4 text-xs text-slate-500 print:text-slate-400">
+              Emitido el {fechaEmision} · Administrador: {usuario.perfil.nombre ?? "—"}
+            </p>
           </div>
 
-          <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
-            <p className="text-sm font-semibold text-white">Elegir periodo</p>
-            <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-300">
-              Mes o gestion
+          {/* Selector de período — solo en pantalla */}
+          <div className="border-l border-white/10 bg-[#162b42] p-5 print:hidden min-w-[260px]">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400 mb-4">
+              Seleccionar período
             </p>
-
-            <form method="GET" className="mt-5 space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-                Modo
-              </label>
-              <select
-                name="modo"
-                defaultValue={modo}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-              >
-                <option value="mensual">Mensual</option>
-                <option value="anual">Anual</option>
-              </select>
-
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-                Mes
-              </label>
-              <select
-                name="mes"
-                defaultValue={rango.mesValue}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-              >
-                <option value="01">Enero</option>
-                <option value="02">Febrero</option>
-                <option value="03">Marzo</option>
-                <option value="04">Abril</option>
-                <option value="05">Mayo</option>
-                <option value="06">Junio</option>
-                <option value="07">Julio</option>
-                <option value="08">Agosto</option>
-                <option value="09">Septiembre</option>
-                <option value="10">Octubre</option>
-                <option value="11">Noviembre</option>
-                <option value="12">Diciembre</option>
-              </select>
-
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
-                Ano (formato AAAA)
-              </label>
-              <input
-                type="number"
-                name="anio"
-                min={2000}
-                max={2100}
-                defaultValue={rango.anioValue}
-                className="w-full rounded-2xl border border-white/10 bg-[#173454] px-3 py-2 text-white outline-none transition focus:border-cyan-400/40"
-              />
-
+            <form method="GET" className="space-y-3">
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Modo</label>
+                <select
+                  name="modo"
+                  defaultValue={modo}
+                  className="w-full rounded-xl border border-white/10 bg-[#0d2137] px-3 py-2 text-sm text-white outline-none focus:border-cyan-500/50"
+                >
+                  <option value="mensual">Mensual</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Mes</label>
+                <select
+                  name="mes"
+                  defaultValue={rango.mesValue}
+                  className="w-full rounded-xl border border-white/10 bg-[#0d2137] px-3 py-2 text-sm text-white outline-none focus:border-cyan-500/50"
+                >
+                  {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m, i) => (
+                    <option key={i} value={String(i + 1).padStart(2, "0")}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.2em] text-slate-500 mb-1">Año (formato AAAA)</label>
+                <select
+                  name="anio"
+                  defaultValue={rango.anioValue}
+                  className="w-full rounded-xl border border-white/10 bg-[#0d2137] px-3 py-2 text-sm text-white outline-none focus:border-cyan-500/50"
+                >
+                  {availableYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-[#ff5a3d] px-3.5 py-2 font-bold text-white transition hover:brightness-110"
+                className="w-full rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-cyan-500"
               >
-                Ver reporte
+                Generar informe
               </button>
             </form>
           </div>
         </div>
       </section>
 
-      <section className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-4 ring-1 ring-white/10">
-        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">
-          Como leer este reporte
-        </p>
-        <p className="mt-1 text-sm text-cyan-100">
-          Saldo del periodo = Saldo inicial + ingresos - gastos
-        </p>
-        <p className="mt-1 text-xs text-cyan-50">
-          El saldo historico acumulado incluye todo lo anterior hasta el corte elegido.
-        </p>
-      </section>
-
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        <Card titulo="Ingresos del periodo" valor={formatBs(ingresos)} />
-        <Card titulo="Gastos del periodo" valor={formatBs(gastos)} />
-        <Card titulo="Balance del periodo" valor={formatBs(balancePeriodo)} />
-        <Card titulo="Saldo inicial" valor={formatBs(saldoInicial)} />
-        <Card titulo="Saldo final del periodo" valor={formatBs(saldoFinalPeriodo)} />
-        <Card
-          titulo="Saldo acumulado"
-          valor={formatBs(saldoAcumuladoHistorico)}
+      {/* ── I. Estado de resultados del período ───────────────────────────── */}
+      <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:rounded-none print:ring-0 print:border print:border-slate-200">
+        <SectionHeader
+          numero="I"
+          titulo="Estado de Resultados del Período"
+          subtitulo="Ingresos, egresos y resultado neto del período seleccionado"
         />
+        <div className="p-5 print:p-4">
+          <table className="w-full text-sm print:text-xs">
+            <tbody className="divide-y divide-white/5 print:divide-slate-200">
+              <FilaTabla
+                concepto="Ingresos por cuotas de mantenimiento"
+                monto={formatBs(ingresos)}
+                tipo="ingreso"
+                descripcion="Pagos recibidos de propietarios en el período"
+              />
+              <FilaTabla
+                concepto="Egresos operativos"
+                monto={`(${formatBs(gastos)})`}
+                tipo="egreso"
+                descripcion="Gastos registrados en el período"
+              />
+              <FilaTabla
+                concepto="Resultado neto del período"
+                monto={formatBs(balancePeriodo)}
+                tipo={balancePeriodo >= 0 ? "resultado-positivo" : "resultado-negativo"}
+                descripcion="Ingresos menos egresos del período"
+                resaltado
+              />
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <Mini titulo="Pagos del periodo" valor={String(pagosPeriodo.length)} />
-        <Mini titulo="Deptos al dia" valor={String(departamentosAlDia)} />
-        <AlertCard titulo="Deben" valor={String(morosos)} />
+      {/* ── II. Posición financiera ────────────────────────────────────────── */}
+      <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:rounded-none print:ring-0 print:border print:border-slate-200">
+        <SectionHeader
+          numero="II"
+          titulo="Posición Financiera"
+          subtitulo="Patrimonio líquido disponible al cierre del período"
+        />
+        <div className="p-5 print:p-4">
+          <table className="w-full text-sm print:text-xs">
+            <tbody className="divide-y divide-white/5 print:divide-slate-200">
+              <FilaTabla
+                concepto="Saldo al inicio del período"
+                monto={formatBs(saldoInicioPeriodo)}
+                tipo="neutro"
+                descripcion="Saldo acumulado justo antes del inicio del período seleccionado"
+              />
+              <FilaTabla
+                concepto="Resultado neto del período"
+                monto={formatBs(balancePeriodo)}
+                tipo={balancePeriodo >= 0 ? "ingreso" : "egreso"}
+                descripcion="Ver sección I"
+              />
+              <FilaTabla
+                concepto="Saldo de caja al cierre del período"
+                monto={formatBs(saldoFinalPeriodo)}
+                tipo={saldoFinalPeriodo >= 0 ? "resultado-positivo" : "resultado-negativo"}
+                descripcion="Saldo al inicio del período más resultado neto del período"
+                resaltado
+              />
+            </tbody>
+          </table>
+
+          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 print:border-slate-200 print:bg-slate-50">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400 print:text-slate-500">
+              Saldo histórico acumulado
+            </p>
+            <p className="mt-1 text-2xl font-bold text-white print:text-slate-900">
+              {formatBs(saldoAcumuladoHistorico)}
+            </p>
+            <p className="mt-1 text-xs text-slate-500 print:text-slate-400">
+              Incluye todos los movimientos desde el inicio hasta el corte del período seleccionado.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="border-b border-white/10 px-4 py-3 md:px-4">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-cyan-300">
-            Ver mas
-          </p>
-          <h2 className="mt-2 text-xl font-bold text-white">
+      {/* ── III. Cumplimiento de cuotas ───────────────────────────────────── */}
+      <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:rounded-none print:ring-0 print:border print:border-slate-200">
+        <SectionHeader
+          numero="III"
+          titulo="Cumplimiento de Cuotas"
+          subtitulo="Estado de pago por unidades del edificio"
+        />
+        <div className="p-5 print:p-4">
+          <div className="grid gap-4 md:grid-cols-4">
+            <MetricaCard
+              label="Unidades totales"
+              valor={String(departamentos.length)}
+              descripcion="Departamentos registrados"
+              color="neutro"
+            />
+            <MetricaCard
+              label="Al día"
+              valor={String(departamentosAlDia)}
+              descripcion="Sin cuotas pendientes"
+              color="positivo"
+            />
+            <MetricaCard
+              label="Con adeudo"
+              valor={String(morosos)}
+              descripcion="Con cuotas pendientes o vencidas"
+              color="negativo"
+            />
+            <MetricaCard
+              label="Tasa de cumplimiento"
+              valor={`${tasaCumplimiento}%`}
+              descripcion="Porcentaje de unidades al día"
+              color={tasaCumplimiento >= 80 ? "positivo" : tasaCumplimiento >= 50 ? "advertencia" : "negativo"}
+            />
+          </div>
+
+          {/* Barra de cumplimiento */}
+          <div className="mt-5">
+            <div className="flex items-center justify-between text-xs text-slate-400 print:text-slate-500 mb-2">
+              <span>Cumplimiento global</span>
+              <span className="font-semibold text-white print:text-slate-700">{tasaCumplimiento}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-white/10 print:bg-slate-200 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  tasaCumplimiento >= 80
+                    ? "bg-emerald-500"
+                    : tasaCumplimiento >= 50
+                    ? "bg-amber-500"
+                    : "bg-red-500"
+                }`}
+                style={{ width: `${tasaCumplimiento}%` }}
+              />
+            </div>
+          </div>
+
+          {morosos > 0 && (
+            <div className="mt-4 rounded-xl border border-orange-400/20 bg-orange-500/10 px-4 py-3 print:border-orange-300 print:bg-orange-50">
+              <p className="text-sm font-semibold text-orange-200 print:text-orange-800">
+                {morosos} unidad{morosos !== 1 ? "es" : ""} registra{morosos === 1 ? "" : "n"} adeudos pendientes.
+              </p>
+              <p className="mt-0.5 text-xs text-orange-300 print:text-orange-600">
+                Consulte el reporte de morosos para el detalle por departamento.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── IV. Indicadores clave ─────────────────────────────────────────── */}
+      <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:rounded-none print:ring-0 print:border print:border-slate-200">
+        <SectionHeader
+          numero="IV"
+          titulo="Indicadores Clave"
+          subtitulo="Métricas de gestión del período"
+        />
+        <div className="p-5 print:p-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <Indicador
+              label="Pagos recibidos"
+              valor={String(pagosPeriodo.length)}
+              unidad="transacciones en el período"
+            />
+            <Indicador
+              label="Promedio por pago"
+              valor={pagosPeriodo.length > 0 ? formatBs(ingresos / pagosPeriodo.length) : "—"}
+              unidad="monto promedio por transacción"
+            />
+            <Indicador
+              label="Cobertura de gastos"
+              valor={gastos > 0 ? `${Math.round((ingresos / gastos) * 100)}%` : "—"}
+              unidad="ratio ingresos sobre egresos"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Nota metodológica ─────────────────────────────────────────────── */}
+      <section className="rounded-[20px] border border-white/10 bg-white/5 px-5 py-4 print:rounded-none print:border-slate-200 print:bg-transparent">
+        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 mb-2">
+          Nota metodológica
+        </p>
+        <ul className="space-y-1 text-xs text-slate-400 print:text-slate-500 list-disc list-inside">
+          <li>El resultado del período se calcula como: Ingresos del período − Egresos del período.</li>
+          <li>El saldo al inicio del período se calcula con el saldo inicial configurado más los movimientos acumulados antes del corte.</li>
+          <li>El saldo al cierre corresponde al saldo al inicio del período más el resultado neto del período.</li>
+          <li>El saldo histórico acumulado considera todos los movimientos desde el inicio de operaciones hasta el corte.</li>
+          <li>La tasa de cumplimiento refleja el estado actual de cuotas; no está limitada al período seleccionado.</li>
+        </ul>
+      </section>
+
+      {/* ── Reportes detallados — solo en pantalla ────────────────────────── */}
+      <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:hidden">
+        <div className="border-b border-white/10 px-6 py-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-400">
             Reportes detallados
-          </h2>
-          <p className="mt-1 text-sm text-slate-300">
-            Abre el reporte que necesitas revisar.
+          </p>
+          <p className="mt-1 text-sm text-slate-400">
+            Documentos de soporte con mayor nivel de detalle.
           </p>
         </div>
-
-        <div className="grid gap-3 p-4 md:grid-cols-3 md:p-6">
+        <div className="grid gap-3 p-5 md:grid-cols-4">
+          <ReportButton
+            href="/admin/auditoria"
+            titulo="Auditoría simple"
+            texto="Control mensual directo de cobros, gastos, por cobrar y saldo."
+          />
           <ReportButton
             href="/admin/reportes/departamento"
-            titulo="Por departamento"
-            texto="Historial, deuda y pagos."
+            titulo="Por Departamento"
+            texto="Historial de pagos, deuda y movimientos por unidad."
           />
-
           <ReportButton
             href="/admin/reportes/morosos"
-            titulo="Morosos"
-            texto="Departamentos con deuda."
+            titulo="Unidades con Adeudo"
+            texto="Relación de departamentos con cuotas pendientes o vencidas."
           />
-
           <ReportButton
             href="/admin/reportes/cuadro"
-            titulo="Cuadro vitrina"
-            texto="Tabla mensual para imprimir."
+            titulo="Cuadro de Cuotas"
+            texto="Tabla anual de cumplimiento por mes, apta para impresión."
           />
         </div>
       </section>
+
     </main>
   );
 }
 
-function Card({
+// ─── Componentes ───────────────────────────────────────────────────────────────
+
+function SectionHeader({
+  numero,
   titulo,
-  valor,
+  subtitulo,
 }: {
+  numero: string;
   titulo: string;
-  valor: string;
+  subtitulo: string;
 }) {
   return (
-    <div className="rounded-[24px] bg-[#213b59] p-4 shadow-xl ring-1 ring-white/10">
-      <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-3 text-xl font-bold text-white">{valor}</p>
+    <div className="border-b border-white/10 px-5 py-4 flex gap-4 items-start print:border-slate-200 print:px-4">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-500/15 text-xs font-bold text-cyan-300 ring-1 ring-cyan-500/20 print:bg-slate-100 print:text-slate-600 print:ring-slate-300">
+        {numero}
+      </span>
+      <div>
+        <h2 className="text-base font-bold text-white print:text-slate-900">{titulo}</h2>
+        <p className="text-xs text-slate-500 print:text-slate-400">{subtitulo}</p>
+      </div>
     </div>
   );
 }
 
-function AlertCard({
-  titulo,
-  valor,
+function FilaTabla({
+  concepto,
+  monto,
+  tipo,
+  descripcion,
+  resaltado = false,
 }: {
-  titulo: string;
-  valor: string;
+  concepto: string;
+  monto: string;
+  tipo: "ingreso" | "egreso" | "resultado-positivo" | "resultado-negativo" | "neutro";
+  descripcion: string;
+  resaltado?: boolean;
 }) {
+  const colorMonto = {
+    ingreso: "text-emerald-400 print:text-emerald-700",
+    egreso: "text-red-400 print:text-red-700",
+    "resultado-positivo": "text-emerald-300 print:text-emerald-800",
+    "resultado-negativo": "text-red-300 print:text-red-800",
+    neutro: "text-slate-200 print:text-slate-700",
+  }[tipo];
+
   return (
-    <div className="rounded-[24px] border border-orange-400/30 bg-orange-500/10 p-4 shadow-xl">
-      <p className="text-sm text-orange-100">{titulo}</p>
-      <p className="mt-3 text-xl font-bold text-white">{valor}</p>
+    <tr className={resaltado ? "bg-white/5 print:bg-slate-50" : ""}>
+      <td className="py-3 pr-4 print:py-2">
+        <p className={`font-medium ${resaltado ? "text-white print:text-slate-900" : "text-slate-200 print:text-slate-700"}`}>
+          {concepto}
+        </p>
+        <p className="text-xs text-slate-500 print:text-slate-400">{descripcion}</p>
+      </td>
+      <td className={`py-3 pl-4 text-right font-bold tabular-nums print:py-2 ${resaltado ? "text-lg" : "text-base"} ${colorMonto}`}>
+        {monto}
+      </td>
+    </tr>
+  );
+}
+
+function MetricaCard({
+  label,
+  valor,
+  descripcion,
+  color,
+}: {
+  label: string;
+  valor: string;
+  descripcion: string;
+  color: "positivo" | "negativo" | "neutro" | "advertencia";
+}) {
+  const borde = {
+    positivo: "border-emerald-500/20 print:border-emerald-300",
+    negativo: "border-red-500/20 print:border-red-300",
+    neutro: "border-white/10 print:border-slate-200",
+    advertencia: "border-amber-500/20 print:border-amber-300",
+  }[color];
+
+  const texto = {
+    positivo: "text-emerald-400 print:text-emerald-700",
+    negativo: "text-red-400 print:text-red-700",
+    neutro: "text-white print:text-slate-800",
+    advertencia: "text-amber-400 print:text-amber-700",
+  }[color];
+
+  return (
+    <div className={`rounded-xl border bg-white/5 px-4 py-3 print:bg-transparent print:rounded-none print:border-b ${borde}`}>
+      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 print:text-slate-400">{label}</p>
+      <p className={`mt-1 text-2xl font-bold tabular-nums ${texto}`}>{valor}</p>
+      <p className="mt-0.5 text-xs text-slate-500 print:text-slate-400">{descripcion}</p>
     </div>
   );
 }
 
-function Mini({
-  titulo,
+function Indicador({
+  label,
   valor,
+  unidad,
 }: {
-  titulo: string;
+  label: string;
   valor: string;
+  unidad: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#2d4a6c] p-4 ring-1 ring-white/10">
-      <p className="text-sm text-slate-300">{titulo}</p>
-      <p className="mt-2 text-xl font-bold text-white">{valor}</p>
+    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 print:border-slate-200 print:bg-transparent print:rounded-none">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 print:text-slate-400">{label}</p>
+      <p className="mt-1 text-xl font-bold text-white tabular-nums print:text-slate-900">{valor}</p>
+      <p className="mt-0.5 text-xs text-slate-500 print:text-slate-400">{unidad}</p>
     </div>
   );
 }
@@ -459,18 +614,15 @@ function ReportButton({
   return (
     <Link
       href={href}
-      className="group rounded-[24px] border border-white/15 bg-[#2d4a6c] p-4 shadow-lg transition hover:bg-[#35557b] hover:ring-1 hover:ring-cyan-400/20"
+      className="group flex flex-col justify-between rounded-[16px] border border-white/10 bg-white/5 p-4 min-h-[120px] transition hover:bg-white/10 hover:border-cyan-500/20"
     >
-      <div className="flex h-full min-h-[150px] flex-col justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-white">{titulo}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-300">{texto}</p>
-        </div>
-
-        <div className="mt-5 inline-flex w-fit items-center rounded-2xl bg-cyan-500/15 px-4 py-2 text-sm font-bold text-cyan-200 transition group-hover:bg-cyan-500/25">
-          Abrir reporte
-        </div>
+      <div>
+        <h3 className="font-bold text-white">{titulo}</h3>
+        <p className="mt-1.5 text-xs leading-5 text-slate-400">{texto}</p>
       </div>
+      <span className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-300 transition group-hover:bg-cyan-500/25">
+        Abrir →
+      </span>
     </Link>
   );
 }

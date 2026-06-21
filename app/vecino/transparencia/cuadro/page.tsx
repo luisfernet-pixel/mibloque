@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import CuadroVitrina, { type CuadroRow } from "@/components/cuotas/cuadro-vitrina";
 import { requireVecino } from "@/lib/auth";
@@ -158,10 +158,10 @@ export default async function VecinoCuadroTransparenciaPage({
       <section className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Transparencia</p>
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Cuentas del bloque</p>
             <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Cuadro general de cuotas</h1>
             <p className="mt-3 text-sm text-slate-200">
-              {nombreBloque} · Gestion {anio}
+              {nombreBloque} Â· Gestion {anio}
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export default async function VecinoCuadroTransparenciaPage({
             href="/vecino/transparencia"
             className="inline-flex min-h-[44px] w-fit items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
           >
-            Volver a transparencia
+            Volver a cuentas del bloque
           </Link>
         </div>
       </section>
@@ -184,4 +184,6 @@ export default async function VecinoCuadroTransparenciaPage({
     </main>
   );
 }
+
+
 

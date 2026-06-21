@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 
@@ -182,7 +183,7 @@ export default function LoginPage() {
       }
 
       if (!vecinoCode) {
-        throw new Error("Escribe tu codigo.");
+        throw new Error("Escribe tu contrasena.");
       }
 
       let emailParaLogin = "";
@@ -213,7 +214,7 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        throw new Error("Usuario o codigo incorrecto.");
+        throw new Error("Usuario o contrasena incorrectos.");
       }
 
       const {
@@ -255,12 +256,22 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="theme-shell min-h-screen px-4 py-8">
+    <main className="theme-shell min-h-screen px-4 py-16 md:py-24">
       <div className="mx-auto max-w-2xl">
-        <section className="theme-panel rounded-3xl p-6 shadow-2xl">
-          <div className="mb-6 text-center">
-            <h2 className="text-xl font-bold text-white">Iniciar sesion</h2>
-            <p className="mt-2 text-sm text-slate-300">Elige tu tipo de acceso</p>
+        <section className="theme-panel rounded-3xl p-6 pt-14 pb-10 shadow-2xl md:pt-20 md:pb-14">
+          <div className="mb-10 text-center">
+            <div className="mb-12 mt-2 flex justify-center md:mb-14 md:mt-4">
+              <Image
+                src="/logo vertical.svg?v=20260522"
+                alt="KUBO"
+                width={220}
+                height={220}
+                priority
+                className="h-auto w-[220px] max-w-full"
+              />
+            </div>
+            <h2 className="text-xl font-bold text-white md:text-2xl">Iniciar sesion</h2>
+            <p className="mt-4 text-sm text-slate-300">Elige tu tipo de acceso</p>
           </div>
 
           {error && (
@@ -272,6 +283,7 @@ export default function LoginPage() {
           <div className="space-y-5">
             <form
               onSubmit={loginAdmin}
+              autoComplete="off"
               className="theme-panel-soft rounded-3xl border border-white/10 p-4"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
@@ -290,9 +302,13 @@ export default function LoginPage() {
                   <label className="mb-2 block text-sm font-medium text-white/80">Email</label>
                   <input
                     type="email"
+                    name="admin_email_kubo"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     placeholder={`admin@${INTERNAL_EMAIL_DOMAIN}`}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
                     className="w-full px-3 py-2"
                     required
                   />
@@ -322,12 +338,13 @@ export default function LoginPage() {
 
             <form
               onSubmit={loginVecino}
+              autoComplete="off"
               className="theme-panel-soft rounded-3xl border border-white/10 p-4"
             >
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-white">Acceso vecino</p>
-                  <p className="text-sm text-slate-300">Usuario simple y codigo de acceso</p>
+                  <p className="text-sm text-slate-300">Usuario simple y contrasena de acceso</p>
                 </div>
 
                 <span className="rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-semibold text-cyan-100">
@@ -349,12 +366,12 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-white/80">Codigo</label>
+                  <label className="mb-2 block text-sm font-medium text-white/80">Contrasena</label>
                   <input
                     type="password"
                     value={vecinoCode}
                     onChange={(e) => setVecinoCode(e.target.value)}
-                    placeholder="Tu clave"
+                    placeholder="Tu contrasena"
                     className="w-full px-3 py-2"
                     required
                   />

@@ -1,0 +1,10 @@
+node_modules
+.next
+.next-build
+.next-mibloque
+.git
+.env
+.env.*
+*.cdr
+tmp-*.txt
+dev-server.log

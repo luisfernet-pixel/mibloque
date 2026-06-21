@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import ConfirmActionButton from "@/app/superadmin/_components/confirm-action-button";
 import { deleteAdminActionForm } from "@/app/superadmin/actions";
+import { parseAdminPaymentDetails } from "@/lib/admin-payment";
 
 export const metadata: Metadata = {
   title: "Admins",
@@ -14,13 +15,14 @@ export default async function AdminsPage() {
   const [{ data: admins }, { data: bloques }] = await Promise.all([
     supabase
       .from("usuarios")
-      .select("id, nombre, email, bloque_id, activo, created_at")
+      .select("id, nombre, email, telefono, username, bloque_id, activo, created_at")
       .eq("rol", "admin")
       .order("created_at", { ascending: false }),
-    supabase.from("bloques").select("id, nombre"),
+    supabase.from("bloques").select("id, nombre, codigo"),
   ]);
 
   const bloqueMap = new Map((bloques ?? []).map((item) => [item.id, item.nombre] as const));
+
 
   return (
     <main className="space-y-3">
@@ -47,18 +49,61 @@ export default async function AdminsPage() {
               <tr>
                 <th className="px-5 py-4">Nombre</th>
                 <th className="px-5 py-4">Email</th>
+                <th className="px-5 py-4">Celular</th>
                 <th className="px-5 py-4">Bloque</th>
+                <th className="px-5 py-4">Banco</th>
+                <th className="px-5 py-4">Cuenta</th>
+                <th className="px-5 py-4">QR</th>
                 <th className="px-5 py-4">Estado</th>
                 <th className="px-5 py-4">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {admins?.map((item) => (
-                <tr key={item.id} className="border-t border-white/10 text-white">
-                  <td className="px-5 py-4">{item.nombre}</td>
-                  <td className="px-5 py-4">{item.email}</td>
-                  <td className="px-5 py-4">{bloqueMap.get(item.bloque_id) ?? "-"}</td>
-                  <td className="px-5 py-4">{item.activo ? "Activo" : "Desactivado"}</td>
+              {admins?.map((item) => {
+                const payment = parseAdminPaymentDetails(item.username);
+
+                return (
+                <tr key={item.id} className="border-t border-white/10 text-white align-top transition hover:bg-white/5">
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {item.nombre}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {item.email}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {item.telefono || "-"}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {bloqueMap.get(item.bloque_id) ?? "-"}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {payment.banco || "-"}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {payment.numeroCuenta || "-"}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {payment.qrUrl ? "Si" : "No"}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-4">
+                    <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
+                      {item.activo ? "Activo" : "Desactivado"}
+                    </Link>
+                  </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
                       <Link
@@ -68,21 +113,20 @@ export default async function AdminsPage() {
                         Editar
                       </Link>
 
-                      {item.activo ? (
-                        <form action={deleteAdminActionForm}>
-                          <input type="hidden" name="id" value={item.id} />
-                          <ConfirmActionButton
-                            confirmText="Borrar este admin? Perdera acceso al sistema."
-                            className="rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
-                          >
-                            Borrar
-                          </ConfirmActionButton>
-                        </form>
-                      ) : null}
+                      <form action={deleteAdminActionForm}>
+                        <input type="hidden" name="id" value={item.id} />
+                        <ConfirmActionButton
+                          confirmText="Borrar este admin? Esta accion lo elimina por completo."
+                          className="rounded-xl border border-red-300/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+                        >
+                          Borrar
+                        </ConfirmActionButton>
+                      </form>
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
 
               {(!admins || admins.length === 0) && (
                 <tr className="border-t border-white/10 text-slate-300">
@@ -98,3 +142,7 @@ export default async function AdminsPage() {
     </main>
   );
 }
+
+
+
+

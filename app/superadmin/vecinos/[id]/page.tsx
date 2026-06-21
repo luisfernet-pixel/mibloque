@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -87,3 +87,8 @@ export default async function EditVecinoPage({ params }: Props) {
     </main>
   );
 }
+
+
+
+
+

@@ -1,1 +1,1 @@
-export const INTERNAL_EMAIL_DOMAIN = "mibloque.app";
+export const INTERNAL_EMAIL_DOMAIN = "kubo.app";

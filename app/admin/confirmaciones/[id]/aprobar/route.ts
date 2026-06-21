@@ -55,6 +55,16 @@ export async function POST(
 
   const supabase = createAdminClient();
 
+  const { data: bloqueEstado } = await supabase
+    .from("bloques")
+    .select("activo")
+    .eq("id", usuario.perfil.bloque_id)
+    .maybeSingle();
+
+  if (bloqueEstado?.activo === false) {
+    return NextResponse.redirect(new URL("/admin/confirmaciones?error=servicio_suspendido", req.url), 303);
+  }
+
   const { data: confirmacion } = await supabase
     .from("confirmaciones_pago")
     .select(`
@@ -79,6 +89,18 @@ export async function POST(
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
+  const { data: cuotaRelacionada } = await supabase
+    .from("cuotas")
+    .select("id")
+    .eq("id", confirmacion.cuota_id)
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("departamento_id", confirmacion.departamento_id)
+    .maybeSingle();
+
+  if (!cuotaRelacionada) {
+    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  }
+
   const ahora = new Date().toISOString();
 
   const { error: updateConfirmacionError } = await supabase
@@ -88,7 +110,8 @@ export async function POST(
       revisado_at: ahora,
       revisado_por: usuario.perfil.id,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("bloque_id", usuario.perfil.bloque_id);
 
   if (updateConfirmacionError) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
@@ -127,10 +150,13 @@ export async function POST(
     .from("cuotas")
     .update({
       estado: "pagado",
+      monto_total: confirmacion.monto_reportado,
       pagada_en: ahora,
       updated_at: ahora,
     })
-    .eq("id", confirmacion.cuota_id);
+    .eq("id", confirmacion.cuota_id)
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("departamento_id", confirmacion.departamento_id);
 
   if (updateCuotaError) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);

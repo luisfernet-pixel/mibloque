@@ -15,6 +15,16 @@ export async function POST(
 
   const supabase = createAdminClient();
 
+  const { data: bloqueEstado } = await supabase
+    .from("bloques")
+    .select("activo")
+    .eq("id", usuario.perfil.bloque_id)
+    .maybeSingle();
+
+  if (bloqueEstado?.activo === false) {
+    return NextResponse.redirect(new URL("/admin/confirmaciones?error=servicio_suspendido", req.url), 303);
+  }
+
   const { data: confirmacion } = await supabase
     .from("confirmaciones_pago")
     .select(
@@ -48,7 +58,8 @@ export async function POST(
       revisado_at: ahora,
       revisado_por: usuario.perfil.id,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("bloque_id", usuario.perfil.bloque_id);
 
   if (updateConfirmacionError) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
@@ -58,6 +69,7 @@ export async function POST(
     .from("cuotas")
     .select("periodo")
     .eq("id", confirmacion.cuota_id)
+    .eq("bloque_id", usuario.perfil.bloque_id)
     .maybeSingle();
 
   const periodo = String(cuotaRelacionada?.periodo || "sin periodo");

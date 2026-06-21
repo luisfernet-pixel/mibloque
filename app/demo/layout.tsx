@@ -1,11 +1,12 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import CuboLogo from "@/components/branding/cubo-logo";
 
 const nav = [
   { href: "/demo", label: "Roles" },
   { href: "/demo/admin", label: "Administradores" },
   { href: "/demo/admin/pagos", label: "Cobros" },
   { href: "/demo/vecino", label: "Vecino" },
-  { href: "/demo/vecino/transparencia", label: "Transparencia" },
+  { href: "/demo/vecino/transparencia", label: "Cuentas del bloque" },
 ];
 
 export default function DemoLayout({
@@ -18,7 +19,8 @@ export default function DemoLayout({
       <header className="theme-hero-alt border-b border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div>
-            <p className="text-lg font-bold text-white">MiBloque Demo</p>
+            <CuboLogo className="h-auto w-[160px] max-w-full md:w-[190px]" />
+            <p className="mt-2 text-lg font-bold text-white">KUBO Demo</p>
             <p className="text-sm text-slate-300">
               Modo solo lectura con datos ficticios
             </p>
@@ -55,3 +57,4 @@ export default function DemoLayout({
     </div>
   );
 }
+

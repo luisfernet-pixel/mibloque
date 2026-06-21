@@ -1,4 +1,5 @@
-const nextConfig = {
+﻿const nextConfig = {
+  devIndicators: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",
@@ -14,3 +15,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+

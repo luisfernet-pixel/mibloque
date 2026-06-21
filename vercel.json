@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/auditoria-diaria",
+      "schedule": "15 9 * * *"
+    }
+  ]
+}

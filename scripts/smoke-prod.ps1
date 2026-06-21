@@ -1,5 +1,5 @@
 param(
-  [string]$BaseUrl = "https://mibloque-app.vercel.app"
+  [string]$BaseUrl = "https://cubo-app.vercel.app"
 )
 
 $ErrorActionPreference = "Stop"
