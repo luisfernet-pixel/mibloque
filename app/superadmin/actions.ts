@@ -80,20 +80,17 @@ async function updateBlockPaymentStorageFields({
   bloqueId,
   banco,
   numeroCuenta,
-  qrUrl,
   qrPath,
 }: {
   supabase: ReturnType<typeof createAdminClient>;
   bloqueId: string;
   banco: string;
   numeroCuenta: string;
-  qrUrl: string;
   qrPath: string;
 }) {
   const payload = {
     pago_banco: banco || null,
     pago_numero_cuenta: numeroCuenta || null,
-    pago_qr_url: qrUrl || null,
     pago_qr_path: qrPath || null,
   };
 
@@ -1054,7 +1051,6 @@ export async function createAdminAction(
       bloqueId: canonicalBloqueId,
       banco,
       numeroCuenta,
-      qrUrl: finalQrUrl,
       qrPath: finalQrPath,
     });
 
@@ -1158,7 +1154,6 @@ export async function updateAdminAction(
       bloqueId: canonicalBloqueId,
       banco,
       numeroCuenta,
-      qrUrl: finalQrUrl,
       qrPath: finalQrPath,
     });
 

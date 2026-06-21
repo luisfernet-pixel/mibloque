@@ -22,19 +22,14 @@ export async function GET(req: Request) {
   const supabase = createAdminClient();
   const { data: bloque, error } = await supabase
     .from("bloques")
-    .select("id, pago_qr_path, pago_qr_url")
+    .select("id, pago_qr_path")
     .eq("id", bloqueId)
     .maybeSingle();
 
-  let bloqueRow = bloque as { pago_qr_path?: string | null; pago_qr_url?: string | null } | null;
+  let bloqueRow = bloque as { pago_qr_path?: string | null } | null;
 
   if (error && String(error.message || "").includes("pago_qr_path")) {
-    const fallback = await supabase
-      .from("bloques")
-      .select("id, pago_qr_url")
-      .eq("id", bloqueId)
-      .maybeSingle();
-    bloqueRow = fallback.data as { pago_qr_url?: string | null } | null;
+    bloqueRow = null;
   }
 
   const { data: adminPerfil } = await supabase
@@ -50,12 +45,12 @@ export async function GET(req: Request) {
   const paymentDetails = parseAdminPaymentDetails(adminPerfil?.username);
   const path = resolveStoragePath(
     bloqueRow?.pago_qr_path || paymentDetails.qrPath,
-    bloqueRow?.pago_qr_url || paymentDetails.qrUrl
+    paymentDetails.qrUrl
   );
 
   if (path) return redirectToComprobantesSignedUrl(path);
 
-  const legacyUrl = bloqueRow?.pago_qr_url || paymentDetails.qrUrl;
+  const legacyUrl = paymentDetails.qrUrl;
   if (isPublicHttpUrl(legacyUrl)) return Response.redirect(String(legacyUrl), 302);
 
   return Response.redirect(new URL("/qr-pago-admin.png", req.url), 302);
