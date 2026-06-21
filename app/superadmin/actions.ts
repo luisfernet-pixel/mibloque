@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
 import { extname } from "node:path";
@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 import { getAuthUserSafe } from "@/lib/auth";
-import { serializeAdminPaymentDetails } from "@/lib/admin-payment";
+import { parseAdminPaymentDetails, serializeAdminPaymentDetails } from "@/lib/admin-payment";
 
 export type ActionState = {
   ok: boolean;
@@ -72,7 +72,45 @@ async function uploadAdminQrImage(file: File, bloqueId: string) {
     .from("comprobantes")
     .getPublicUrl(fileName);
 
-  return String(publicFile.publicUrl || "");
+  return { url: String(publicFile.publicUrl || ""), path: fileName };
+}
+
+async function updateBlockPaymentStorageFields({
+  supabase,
+  bloqueId,
+  banco,
+  numeroCuenta,
+  qrUrl,
+  qrPath,
+}: {
+  supabase: ReturnType<typeof createAdminClient>;
+  bloqueId: string;
+  banco: string;
+  numeroCuenta: string;
+  qrUrl: string;
+  qrPath: string;
+}) {
+  const payload = {
+    pago_banco: banco || null,
+    pago_numero_cuenta: numeroCuenta || null,
+    pago_qr_url: qrUrl || null,
+    pago_qr_path: qrPath || null,
+  };
+
+  const { error } = await supabase.from("bloques").update(payload).eq("id", bloqueId);
+  if (!error) return;
+
+  if (String(error.message || "").includes("pago_qr_path")) {
+    const { pago_qr_path: _unusedPath, ...fallbackPayload } = payload;
+    const { error: fallbackError } = await supabase
+      .from("bloques")
+      .update(fallbackPayload)
+      .eq("id", bloqueId);
+    if (!fallbackError) return;
+    throw fallbackError;
+  }
+
+  throw error;
 }
 function formatActionError(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) {
@@ -588,7 +626,6 @@ export async function deleteBlockAction(
       throw error;
     }
 
-
     revalidatePath("/superadmin/bloques");
     revalidatePath("/superadmin");
     return { ok: true, message: "Bloque desactivado." };
@@ -643,7 +680,6 @@ export async function activateBlockAction(
     if (error) {
       throw error;
     }
-
 
     revalidatePath("/superadmin/bloques");
     revalidatePath("/superadmin");
@@ -964,14 +1000,18 @@ export async function createAdminAction(
     const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
 
     let finalQrUrl = qrUrl;
+    let finalQrPath = "";
     if (qrFile instanceof File && qrFile.size > 0) {
-      finalQrUrl = await uploadAdminQrImage(qrFile, canonicalBloqueId);
+      const uploadedQr = await uploadAdminQrImage(qrFile, canonicalBloqueId);
+      finalQrUrl = uploadedQr.url;
+      finalQrPath = uploadedQr.path;
     }
 
     const paymentDetails = serializeAdminPaymentDetails({
       banco,
       numeroCuenta,
       qrUrl: finalQrUrl,
+      qrPath: finalQrPath,
     });
 
     const authResult = await createAuthUser({
@@ -1008,6 +1048,15 @@ export async function createAdminAction(
     if (perfilError) {
       throw perfilError;
     }
+
+    await updateBlockPaymentStorageFields({
+      supabase: createAdminClient(),
+      bloqueId: canonicalBloqueId,
+      banco,
+      numeroCuenta,
+      qrUrl: finalQrUrl,
+      qrPath: finalQrPath,
+    });
 
     revalidatePath("/superadmin");
     revalidatePath("/superadmin/admins");
@@ -1049,16 +1098,25 @@ export async function updateAdminAction(
       return { ok: false, message: "Completa nombre." };
     }
 
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
     const bloque = await resolveBlockForAdmin(adminSupabase, bloqueId);
     const canonicalBloqueId = String(bloque.id || "");
 
     const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
 
+    const { data: currentAdmin } = await adminSupabase
+      .from("usuarios")
+      .select("username")
+      .eq("id", id)
+      .maybeSingle();
+    const previousPaymentDetails = parseAdminPaymentDetails(currentAdmin?.username);
+
     let finalQrUrl = qrUrl;
+    let finalQrPath = previousPaymentDetails.qrPath;
     if (qrFile instanceof File && qrFile.size > 0) {
-      finalQrUrl = await uploadAdminQrImage(qrFile, canonicalBloqueId);
+      const uploadedQr = await uploadAdminQrImage(qrFile, canonicalBloqueId);
+      finalQrUrl = uploadedQr.url;
+      finalQrPath = uploadedQr.path;
     }
 
     if (activo) {
@@ -1083,7 +1141,7 @@ export async function updateAdminAction(
       rol: "admin",
       bloque_id: canonicalBloqueId,
       departamento_id: null,
-      username: serializeAdminPaymentDetails({ banco, numeroCuenta, qrUrl: finalQrUrl }),
+      username: serializeAdminPaymentDetails({ banco, numeroCuenta, qrUrl: finalQrUrl, qrPath: finalQrPath }),
       activo,
     };
 
@@ -1095,6 +1153,14 @@ export async function updateAdminAction(
     if (error) {
       throw error;
     }
+    await updateBlockPaymentStorageFields({
+      supabase: adminSupabase,
+      bloqueId: canonicalBloqueId,
+      banco,
+      numeroCuenta,
+      qrUrl: finalQrUrl,
+      qrPath: finalQrPath,
+    });
 
     if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
       const adminSupabase = createAdminClient();

@@ -96,6 +96,7 @@ async function crearGasto(formData: FormData) {
   }
 
   let comprobanteUrl: string | null = null;
+  let comprobantePath: string | null = null;
 
   if (archivo && archivo.size > 0) {
     const adminSupabase = createAdminClient();
@@ -119,6 +120,7 @@ async function crearGasto(formData: FormData) {
         .from("comprobantes")
         .getPublicUrl(fileName);
       comprobanteUrl = publicFile.publicUrl;
+      comprobantePath = fileName;
     }
   }
 
@@ -132,13 +134,26 @@ async function crearGasto(formData: FormData) {
 
   const payloadConComprobante = {
     ...payloadBase,
+    comprobante_path: comprobantePath,
     comprobante_url: comprobanteUrl,
   };
 
   const { error: insertError } = await supabase.from("gastos").insert(payloadConComprobante);
 
-  if (insertError && String(insertError.message || "").includes("comprobante_url")) {
-    await supabase.from("gastos").insert(payloadBase);
+  if (insertError) {
+    const message = String(insertError.message || "");
+    if (message.includes("comprobante_path")) {
+      const { error: fallbackError } = await supabase.from("gastos").insert({
+        ...payloadBase,
+        comprobante_url: comprobanteUrl,
+      });
+
+      if (fallbackError && String(fallbackError.message || "").includes("comprobante_url")) {
+        await supabase.from("gastos").insert(payloadBase);
+      }
+    } else if (message.includes("comprobante_url")) {
+      await supabase.from("gastos").insert(payloadBase);
+    }
   }
 
   const mesActual = monthKey(new Date().toISOString());

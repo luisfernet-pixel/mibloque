@@ -177,15 +177,37 @@ export async function POST(req: Request) {
       cuota_id: cuota.id,
       monto_reportado: getCuotaMontoVigente(cuota, config),
       referencia: referencia || null,
+      comprobante_path: fileName,
       comprobante_url: publicFile.publicUrl,
       estado: "pendiente",
     });
 
   if (insertError) {
-    return NextResponse.redirect(
-      new URL("/vecino?error=confirmacion", req.url),
-      303
-    );
+    if (String(insertError.message || "").includes("comprobante_path")) {
+      const { error: fallbackInsertError } = await adminSupabase
+        .from("confirmaciones_pago")
+        .insert({
+          bloque_id: perfil.bloque_id,
+          departamento_id: perfil.departamento_id,
+          cuota_id: cuota.id,
+          monto_reportado: getCuotaMontoVigente(cuota, config),
+          referencia: referencia || null,
+          comprobante_url: publicFile.publicUrl,
+          estado: "pendiente",
+        });
+
+      if (fallbackInsertError) {
+        return NextResponse.redirect(
+          new URL("/vecino?error=confirmacion", req.url),
+          303
+        );
+      }
+    } else {
+      return NextResponse.redirect(
+        new URL("/vecino?error=confirmacion", req.url),
+        303
+      );
+    }
   }
 
   revalidatePath("/vecino");

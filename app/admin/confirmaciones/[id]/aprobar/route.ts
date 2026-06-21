@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
+import { resolveStoragePath } from "@/lib/storage-paths";
 
 function buildReceiptNumber(prefix: string, seq: number) {
   const safePrefix = String(prefix || "BLK")
@@ -65,7 +66,7 @@ export async function POST(
     return NextResponse.redirect(new URL("/admin/confirmaciones?error=servicio_suspendido", req.url), 303);
   }
 
-  const { data: confirmacion } = await supabase
+  const { data: confirmacion, error: confirmacionError } = await supabase
     .from("confirmaciones_pago")
     .select(`
       id,
@@ -74,6 +75,7 @@ export async function POST(
       cuota_id,
       monto_reportado,
       referencia,
+      comprobante_path,
       comprobante_url,
       estado
     `)
@@ -81,20 +83,40 @@ export async function POST(
     .eq("bloque_id", usuario.perfil.bloque_id)
     .single();
 
-  if (!confirmacion) {
+  let confirmacionRow = confirmacion;
+  if (confirmacionError && String(confirmacionError.message || "").includes("comprobante_path")) {
+    const fallback = await supabase
+      .from("confirmaciones_pago")
+      .select(`
+        id,
+        bloque_id,
+        departamento_id,
+        cuota_id,
+        monto_reportado,
+        referencia,
+        comprobante_url,
+        estado
+      `)
+      .eq("id", id)
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .single();
+    confirmacionRow = fallback.data as typeof confirmacion;
+  }
+
+  if (!confirmacionRow) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
-  if (confirmacion.estado === "aprobado") {
+  if (confirmacionRow.estado === "aprobado") {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
   const { data: cuotaRelacionada } = await supabase
     .from("cuotas")
     .select("id")
-    .eq("id", confirmacion.cuota_id)
+    .eq("id", confirmacionRow.cuota_id)
     .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", confirmacion.departamento_id)
+    .eq("departamento_id", confirmacionRow.departamento_id)
     .maybeSingle();
 
   if (!cuotaRelacionada) {
@@ -117,30 +139,44 @@ export async function POST(
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
-  const numeroRecibo = await getNextReceiptNumber(supabase, confirmacion.bloque_id);
+  const numeroRecibo = await getNextReceiptNumber(supabase, confirmacionRow.bloque_id);
   if (!numeroRecibo) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
-  const { error: insertPagoError } = await supabase
-    .from("pagos")
-    .insert({
-      bloque_id: confirmacion.bloque_id,
-      departamento_id: confirmacion.departamento_id,
-      cuota_id: confirmacion.cuota_id,
-      monto_pagado: confirmacion.monto_reportado,
+  const pagoPayload = {
+      bloque_id: confirmacionRow.bloque_id,
+      departamento_id: confirmacionRow.departamento_id,
+      cuota_id: confirmacionRow.cuota_id,
+      monto_pagado: confirmacionRow.monto_reportado,
       fecha_pago: ahora,
       metodo_pago: "transferencia",
-      referencia: confirmacion.referencia,
-      comprobante_url: confirmacion.comprobante_url,
+      referencia: confirmacionRow.referencia,
+      comprobante_path: resolveStoragePath((confirmacionRow as { comprobante_path?: string | null }).comprobante_path, confirmacionRow.comprobante_url),
+      comprobante_url: confirmacionRow.comprobante_url,
       numero_recibo: numeroRecibo,
       observaciones: "Pago aprobado desde confirmaciones",
-    });
+    };
+
+  const { error: insertPagoError } = await supabase
+    .from("pagos")
+    .insert(pagoPayload);
 
   if (insertPagoError) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
-  }
+    if (String(insertPagoError.message || "").includes("comprobante_path")) {
+      const fallbackPagoPayload = { ...pagoPayload };
+      delete (fallbackPagoPayload as { comprobante_path?: unknown }).comprobante_path;
+      const { error: fallbackPagoError } = await supabase
+        .from("pagos")
+        .insert(fallbackPagoPayload);
 
+      if (fallbackPagoError) {
+        return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+      }
+    } else {
+      return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+    }
+  }
   revalidatePath("/admin/confirmaciones");
   revalidatePath("/admin");
   revalidatePath("/vecino");
@@ -150,13 +186,13 @@ export async function POST(
     .from("cuotas")
     .update({
       estado: "pagado",
-      monto_total: confirmacion.monto_reportado,
+      monto_total: confirmacionRow.monto_reportado,
       pagada_en: ahora,
       updated_at: ahora,
     })
-    .eq("id", confirmacion.cuota_id)
+    .eq("id", confirmacionRow.cuota_id)
     .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", confirmacion.departamento_id);
+    .eq("departamento_id", confirmacionRow.departamento_id);
 
   if (updateCuotaError) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);

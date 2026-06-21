@@ -9,6 +9,7 @@ type ConfirmacionRow = {
   id: string;
   referencia: string | null;
   monto_reportado: number | null;
+  comprobante_path: string | null;
   comprobante_url: string | null;
   estado: string | null;
   created_at: string | null;
@@ -58,7 +59,7 @@ export default async function AdminConfirmacionesPage({
   const bloqueId = usuario.perfil.bloque_id;
 
   const [{ data }, { data: config }] = await Promise.all([
-    supabase.from("confirmaciones_pago").select(`id, referencia, monto_reportado, comprobante_url, estado, created_at, revisado_at, departamentos:departamento_id (numero), cuotas:cuota_id (periodo, monto_base, mora_acumulada, monto_total, estado, anio, mes, fecha_vencimiento, created_at)`).eq("bloque_id", bloqueId).order("created_at", { ascending: false }),
+    supabase.from("confirmaciones_pago").select(`id, referencia, monto_reportado, comprobante_path, comprobante_url, estado, created_at, revisado_at, departamentos:departamento_id (numero), cuotas:cuota_id (periodo, monto_base, mora_acumulada, monto_total, estado, anio, mes, fecha_vencimiento, created_at)`).eq("bloque_id", bloqueId).order("created_at", { ascending: false }),
     supabase.from("configuracion_bloque").select("dia_vencimiento, valor_mora").eq("bloque_id", bloqueId).maybeSingle(),
   ]);
 
@@ -132,9 +133,9 @@ export default async function AdminConfirmacionesPage({
                   <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 md:grid-cols-[1fr_auto] md:items-center">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-300">Comprobante</p>
-                      {item.comprobante_url ? (
+                      {item.comprobante_path || item.comprobante_url ? (
                         <Link
-                          href={item.comprobante_url}
+                          href={`/api/admin/confirmaciones/${item.id}/comprobante`}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-100 transition hover:bg-white/20 hover:text-white"

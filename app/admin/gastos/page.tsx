@@ -22,6 +22,7 @@ type GastoRow = {
   categoria: string;
   concepto: string;
   monto: number;
+  comprobante_path: string | null;
   comprobante_url: string | null;
 };
 
@@ -153,6 +154,7 @@ async function editarGasto(formData: FormData) {
   );
 
   let comprobanteUrl: string | null | undefined = undefined;
+  let comprobantePath: string | null | undefined = undefined;
 
   if (archivo && archivo.size > 0) {
     const adminSupabase = createAdminClient();
@@ -176,6 +178,7 @@ async function editarGasto(formData: FormData) {
         .from("comprobantes")
         .getPublicUrl(fileName);
       comprobanteUrl = publicFile.publicUrl;
+      comprobantePath = fileName;
     }
   }
 
@@ -188,6 +191,7 @@ async function editarGasto(formData: FormData) {
 
   const payloadConComprobante = {
     ...payloadBase,
+    ...(comprobantePath ? { comprobante_path: comprobantePath } : {}),
     ...(comprobanteUrl ? { comprobante_url: comprobanteUrl } : {}),
   };
 
@@ -199,7 +203,16 @@ async function editarGasto(formData: FormData) {
 
   if (comprobanteUrl) {
     const { error: updateError } = await updateBuilder.select("id").single();
-    if (updateError && String(updateError.message || "").includes("comprobante_url")) {
+    if (updateError && String(updateError.message || "").includes("comprobante_path")) {
+      await supabase
+        .from("gastos")
+        .update({
+          ...payloadBase,
+          ...(comprobanteUrl ? { comprobante_url: comprobanteUrl } : {}),
+        })
+        .eq("id", id)
+        .eq("bloque_id", usuario.perfil.bloque_id);
+    } else if (updateError && String(updateError.message || "").includes("comprobante_url")) {
       await supabase
         .from("gastos")
         .update(payloadBase)
@@ -307,7 +320,7 @@ export default async function GastosPage({
   const [{ data: gastos, error }, { data: categorias }, { data: cierres }] = await Promise.all([
     supabase
       .from("gastos")
-      .select("id, bloque_id, fecha_gasto, categoria, concepto, monto, comprobante_url")
+      .select("id, bloque_id, fecha_gasto, categoria, concepto, monto, comprobante_path, comprobante_url")
       .eq("bloque_id", usuario.perfil.bloque_id)
       .order("fecha_gasto", { ascending: false }),
     supabase
@@ -594,9 +607,9 @@ export default async function GastosPage({
                             Nuevo recibo / factura
                           </label>
                           <ComprobanteImageInput name="comprobante" />
-                          {item.comprobante_url ? (
+                          {item.comprobante_path || item.comprobante_url ? (
                             <a
-                              href={item.comprobante_url}
+                              href={`/api/admin/gastos/${item.id}/comprobante`}
                               target="_blank"
                               rel="noreferrer"
                               className="mt-2 inline-flex text-xs font-semibold text-cyan-300 underline-offset-2 hover:underline"
@@ -649,9 +662,9 @@ export default async function GastosPage({
                               <p className="text-sm font-bold text-white">{money(item.monto)}</p>
 
                               <div className="flex flex-nowrap justify-end gap-2">
-                                {item.comprobante_url ? (
+                                {item.comprobante_path || item.comprobante_url ? (
                                   <a
-                                    href={item.comprobante_url}
+                                    href={`/api/admin/gastos/${item.id}/comprobante`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/25"

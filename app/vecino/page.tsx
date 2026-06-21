@@ -69,6 +69,7 @@ type AdminPagoRow = {
 type BloquePagoRow = {
   pago_banco: string | null;
   pago_numero_cuenta: string | null;
+  pago_qr_path: string | null;
   pago_qr_url: string | null;
 };
 
@@ -194,7 +195,7 @@ export default async function VecinoPage({
         .order("created_at", { ascending: false }),
       adminSupabase
         .from("bloques")
-        .select("pago_banco, pago_numero_cuenta, pago_qr_url")
+        .select("pago_banco, pago_numero_cuenta, pago_qr_path, pago_qr_url")
         .eq("id", perfil.bloque_id)
         .maybeSingle(),
     ]);
@@ -217,9 +218,7 @@ export default async function VecinoPage({
     adminsPagoRows[0] ??
     null;
   const paymentFromAdmin = parseAdminPaymentDetails(adminPago?.username);
-  const adminQrPath = String(
-    bloquePagoRow?.pago_qr_url || paymentFromAdmin.qrUrl || "/qr-pago-admin.png"
-  );
+  const adminQrPath = "/api/storage/qr-pago";
   const adminNombreCompleto = String(
     adminPago?.nombre || configRow?.nombre_administracion || "Administrador del bloque"
   );
