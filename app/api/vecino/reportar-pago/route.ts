@@ -165,10 +165,6 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: publicFile } = adminSupabase.storage
-    .from("comprobantes")
-    .getPublicUrl(fileName);
-
   const { error: insertError } = await adminSupabase
     .from("confirmaciones_pago")
     .insert({
@@ -178,12 +174,15 @@ export async function POST(req: Request) {
       monto_reportado: getCuotaMontoVigente(cuota, config),
       referencia: referencia || null,
       comprobante_path: fileName,
-      comprobante_url: publicFile.publicUrl,
+      comprobante_url: null,
       estado: "pendiente",
     });
 
   if (insertError) {
     if (String(insertError.message || "").includes("comprobante_path")) {
+      const { data: publicFile } = adminSupabase.storage
+        .from("comprobantes")
+        .getPublicUrl(fileName);
       const { error: fallbackInsertError } = await adminSupabase
         .from("confirmaciones_pago")
         .insert({

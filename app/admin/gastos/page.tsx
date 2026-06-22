@@ -174,10 +174,6 @@ async function editarGasto(formData: FormData) {
       });
 
     if (!uploadError) {
-      const { data: publicFile } = adminSupabase.storage
-        .from("comprobantes")
-        .getPublicUrl(fileName);
-      comprobanteUrl = publicFile.publicUrl;
       comprobantePath = fileName;
     }
   }
@@ -201,9 +197,13 @@ async function editarGasto(formData: FormData) {
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
 
-  if (comprobanteUrl) {
+  if (comprobantePath) {
     const { error: updateError } = await updateBuilder.select("id").single();
     if (updateError && String(updateError.message || "").includes("comprobante_path")) {
+      const { data: publicFile } = adminSupabase.storage
+        .from("comprobantes")
+        .getPublicUrl(comprobantePath);
+      comprobanteUrl = publicFile.publicUrl;
       await supabase
         .from("gastos")
         .update({

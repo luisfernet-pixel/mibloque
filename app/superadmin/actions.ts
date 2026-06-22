@@ -68,11 +68,7 @@ async function uploadAdminQrImage(file: File, bloqueId: string) {
     throw uploadError;
   }
 
-  const { data: publicFile } = adminSupabase.storage
-    .from("comprobantes")
-    .getPublicUrl(fileName);
-
-  return { url: String(publicFile.publicUrl || ""), path: fileName };
+  return { path: fileName };
 }
 
 async function updateBlockPaymentStorageFields({
@@ -1003,7 +999,7 @@ export async function createAdminAction(
     let finalQrPath = "";
     if (qrFile instanceof File && qrFile.size > 0) {
       const uploadedQr = await uploadAdminQrImage(qrFile, canonicalBloqueId);
-      finalQrUrl = uploadedQr.url;
+      finalQrUrl = "";
       finalQrPath = uploadedQr.path;
     }
 
@@ -1127,7 +1123,7 @@ export async function updateAdminAction(
     let finalQrPath = previousPaymentDetails.qrPath;
     if (qrFile instanceof File && qrFile.size > 0) {
       const uploadedQr = await uploadAdminQrImage(qrFile, canonicalBloqueId);
-      finalQrUrl = uploadedQr.url;
+      finalQrUrl = "";
       finalQrPath = uploadedQr.path;
     }
 

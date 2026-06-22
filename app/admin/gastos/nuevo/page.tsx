@@ -116,10 +116,6 @@ async function crearGasto(formData: FormData) {
       });
 
     if (!uploadError) {
-      const { data: publicFile } = adminSupabase.storage
-        .from("comprobantes")
-        .getPublicUrl(fileName);
-      comprobanteUrl = publicFile.publicUrl;
       comprobantePath = fileName;
     }
   }
@@ -143,6 +139,12 @@ async function crearGasto(formData: FormData) {
   if (insertError) {
     const message = String(insertError.message || "");
     if (message.includes("comprobante_path")) {
+      if (comprobantePath) {
+        const { data: publicFile } = adminSupabase.storage
+          .from("comprobantes")
+          .getPublicUrl(comprobantePath);
+        comprobanteUrl = publicFile.publicUrl;
+      }
       const { error: fallbackError } = await supabase.from("gastos").insert({
         ...payloadBase,
         comprobante_url: comprobanteUrl,
