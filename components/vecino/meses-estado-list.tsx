@@ -14,6 +14,7 @@ type FilaMes = {
   anio: number | null;
   mes: number | null;
   reciboPagoId: string | null;
+  rejectedAt: string | null;
 };
 
 function money(value: number | null | undefined) {
@@ -100,6 +101,11 @@ export default function MesesEstadoList({
             </div>
 
             <p className="mt-1.5 text-xs text-slate-200">Monto: {money(item.monto_total)}</p>
+            {item.status === "pendiente" && item.rejectedAt ? (
+              <div className="mt-2 rounded-lg border border-red-300/30 bg-red-500/10 px-2.5 py-2 text-xs font-semibold text-red-100">
+                Tu comprobante anterior fue rechazado. Puedes subir uno nuevo.
+              </div>
+            ) : null}
 
             <div className="mt-2">
               {item.status === "pendiente" ? (
@@ -169,6 +175,11 @@ export default function MesesEstadoList({
                   </span>
                 </td>
                 <td className="px-4 py-4">
+                  {item.status === "pendiente" && item.rejectedAt ? (
+                    <div className="mb-2 max-w-sm rounded-lg border border-red-300/30 bg-red-500/10 px-2.5 py-2 text-xs font-semibold text-red-100">
+                      Tu comprobante anterior fue rechazado. Puedes subir uno nuevo.
+                    </div>
+                  ) : null}
                   {item.status === "pendiente" ? (
                     cuotaHabilitadaId === item.id ? (
                       <button

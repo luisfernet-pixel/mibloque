@@ -35,6 +35,7 @@ type ConfirmacionRow = {
   cuota_id: string | null;
   estado: string | null;
   created_at: string | null;
+  revisado_at?: string | null;
 };
 
 type PagoRow = {
@@ -159,7 +160,7 @@ export default async function VecinoPage({
         .order("mes", { ascending: false }),
       supabase
         .from("confirmaciones_pago")
-        .select("id, cuota_id, estado, created_at")
+        .select("id, cuota_id, estado, created_at, revisado_at")
         .eq("departamento_id", perfil.departamento_id)
         .order("created_at", { ascending: false }),
       supabase
@@ -241,12 +242,21 @@ export default async function VecinoPage({
   const avisoDirecto = mostrarAvisoDirecto ? avisosNuevos[0] : null;
 
   const pendingConfirmacionByCuota = new Map<string, ConfirmacionRow>();
+  const rejectedAtByCuota = new Map<string, string>();
   for (const item of confirmacionesRows) {
     const cuotaId = item.cuota_id || "";
     const estado = String(item.estado || "").toLowerCase();
-    if (!cuotaId || estado !== "pendiente") continue;
-    if (!pendingConfirmacionByCuota.has(cuotaId)) {
+    if (!cuotaId) continue;
+    if (estado === "pendiente" && !pendingConfirmacionByCuota.has(cuotaId)) {
       pendingConfirmacionByCuota.set(cuotaId, item);
+    }
+    if (estado === "rechazado") {
+      const rejectedAt = item.revisado_at || item.created_at || "";
+      if (!rejectedAt) continue;
+      const current = rejectedAtByCuota.get(cuotaId);
+      if (!current || new Date(rejectedAt).getTime() > new Date(current).getTime()) {
+        rejectedAtByCuota.set(cuotaId, rejectedAt);
+      }
     }
   }
 
@@ -271,6 +281,7 @@ export default async function VecinoPage({
       ...item,
       status,
       reciboPagoId: pagoByCuota.get(item.id) || null,
+      rejectedAt: status === "pendiente" ? rejectedAtByCuota.get(item.id) || null : null,
     };
   });
 
