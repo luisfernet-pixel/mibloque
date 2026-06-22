@@ -60,9 +60,7 @@ async function crearAviso(formData: FormData) {
   if (!titulo || !mensaje) redirect("/admin/comunicacion?error=datos_aviso");
 
   const supabase = await createClient();
-  const adminSupabase = createAdminClient();
-
-  const { data: avisoCreado, error: avisoError } = await supabase
+  const { error: avisoError } = await supabase
     .from("avisos")
     .insert({
       bloque_id: usuario.perfil.bloque_id,
@@ -74,53 +72,6 @@ async function crearAviso(formData: FormData) {
     .maybeSingle();
 
   if (avisoError) redirect("/admin/comunicacion?error=save_aviso");
-
-  const { data: vecinosBloque } = await adminSupabase
-    .from("usuarios")
-    .select("departamento_id")
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("rol", "vecino")
-    .not("departamento_id", "is", null);
-
-  const vecinosDeptoIds = Array.from(
-    new Set((vecinosBloque ?? []).map((item) => item.departamento_id).filter(Boolean))
-  ) as string[];
-
-  const { data: departamentos } = await adminSupabase
-    .from("departamentos")
-    .select("id")
-    .eq("bloque_id", usuario.perfil.bloque_id);
-
-  const fallbackDeptoIds = (departamentos ?? []).map((item) => item.id);
-  const targetDeptoIds = vecinosDeptoIds.length > 0 ? vecinosDeptoIds : fallbackDeptoIds;
-
-  const rows = targetDeptoIds.map((departamentoId) => ({
-    bloque_id: usuario.perfil.bloque_id,
-    departamento_id: departamentoId,
-    tipo: "aviso_admin",
-    titulo,
-    mensaje,
-    metadata: { aviso_id: avisoCreado?.id ?? null },
-  }));
-
-  if (rows.length > 0) {
-    const { error: notifyErrorWithMetadata } = await adminSupabase
-      .from("notificaciones_vecino")
-      .insert(rows);
-    if (notifyErrorWithMetadata) {
-      const fallbackRows = rows.map((item) => ({
-        bloque_id: item.bloque_id,
-        departamento_id: item.departamento_id,
-        tipo: item.tipo,
-        titulo: item.titulo,
-        mensaje: item.mensaje,
-      }));
-      await adminSupabase
-        .from("notificaciones_vecino")
-        .insert(fallbackRows);
-    }
-  }
-
   revalidatePath("/admin");
   revalidatePath("/admin/comunicacion");
   revalidatePath("/admin/avisos");
@@ -166,27 +117,6 @@ async function responderBuzon(formData: FormData) {
 
   if (updateError) redirect("/admin/comunicacion?error=save");
 
-  const notifyPayload = {
-    bloque_id: current.bloque_id,
-    departamento_id: current.departamento_id,
-    tipo: "respuesta_buzon",
-    titulo: "Respuesta del admin",
-    mensaje: `Tu mensaje "${current.asunto}" ya tiene respuesta.`,
-    metadata: { buzon_id: current.id },
-  };
-
-  const { error: notifyErrorWithMetadata } = await supabase
-    .from("notificaciones_vecino")
-    .insert(notifyPayload);
-  if (notifyErrorWithMetadata) {
-    await supabase.from("notificaciones_vecino").insert({
-      bloque_id: current.bloque_id,
-      departamento_id: current.departamento_id,
-      tipo: "respuesta_buzon",
-      titulo: "Respuesta del admin",
-      mensaje: `Tu mensaje "${current.asunto}" ya tiene respuesta.`,
-    });
-  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/comunicacion");

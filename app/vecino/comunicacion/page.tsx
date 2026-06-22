@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { isBloqueActivo, requireVecino } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -94,11 +95,14 @@ async function limpiarAvisosNuevos() {
   if (!usuario || !usuario.perfil.departamento_id) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/vecino/comunicacion?error=servicio_suspendido");
   const supabase = createAdminClient();
-  await supabase
-    .from("notificaciones_vecino")
-    .update({ leida: true })
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", usuario.perfil.departamento_id);
+  const cookieStore = await cookies();
+  cookieStore.set("vecino_avisos_vistos_at", new Date().toISOString(), {
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    secure: true,
+    maxAge: 60 * 60 * 24 * 365,
+  });
   await supabase
     .from("buzon_sugerencias")
     .update({ respuesta_leida: true })
@@ -122,29 +126,12 @@ export default async function VecinoComunicacionPage({
   const params = await searchParams;
   const supabase = createAdminClient();
 
-  const { data: unreadNotifs } = await supabase
-    .from("notificaciones_vecino")
-    .select("id")
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", usuario.perfil.departamento_id)
-    .limit(1000);
-
-  const notifIds = (unreadNotifs ?? []).map((item) => item.id);
-
-  await Promise.all([
-    notifIds.length > 0
-      ? supabase
-          .from("notificaciones_vecino")
-          .update({ leida: true })
-          .in("id", notifIds)
-      : Promise.resolve({ error: null }),
-    supabase
-      .from("buzon_sugerencias")
-      .update({ respuesta_leida: true })
-      .eq("vecino_id", usuario.perfil.id)
-      .eq("estado", "respondido")
-      .eq("respuesta_leida", false),
-  ]);
+  await supabase
+    .from("buzon_sugerencias")
+    .update({ respuesta_leida: true })
+    .eq("vecino_id", usuario.perfil.id)
+    .eq("estado", "respondido")
+    .eq("respuesta_leida", false);
 
   const [{ data: avisosData }, { data: buzonData, error: buzonError }] = await Promise.all([
     supabase
