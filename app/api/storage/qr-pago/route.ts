@@ -1,8 +1,27 @@
 import { requireAdmin, requireVecino } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseAdminPaymentDetails } from "@/lib/admin-payment";
-import { redirectToComprobantesSignedUrl, resolveStoragePath } from "@/lib/storage-paths";
+import { createComprobantesSignedUrl, resolveStoragePath } from "@/lib/storage-paths";
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+
+function noStoreResponse(body: string, status: number) {
+  return new Response(body, { status, headers: NO_STORE_HEADERS });
+}
+
+function noStoreRedirect(url: string | URL) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...NO_STORE_HEADERS,
+      Location: String(url),
+    },
+  });
+}
 function isPublicHttpUrl(value: string | null | undefined) {
   return /^https?:\/\//i.test(String(value || "").trim());
 }
@@ -11,13 +30,13 @@ export async function GET(req: Request) {
   const adminUsuario = await requireAdmin();
   const vecinoUsuario = adminUsuario ? null : await requireVecino();
   const usuario = adminUsuario ?? vecinoUsuario;
-  if (!usuario) return new Response("No autorizado.", { status: 401 });
+  if (!usuario) return noStoreResponse("No autorizado.", 401);
 
   const url = new URL(req.url);
   const requestedBloqueId = url.searchParams.get("bloque_id");
   const isSuperadmin = usuario.perfil.rol === "superadmin";
   const bloqueId = isSuperadmin && requestedBloqueId ? requestedBloqueId : usuario.perfil.bloque_id;
-  if (!bloqueId) return new Response("QR no disponible.", { status: 404 });
+  if (!bloqueId) return noStoreResponse("QR no disponible.", 404);
 
   const supabase = createAdminClient();
   const { data: bloque, error } = await supabase
@@ -48,10 +67,14 @@ export async function GET(req: Request) {
     paymentDetails.qrUrl
   );
 
-  if (path) return redirectToComprobantesSignedUrl(path);
+  if (path) {
+    const signedUrl = await createComprobantesSignedUrl(path);
+    if (!signedUrl) return noStoreResponse("Archivo no disponible.", 404);
+    return noStoreRedirect(signedUrl);
+  }
 
   const legacyUrl = paymentDetails.qrUrl;
-  if (isPublicHttpUrl(legacyUrl)) return Response.redirect(String(legacyUrl), 302);
+  if (isPublicHttpUrl(legacyUrl)) return noStoreRedirect(String(legacyUrl));
 
-  return Response.redirect(new URL("/qr-pago-admin.png", req.url), 302);
+  return noStoreRedirect(new URL("/qr-pago-admin.png", req.url));
 }

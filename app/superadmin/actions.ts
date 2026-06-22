@@ -78,33 +78,22 @@ async function uploadAdminQrImage(file: File, bloqueId: string) {
 async function updateBlockPaymentStorageFields({
   supabase,
   bloqueId,
-  banco,
-  numeroCuenta,
   qrPath,
 }: {
   supabase: ReturnType<typeof createAdminClient>;
   bloqueId: string;
-  banco: string;
-  numeroCuenta: string;
   qrPath: string;
 }) {
-  const payload = {
-    pago_banco: banco || null,
-    pago_numero_cuenta: numeroCuenta || null,
-    pago_qr_path: qrPath || null,
-  };
+  if (!qrPath) return;
 
-  const { error } = await supabase.from("bloques").update(payload).eq("id", bloqueId);
+  const { error } = await supabase
+    .from("bloques")
+    .update({ pago_qr_path: qrPath })
+    .eq("id", bloqueId);
   if (!error) return;
 
   if (String(error.message || "").includes("pago_qr_path")) {
-    const { pago_qr_path: _unusedPath, ...fallbackPayload } = payload;
-    const { error: fallbackError } = await supabase
-      .from("bloques")
-      .update(fallbackPayload)
-      .eq("id", bloqueId);
-    if (!fallbackError) return;
-    throw fallbackError;
+    return;
   }
 
   throw error;
@@ -247,7 +236,7 @@ async function createAuthUser({
   email: string;
   password: string;
   userMetadata: Record<string, unknown>;
-}): Promise<{ userId: string; usedServiceRole: boolean }> {
+}): Promise<{ userId: string; usedServiceRole: boolean; createdAuthUser: boolean }> {
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const supabase = createAdminClient();
 
@@ -267,7 +256,7 @@ async function createAuthUser({
         throw updateError;
       }
 
-      return { userId: existingUserId, usedServiceRole: true };
+      return { userId: existingUserId, usedServiceRole: true, createdAuthUser: false };
     }
 
     const { data, error } = await supabase.auth.admin.createUser({
@@ -281,7 +270,7 @@ async function createAuthUser({
       throw error ?? new Error("No se pudo crear el usuario de Auth.");
     }
 
-    return { userId: data.user.id, usedServiceRole: true };
+    return { userId: data.user.id, usedServiceRole: true, createdAuthUser: true };
   }
 
   throw new Error(
@@ -360,6 +349,17 @@ async function deleteAuthUserIfNeeded(userId?: string) {
     await supabase.auth.admin.deleteUser(userId);
   } catch {
     // Intencionalmente silencioso: si el rollback falla, no bloqueamos el flujo.
+  }
+}
+
+async function deleteProfileUserIfNeeded(userId?: string) {
+  if (!userId) return;
+
+  try {
+    const supabase = createAdminClient();
+    await supabase.from("usuarios").delete().eq("id", userId);
+  } catch {
+    // Intencionalmente silencioso: evita dejar el flujo bloqueado por el rollback.
   }
 }
 
@@ -954,6 +954,8 @@ export async function createAdminAction(
   void state;
 
   let createdUserId: string | undefined;
+  let createdProfileId: string | undefined;
+  let shouldDeleteAuthUser = false;
 
   try {
     await requireSuperadmin();
@@ -1022,10 +1024,17 @@ export async function createAdminAction(
     });
 
     createdUserId = authResult.userId;
+    shouldDeleteAuthUser = authResult.createdAuthUser;
 
     const profileSupabase = authResult.usedServiceRole
       ? createAdminClient()
       : await createClient();
+
+    const { data: existingProfile } = await profileSupabase
+      .from("usuarios")
+      .select("id")
+      .eq("id", authResult.userId)
+      .maybeSingle();
 
     const { error: perfilError } = await profileSupabase.from("usuarios").upsert(
       {
@@ -1046,11 +1055,14 @@ export async function createAdminAction(
       throw perfilError;
     }
 
+
+    if (!existingProfile) {
+      createdProfileId = authResult.userId;
+    }
+
     await updateBlockPaymentStorageFields({
       supabase: createAdminClient(),
       bloqueId: canonicalBloqueId,
-      banco,
-      numeroCuenta,
       qrPath: finalQrPath,
     });
 
@@ -1058,7 +1070,10 @@ export async function createAdminAction(
     revalidatePath("/superadmin/admins");
     return { ok: true, message: `Admin ${nombre} creado.` };
   } catch (error) {
-    await deleteAuthUserIfNeeded(createdUserId);
+    await deleteProfileUserIfNeeded(createdProfileId);
+    if (shouldDeleteAuthUser) {
+      await deleteAuthUserIfNeeded(createdUserId);
+    }
     return {
       ok: false,
       message: formatActionError(error, "No se pudo crear el admin."),
@@ -1152,8 +1167,6 @@ export async function updateAdminAction(
     await updateBlockPaymentStorageFields({
       supabase: adminSupabase,
       bloqueId: canonicalBloqueId,
-      banco,
-      numeroCuenta,
       qrPath: finalQrPath,
     });
 
