@@ -868,6 +868,7 @@ export async function purgeBlockAction(
     };
 
     // Children first (FK dependencies). Some tables may not exist in older DBs.
+    // Compatibilidad con bases antiguas: esta tabla puede no existir y deleteByBloqueId lo tolera.
     await deleteByBloqueId("notificaciones_vecino");
     await deleteByBloqueId("buzon_sugerencias");
     await deleteByBloqueId("avisos");
