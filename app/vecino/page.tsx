@@ -217,7 +217,18 @@ export default async function VecinoPage({
     adminsPagoRows[0] ??
     null;
   const paymentFromAdmin = parseAdminPaymentDetails(adminPago?.username);
-  const adminQrPath = "/api/storage/qr-pago";
+  const adminQrVersion = encodeURIComponent(
+    String(
+      bloquePagoRow?.pago_qr_path ||
+        paymentFromAdmin.qrPath ||
+        paymentFromAdmin.qrUrl ||
+        perfil.bloque_id ||
+        "fallback"
+    )
+  );
+  const adminQrPath = `/api/storage/qr-pago?b=${encodeURIComponent(
+    String(perfil.bloque_id || "")
+  )}&v=${adminQrVersion}`;
   const adminNombreCompleto = String(
     adminPago?.nombre || configRow?.nombre_administracion || "Administrador del bloque"
   );

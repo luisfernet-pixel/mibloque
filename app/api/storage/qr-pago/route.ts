@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { parseAdminPaymentDetails } from "@/lib/admin-payment";
 import { createComprobantesSignedUrl, resolveStoragePath } from "@/lib/storage-paths";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
   Pragma: "no-cache",
