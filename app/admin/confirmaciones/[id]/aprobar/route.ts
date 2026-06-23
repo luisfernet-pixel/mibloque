@@ -11,6 +11,10 @@ function buildReceiptNumber(prefix: string, seq: number) {
   return `${safePrefix}-${String(seq).padStart(4, "0")}`;
 }
 
+function redirectToConfirmaciones(req: Request, suffix = "") {
+  return NextResponse.redirect(new URL(`/admin/confirmaciones${suffix}`, req.url), 303);
+}
+
 async function getNextReceiptNumber(
   supabase: ReturnType<typeof createAdminClient>,
   bloqueId: string
@@ -54,20 +58,22 @@ export async function POST(
   }
 
   const supabase = createAdminClient();
+  const bloqueId = usuario.perfil.bloque_id;
 
   const { data: bloqueEstado } = await supabase
     .from("bloques")
     .select("activo")
-    .eq("id", usuario.perfil.bloque_id)
+    .eq("id", bloqueId)
     .maybeSingle();
 
   if (bloqueEstado?.activo === false) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones?error=servicio_suspendido", req.url), 303);
+    return redirectToConfirmaciones(req, "?error=servicio_suspendido");
   }
 
-  const { data: confirmacion, error: confirmacionError } = await supabase
+  const { data: confirmacion } = await supabase
     .from("confirmaciones_pago")
-    .select(`
+    .select(
+      `
       id,
       bloque_id,
       departamento_id,
@@ -76,48 +82,79 @@ export async function POST(
       referencia,
       comprobante_path,
       estado
-    `)
+    `
+    )
     .eq("id", id)
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .single();
+    .eq("bloque_id", bloqueId)
+    .eq("estado", "pendiente")
+    .maybeSingle();
 
-  const confirmacionRow = confirmacion;
-
-  if (!confirmacionRow) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
-  }
-
-  const estadoActual = String(confirmacionRow.estado || "").toLowerCase();
-  if (estadoActual !== "pendiente") {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  if (!confirmacion) {
+    return redirectToConfirmaciones(req);
   }
 
   const { data: cuotaRelacionada } = await supabase
     .from("cuotas")
-    .select("id")
-    .eq("id", confirmacionRow.cuota_id)
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", confirmacionRow.departamento_id)
+    .select("id, estado, periodo, anio, mes")
+    .eq("id", confirmacion.cuota_id)
+    .eq("bloque_id", bloqueId)
+    .eq("departamento_id", confirmacion.departamento_id)
+    .in("estado", ["pendiente", "vencido"])
     .maybeSingle();
 
   if (!cuotaRelacionada) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+    return redirectToConfirmaciones(req);
   }
+
+  const cuotaIdsMismoPeriodo = new Set<string>([String(cuotaRelacionada.id)]);
+  const cuotaPeriodo = String(cuotaRelacionada.periodo || "").trim();
+
+  if (cuotaPeriodo) {
+    const { data: cuotasMismoPeriodo } = await supabase
+      .from("cuotas")
+      .select("id")
+      .eq("bloque_id", bloqueId)
+      .eq("departamento_id", confirmacion.departamento_id)
+      .eq("periodo", cuotaPeriodo);
+
+    for (const cuota of cuotasMismoPeriodo ?? []) {
+      if (cuota.id) cuotaIdsMismoPeriodo.add(String(cuota.id));
+    }
+  } else if (cuotaRelacionada.anio && cuotaRelacionada.mes) {
+    const { data: cuotasMismoPeriodo } = await supabase
+      .from("cuotas")
+      .select("id")
+      .eq("bloque_id", bloqueId)
+      .eq("departamento_id", confirmacion.departamento_id)
+      .eq("anio", cuotaRelacionada.anio)
+      .eq("mes", cuotaRelacionada.mes);
+
+    for (const cuota of cuotasMismoPeriodo ?? []) {
+      if (cuota.id) cuotaIdsMismoPeriodo.add(String(cuota.id));
+    }
+  }
+
+  const cuotaIds = Array.from(cuotaIdsMismoPeriodo);
 
   const { data: pagoExistente } = await supabase
     .from("pagos")
     .select("id")
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", confirmacionRow.departamento_id)
-    .eq("cuota_id", confirmacionRow.cuota_id)
+    .eq("bloque_id", bloqueId)
+    .eq("departamento_id", confirmacion.departamento_id)
+    .in("cuota_id", cuotaIds)
     .limit(1)
     .maybeSingle();
 
   if (pagoExistente) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+    return redirectToConfirmaciones(req);
   }
 
   const ahora = new Date().toISOString();
+  const numeroRecibo = await getNextReceiptNumber(supabase, confirmacion.bloque_id);
+
+  if (!numeroRecibo) {
+    return redirectToConfirmaciones(req);
+  }
 
   const { data: confirmacionActualizada, error: updateConfirmacionError } = await supabase
     .from("confirmaciones_pago")
@@ -127,60 +164,98 @@ export async function POST(
       revisado_por: usuario.perfil.id,
     })
     .eq("id", id)
-    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("bloque_id", bloqueId)
     .eq("estado", "pendiente")
     .select("id")
     .maybeSingle();
 
   if (updateConfirmacionError || !confirmacionActualizada) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+    return redirectToConfirmaciones(req);
   }
 
-  const numeroRecibo = await getNextReceiptNumber(supabase, confirmacionRow.bloque_id);
-  if (!numeroRecibo) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  const rollbackConfirmacion = async () => {
+    await supabase
+      .from("confirmaciones_pago")
+      .update({
+        estado: "pendiente",
+        revisado_at: null,
+        revisado_por: null,
+      })
+      .eq("id", id)
+      .eq("bloque_id", bloqueId)
+      .eq("estado", "aprobado")
+      .eq("revisado_at", ahora)
+      .eq("revisado_por", usuario.perfil.id);
+  };
+
+  const { data: pagoDuplicadoPostBloqueo } = await supabase
+    .from("pagos")
+    .select("id")
+    .eq("bloque_id", bloqueId)
+    .eq("departamento_id", confirmacion.departamento_id)
+    .in("cuota_id", cuotaIds)
+    .limit(1)
+    .maybeSingle();
+
+  if (pagoDuplicadoPostBloqueo) {
+    await rollbackConfirmacion();
+    return redirectToConfirmaciones(req);
   }
 
-  const pagoPayload = {
-      bloque_id: confirmacionRow.bloque_id,
-      departamento_id: confirmacionRow.departamento_id,
-      cuota_id: confirmacionRow.cuota_id,
-      monto_pagado: confirmacionRow.monto_reportado,
+  const { data: pagoInsertado, error: insertPagoError } = await supabase
+    .from("pagos")
+    .insert({
+      bloque_id: confirmacion.bloque_id,
+      departamento_id: confirmacion.departamento_id,
+      cuota_id: confirmacion.cuota_id,
+      monto_pagado: confirmacion.monto_reportado,
       fecha_pago: ahora,
       metodo_pago: "transferencia",
-      referencia: confirmacionRow.referencia,
-      comprobante_path: confirmacionRow.comprobante_path,
+      referencia: confirmacion.referencia,
+      comprobante_path: confirmacion.comprobante_path,
       numero_recibo: numeroRecibo,
       observaciones: "Pago aprobado desde confirmaciones",
-    };
+    })
+    .select("id")
+    .maybeSingle();
 
-  const { error: insertPagoError } = await supabase
-    .from("pagos")
-    .insert(pagoPayload);
-
-  if (insertPagoError) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  if (insertPagoError || !pagoInsertado) {
+    await rollbackConfirmacion();
+    return redirectToConfirmaciones(req);
   }
+
+  const { data: cuotaActualizada, error: updateCuotaError } = await supabase
+    .from("cuotas")
+    .update({
+      estado: "pagado",
+      monto_total: confirmacion.monto_reportado,
+      pagada_en: ahora,
+      updated_at: ahora,
+    })
+    .eq("id", confirmacion.cuota_id)
+    .eq("bloque_id", bloqueId)
+    .eq("departamento_id", confirmacion.departamento_id)
+    .in("estado", ["pendiente", "vencido"])
+    .select("id")
+    .maybeSingle();
+
+  if (updateCuotaError || !cuotaActualizada) {
+    await supabase
+      .from("pagos")
+      .delete()
+      .eq("id", pagoInsertado.id)
+      .eq("bloque_id", bloqueId)
+      .eq("departamento_id", confirmacion.departamento_id)
+      .eq("cuota_id", confirmacion.cuota_id);
+
+    await rollbackConfirmacion();
+    return redirectToConfirmaciones(req);
+  }
+
   revalidatePath("/admin/confirmaciones");
   revalidatePath("/admin");
   revalidatePath("/vecino");
   revalidatePath("/vecino/recibos");
 
-  const { error: updateCuotaError } = await supabase
-    .from("cuotas")
-    .update({
-      estado: "pagado",
-      monto_total: confirmacionRow.monto_reportado,
-      pagada_en: ahora,
-      updated_at: ahora,
-    })
-    .eq("id", confirmacionRow.cuota_id)
-    .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", confirmacionRow.departamento_id);
-
-  if (updateCuotaError) {
-    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
-  }
-
-  return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  return redirectToConfirmaciones(req);
 }

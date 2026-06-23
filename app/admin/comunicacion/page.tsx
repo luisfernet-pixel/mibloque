@@ -117,7 +117,6 @@ async function responderBuzon(formData: FormData) {
 
   if (updateError) redirect("/admin/comunicacion?error=save");
 
-
   revalidatePath("/admin");
   revalidatePath("/admin/comunicacion");
   revalidatePath("/admin/sugerencias");
@@ -209,12 +208,12 @@ export default async function AdminComunicacionPage({
   return (
     <main className="space-y-3">
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-3 p-3 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Comunicacion</p>
+            <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Comunicación</p>
             <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">Avisos y mensajes</h1>
             <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              Gestiona en una sola pantalla los avisos del bloque y las sugerencias/reclamos de vecinos.
+              Aquí publicas avisos para todo el bloque y respondes mensajes enviados por vecinos.
             </p>
           </div>
 
@@ -222,7 +221,7 @@ export default async function AdminComunicacionPage({
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-300">Resumen</p>
             <div className="mt-4 space-y-2 text-sm text-slate-200">
               <p>Avisos publicados: <span className="font-bold text-white">{avisos.length}</span></p>
-              <p>Pendientes por responder: <span className="font-bold text-white">{pendientes}</span></p>
+              <p>Mensajes por responder: <span className="font-bold text-white">{pendientes}</span></p>
             </div>
             {params.sent === "1" ? <p className="mt-4 text-sm font-semibold text-cyan-200">Aviso publicado.</p> : null}
             {params.ok === "1" ? <p className="mt-2 text-sm font-semibold text-cyan-200">Respuesta enviada.</p> : null}
@@ -234,39 +233,46 @@ export default async function AdminComunicacionPage({
       </section>
 
       <section className="grid gap-3 xl:grid-cols-2">
-        <div className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <div className="border-b border-white/10 px-4 py-3">
-            <h2 className="text-xl font-bold text-white">Avisos</h2>
-            <p className="mt-1 text-sm text-slate-300">Publica y revisa los ultimos comunicados.</p>
+        <div className="overflow-hidden rounded-[24px] border border-cyan-400/20 bg-[#213b59] shadow-xl ring-1 ring-white/10">
+          <div className="border-b border-cyan-400/20 bg-cyan-500/10 px-4 py-3">
+            <span className="inline-flex rounded-full border border-cyan-300/30 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-100">
+              Publicar aviso
+            </span>
+            <h2 className="mt-2 text-xl font-bold text-white">Avisos del administrador</h2>
+            <p className="mt-1 text-sm text-slate-200">Aquí escribes avisos para todos los vecinos.</p>
           </div>
 
-          <div className="space-y-3 p-4">
-            <form action={crearAviso} className="flex items-center gap-2 rounded-xl border border-white/15 bg-[#2d4a6c] p-2.5">
-              <input
-                name="titulo"
-                placeholder="Titulo"
-                required
-                className="h-9 w-[180px] rounded-lg border border-white/10 bg-[#173454] px-3 text-sm text-white outline-none focus:border-cyan-400/40"
-              />
-              <textarea
-                name="mensaje"
-                rows={1}
-                placeholder="Mensaje del aviso"
-                required
-                className="h-9 min-h-[36px] flex-1 resize-none rounded-lg border border-white/10 bg-[#173454] px-3 py-2 text-sm text-white outline-none transition-[height] duration-150 focus:h-[72px] focus:border-cyan-400/40"
-              />
-              <button
-                type="submit"
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110"
-              >
-                Publicar
-              </button>
+          <div className="space-y-3 p-3 md:p-4">
+            <form action={crearAviso} className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                <input
+                  name="titulo"
+                  placeholder="Título del aviso"
+                  required
+                  className="h-10 w-full rounded-lg border border-white/10 bg-[#173454] px-3 text-sm text-white outline-none focus:border-cyan-400/40 sm:max-w-[220px]"
+                />
+                <textarea
+                  name="mensaje"
+                  rows={3}
+                  placeholder="Escribe el aviso"
+                  required
+                  className="min-h-[96px] w-full resize-none rounded-lg border border-white/10 bg-[#173454] px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/40"
+                />
+              </div>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="submit"
+                  className="inline-flex min-h-[40px] w-full items-center justify-center rounded-lg bg-[#ff5a3d] px-4 text-sm font-bold text-white transition hover:brightness-110 sm:w-auto"
+                >
+                  Publicar aviso
+                </button>
+              </div>
             </form>
 
             <div className="space-y-2 rounded-xl border border-white/15 bg-[#2d4a6c] p-2.5">
               {avisosMesActual.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-white/20 bg-[#1d3551] px-3 py-2 text-sm text-slate-300">
-                  No hay avisos de este mes.
+                  Sin avisos todavía.
                 </div>
               ) : (
                 avisosMesActual.map((item) => (
@@ -275,7 +281,6 @@ export default async function AdminComunicacionPage({
                       <span className="h-2 w-2 rounded-full bg-cyan-300" />
                       <p className="truncate text-sm font-bold text-white">{item.titulo}</p>
                       <p className="ml-auto text-xs text-slate-300">{formatDate(item.created_at)}</p>
-                      <span className="ml-2 text-sm text-cyan-100 transition-transform duration-200 group-open:rotate-90">{">"}</span>
                     </summary>
                     <div className="border-t border-white/10 px-3 py-2">
                       <p className="mb-2 whitespace-pre-line text-sm text-slate-100">{item.mensaje}</p>
@@ -294,7 +299,7 @@ export default async function AdminComunicacionPage({
                           required
                           className="w-full rounded-lg border border-white/10 bg-[#173454] px-3 py-2 text-sm text-white"
                         />
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
                           <button type="submit" className="rounded-lg bg-cyan-600 px-3 py-1 text-xs font-bold text-white">Guardar</button>
                           <button formAction={eliminarAviso} className="rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white">Eliminar</button>
                         </div>
@@ -307,16 +312,12 @@ export default async function AdminComunicacionPage({
 
             <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
               <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
-                <span className="inline-flex items-center gap-2">
-                  <span className="group-open:hidden">{">"}</span>
-                  <span className="hidden group-open:inline">v</span>
-                  <span>Historial de avisos ({avisosHistorial.length})</span>
-                </span>
+                Historial de avisos ({avisosHistorial.length})
               </summary>
               <div className="mt-3 space-y-2">
                 {avisosHistorial.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-white/20 bg-[#1d3551] p-3 text-sm text-slate-300">
-                    No hay avisos en historial.
+                    Sin avisos anteriores.
                   </div>
                 ) : (
                   avisosHistorial.map((item) => (
@@ -325,7 +326,6 @@ export default async function AdminComunicacionPage({
                         <span className="h-2 w-2 rounded-full bg-slate-300" />
                         <p className="truncate text-sm font-bold text-white">{item.titulo}</p>
                         <p className="ml-auto text-xs text-slate-300">{formatDate(item.created_at)}</p>
-                        <span className="ml-2 text-sm text-cyan-100 transition-transform duration-200 group-open:rotate-90">{">"}</span>
                       </summary>
                       <div className="border-t border-white/10 px-3 py-2">
                         <p className="mb-2 whitespace-pre-line text-sm text-slate-100">{item.mensaje}</p>
@@ -344,7 +344,7 @@ export default async function AdminComunicacionPage({
                             required
                             className="w-full rounded-lg border border-white/10 bg-[#173454] px-3 py-2 text-sm text-white"
                           />
-                          <div className="flex justify-end gap-2">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
                             <button type="submit" className="rounded-lg bg-cyan-600 px-3 py-1 text-xs font-bold text-white">Guardar</button>
                             <button formAction={eliminarAviso} className="rounded-lg bg-red-600 px-3 py-1 text-xs font-bold text-white">Eliminar</button>
                           </div>
@@ -358,68 +358,70 @@ export default async function AdminComunicacionPage({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-          <div className="border-b border-white/10 px-4 py-3">
-            <h2 className="text-xl font-bold text-white">Mensajes de vecinos</h2>
-            <p className="mt-1 text-sm text-slate-300">Responde solicitudes de vecinos desde aqui.</p>
+        <div className="overflow-hidden rounded-[24px] border border-orange-300/20 bg-[#213b59] shadow-xl ring-1 ring-white/10">
+          <div className="border-b border-orange-300/20 bg-orange-500/10 px-4 py-3">
+            <span className="inline-flex rounded-full border border-orange-300/30 bg-orange-400/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-orange-100">
+              Ver mensajes
+            </span>
+            <h2 className="mt-2 text-xl font-bold text-white">Mensajes de vecinos</h2>
+            <p className="mt-1 text-sm text-slate-200">Aquí respondes dudas, sugerencias o reclamos enviados por vecinos.</p>
           </div>
-          <div className="space-y-3 p-4">
+          <div className="space-y-3 p-3 md:p-4">
             {buzon.length === 0 ? (
               <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
-                No hay mensajes en el buzon.
+                Sin mensajes todavía.
               </div>
             ) : (
               <div className="space-y-1 rounded-xl border border-white/15 bg-[#2d4a6c] p-1.5">
               {buzonPendiente.map((item) => (
                 <details key={item.id} className="group rounded-lg border border-white/10 bg-[#1d3551]">
-                  <summary className="flex h-9 cursor-pointer list-none items-center gap-2 px-2">
+                  <summary className="flex h-auto min-h-10 cursor-pointer list-none items-center gap-2 px-2 py-2">
                     <span className={`h-2 w-2 rounded-full ${item.tipo === "reclamo" ? "bg-orange-300" : "bg-cyan-300"}`} />
-                    <p className="truncate text-sm font-bold text-white">{item.asunto}</p>
-                    <p className="ml-auto text-[11px] text-slate-300">{formatDate(item.created_at)}</p>
-                    <span className="text-sm text-cyan-100 transition-transform duration-200 group-open:rotate-90">{">"}</span>
+                    <p className="min-w-0 flex-1 text-sm font-bold text-white">{item.asunto}</p>
+                    <p className="shrink-0 text-[11px] text-slate-300">{formatDate(item.created_at)}</p>
                   </summary>
-                    <div className="border-t border-white/10 px-2 py-1 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-200">
-                      {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} - Depto {item.departamento_numero || "-"} - {item.vecino_nombre || "Vecino"}
-                    </p>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                        item.estado === "respondido" ? "bg-cyan-500/20 text-cyan-100" : "bg-orange-500/20 text-orange-100"
-                      }`}
-                    >
-                      {item.estado === "respondido" ? "Respondido" : "Pendiente"}
-                    </span>
-                  </div>
-
-                  <div className="mb-1 ml-auto max-w-[94%] rounded-xl bg-[#173454] px-2 py-1 text-sm text-slate-100">
-                    <p className="whitespace-pre-line">{item.mensaje}</p>
-                  </div>
-
-                  {!item.respuesta ? (
-                    <form action={responderBuzon} className="mb-1 space-y-1">
-                      <input type="hidden" name="id" value={item.id} />
-                      <textarea
-                        name="respuesta"
-                        rows={1}
-                        required
-                        className="h-8 min-h-[32px] w-full rounded-lg border border-white/10 bg-[#173454] px-2 py-1 text-sm text-white"
-                        placeholder="Responder..."
-                      />
-                      <div className="flex justify-end">
-                        <button type="submit" className="h-7 rounded-lg bg-[#ff5a3d] px-3 text-xs font-bold text-white">Enviar</button>
-                      </div>
-                    </form>
-                  ) : null}
-
-                  {item.respuesta ? (
-                    <div className="mt-1 max-w-[94%] rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-2 py-1">
+                  <div className="border-t border-white/10 px-2 py-2 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-200">
-                        Respondido {formatDate(item.respondido_at)}
+                        {item.tipo === "reclamo" ? "Reclamo" : "Sugerencia"} - Depto {item.departamento_numero || "-"} - {item.vecino_nombre || "Vecino"}
                       </p>
-                      <p className="mt-1 text-sm text-cyan-50">{item.respuesta}</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          item.estado === "respondido" ? "bg-cyan-500/20 text-cyan-100" : "bg-orange-500/20 text-orange-100"
+                        }`}
+                      >
+                        {item.estado === "respondido" ? "Respondido" : "Pendiente"}
+                      </span>
                     </div>
-                  ) : null}
+
+                    <div className="rounded-xl bg-[#173454] px-3 py-2 text-sm text-slate-100">
+                      <p className="whitespace-pre-line">{item.mensaje}</p>
+                    </div>
+
+                    {!item.respuesta ? (
+                      <form action={responderBuzon} className="space-y-2">
+                        <input type="hidden" name="id" value={item.id} />
+                        <textarea
+                          name="respuesta"
+                          rows={2}
+                          required
+                          className="w-full rounded-lg border border-white/10 bg-[#173454] px-3 py-2 text-sm text-white"
+                          placeholder="Escribe tu respuesta"
+                        />
+                        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                          <button type="submit" className="min-h-[36px] w-full rounded-lg bg-[#ff5a3d] px-3 text-xs font-bold text-white sm:w-auto">Responder</button>
+                        </div>
+                      </form>
+                    ) : null}
+
+                    {item.respuesta ? (
+                      <div className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-200">
+                          Respondido {formatDate(item.respondido_at)}
+                        </p>
+                        <p className="mt-1 text-sm text-cyan-50">{item.respuesta}</p>
+                      </div>
+                    ) : null}
                   </div>
                 </details>
               ))
@@ -428,31 +430,30 @@ export default async function AdminComunicacionPage({
             )}
             {buzonPendiente.length === 0 && buzon.length > 0 ? (
               <div className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3 text-sm text-slate-200">
-                No tienes pendientes por responder.
+                Sin mensajes por responder.
               </div>
             ) : null}
             {buzonHistorial.length > 0 ? (
-                  <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-2">
+              <details className="group rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                 <summary className="list-none cursor-pointer text-sm font-semibold text-cyan-100">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="group-open:hidden">{">"}</span>
-                    <span className="hidden group-open:inline">v</span>
-                    <span>Historial respondido ({buzonHistorial.length})</span>
-                  </span>
+                  Historial respondido ({buzonHistorial.length})
                 </summary>
                 <div className="mt-3 space-y-2">
                   {buzonHistorial.map((item) => (
                     <details key={item.id} className="group rounded-lg border border-white/10 bg-[#1d3551]">
-                      <summary className="flex h-9 cursor-pointer list-none items-center gap-2 px-2">
+                      <summary className="flex h-auto min-h-9 cursor-pointer list-none items-center gap-2 px-2 py-2">
                         <span className={`h-2 w-2 rounded-full ${item.tipo === "reclamo" ? "bg-orange-300" : "bg-cyan-300"}`} />
-                        <p className="truncate text-sm font-bold text-white">{item.asunto}</p>
-                        <p className="ml-auto text-[11px] text-slate-300">{formatDate(item.respondido_at || item.created_at)}</p>
-                        <span className="text-sm text-cyan-100 transition-transform duration-200 group-open:rotate-90">{">"}</span>
+                        <p className="min-w-0 flex-1 text-sm font-bold text-white">{item.asunto}</p>
+                        <p className="shrink-0 text-[11px] text-slate-300">{formatDate(item.respondido_at || item.created_at)}</p>
                       </summary>
-                      <div className="border-t border-white/10 px-2 py-1 space-y-1">
-                      <div className="mt-1.5 ml-auto max-w-[94%] rounded-xl bg-[#173454] px-2 py-1 text-sm text-slate-100">
-                        <p className="line-clamp-2">{item.mensaje}</p>
-                      </div>
+                      <div className="border-t border-white/10 px-3 py-2 space-y-2">
+                        <div className="rounded-xl bg-[#173454] px-3 py-2 text-sm text-slate-100">
+                          <p className="whitespace-pre-line">{item.mensaje}</p>
+                        </div>
+                        <div className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-200">Respuesta enviada</p>
+                          <p className="mt-1 text-sm text-cyan-50">{item.respuesta || "Sin texto guardado."}</p>
+                        </div>
                       </div>
                     </details>
                   ))}
@@ -465,8 +466,3 @@ export default async function AdminComunicacionPage({
     </main>
   );
 }
-
-
-
-
-

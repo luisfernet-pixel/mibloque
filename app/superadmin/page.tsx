@@ -131,7 +131,7 @@ export default async function SuperadminPage({
   }
 
   return (
-    <main className="min-h-screen bg-[#324359] p-6">
+    <main className="min-h-screen bg-[#324359] px-3 py-3 sm:px-4 sm:py-4 md:px-5 md:py-5 lg:px-6">
       <div className="mx-auto max-w-7xl space-y-3">
         {showBlockMsg ? (
           <section
@@ -148,7 +148,7 @@ export default async function SuperadminPage({
           <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-300">Panel maestro</p>
           <h1 className="mt-2 text-xl font-bold text-white">SuperAdmin KUBO</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Bloques {totalBloques} - Departamentos {totalDeptos}
+            Bloques: {totalBloques} - Departamentos: {totalDeptos}
           </p>
 
           <details className="group mt-3 rounded-2xl border border-white/15 bg-white/5 p-3">
@@ -174,7 +174,7 @@ export default async function SuperadminPage({
             <div className="mt-3">
               <Link
                 href="/superadmin/bloques/nuevo"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-semibold text-black"
+                className="inline-flex min-h-[40px] w-full items-center justify-center rounded-xl bg-cyan-500 px-4 text-xs font-semibold text-black sm:w-auto"
               >
                 Nuevo bloque
               </Link>
@@ -206,15 +206,15 @@ export default async function SuperadminPage({
         </section>
 
         <section className="overflow-hidden rounded-3xl border border-white/10 bg-white/10">
-          <div className="flex items-center justify-between px-6 py-5">
+          <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-slate-300">BLOQUES REGISTRADOS</p>
-              <h2 className="text-xl font-bold text-white">Lista operativa</h2>
+              <h2 className="text-xl font-bold text-white">Bloques registrados</h2>
             </div>
 
             <Link
               href="/superadmin/bloques/nuevo"
-              className="rounded-2xl bg-cyan-500 px-4 py-2 font-semibold text-black"
+              className="inline-flex min-h-[40px] w-full items-center justify-center rounded-2xl bg-cyan-500 px-4 py-2 font-semibold text-black sm:w-auto"
             >
               Nuevo bloque
             </Link>
@@ -239,7 +239,7 @@ export default async function SuperadminPage({
                     className="group rounded-2xl border border-white/15 bg-[#2d4a6c] p-4 md:p-4"
                   >
                     <summary className="list-none cursor-pointer">
-                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] md:items-end">
+                      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] xl:items-end">
                         <div>
                           <p className="text-sm text-slate-300">Bloque</p>
                           <p className="mt-1 text-xl font-bold text-white">{item.nombre}</p>
@@ -248,7 +248,7 @@ export default async function SuperadminPage({
                           </p>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 md:justify-self-start">
+                        <div className="flex flex-wrap items-center gap-2 xl:justify-self-start">
                           {item.activo ? (
                             <form action={deleteBlockActionForm}>
                               <input type="hidden" name="id" value={item.id} />
@@ -317,7 +317,7 @@ export default async function SuperadminPage({
                           <p className="mt-1 text-base font-bold text-white">{deptosDelBloque.length}</p>
                         </div>
 
-                        <div className="self-center md:justify-self-end">
+                        <div className="self-center xl:justify-self-end">
                           <span className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-sm font-bold text-cyan-100 transition group-open:hidden">
                             Ampliar
                           </span>

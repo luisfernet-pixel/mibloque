@@ -1,4 +1,4 @@
-﻿import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getUsuarioActual } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LogoutButton from "@/app/logout-button";
@@ -96,15 +96,10 @@ export default async function AdminLayout({
       label: "Pagos",
       badge: comprobantesPendientes,
       children: [
-        { href: "/admin/pagos/registrar", label: "Registrar pago" },
-        { href: "/admin/pagos/comprobantes", label: "Comprobantes" },
-        { href: "/admin/confirmaciones", label: "Confirmaciones", badge: comprobantesPendientes },
-        { href: "/admin/pagos/deudas", label: "Deudas" },
-        { href: "/admin/pagos/historial", label: "Historial" },
-        { href: "/admin/validar-pagos", label: "Validar pagos" },
-        { href: "/admin/vecinos-pagos", label: "Vecinos y pagos" },
-        { href: "/admin/pagos/historial", label: "Recibos" },
-        { href: "/admin/cuotas", label: "Cuotas" },
+        { href: "/admin/pagos/nuevo", label: "Registrar pago" },
+        { href: "/admin/cuotas", label: "Ver quién debe" },
+        { href: "/admin/confirmaciones", label: "Revisar comprobantes", badge: comprobantesPendientes },
+        { href: "/admin/pagos/historial", label: "Historial de pagos" },
       ],
     },
     {
@@ -112,12 +107,12 @@ export default async function AdminLayout({
       label: "Gastos",
       children: [
         { href: "/admin/gastos/nuevo", label: "Nuevo gasto" },
-        { href: "/admin/gastos/categorias", label: "Categorias" },
+        { href: "/admin/gastos/categorias", label: "Categorías" },
       ],
     },
     {
       href: "/admin/comunicacion",
-      label: "Avisos",
+      label: "Avisos y mensajes",
       badge: sugerenciasPendientes,
     },
     {
@@ -216,8 +211,3 @@ export default async function AdminLayout({
     </div>
   );
 }
-
-
-
-
-

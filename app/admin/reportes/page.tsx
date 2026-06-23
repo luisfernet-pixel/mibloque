@@ -2,9 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { getCurrentBoliviaYearMonth } from "@/lib/bolivia-time";
+import { getCuotaEstadoVigente } from "@/lib/cuotas";
 import { createClient } from "@/lib/supabase/server";
 
-// ─── Utilidades ────────────────────────────────────────────────────────────────
+// Utilidades
 
 function formatBs(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", {
@@ -22,6 +23,17 @@ function formatDateLong(value: Date) {
   }).format(value);
 }
 
+function dateOnly(year: number, month: number, day: number) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function boliviaDateToUtcIso(year: number, month: number, day: number) {
+  return new Date(Date.UTC(year, month - 1, day, 4, 0, 0, 0)).toISOString();
+}
+
+function getNextMonth(year: number, month: number) {
+  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+}
 function parseMes(value: string, fallbackMonth: number) {
   const raw = String(value || "").trim();
   const legacy = /^(\d{4})-(\d{2})$/.exec(raw);
@@ -46,61 +58,73 @@ function getRangoPeriodo(
   anioInput: string,
   now: Date
 ) {
-  const fallbackYear = now.getUTCFullYear();
-  const fallbackMonth = now.getUTCMonth() + 1;
+  const actualBolivia = getCurrentBoliviaYearMonth(now);
+  const fallbackYear = actualBolivia.year;
+  const fallbackMonth = actualBolivia.month;
 
   if (modo === "anual") {
     const year = parseAnio(anioInput, fallbackYear);
-    const inicio = new Date(Date.UTC(year, 0, 1));
-    const finExclusivo = new Date(Date.UTC(year + 1, 0, 1));
+    const inicioVisible = new Date(Date.UTC(year, 0, 1));
     const finVisible = new Date(Date.UTC(year, 11, 31));
     return {
       modo,
       mesValue: String(fallbackMonth).padStart(2, "0"),
       anioValue: String(year),
-      inicioIso: inicio.toISOString(),
-      finIso: finExclusivo.toISOString(),
-      inicioDate: inicio.toISOString().split("T")[0],
-      finDateExclusiva: finExclusivo.toISOString().split("T")[0],
+      inicioIso: boliviaDateToUtcIso(year, 1, 1),
+      finIso: boliviaDateToUtcIso(year + 1, 1, 1),
+      inicioDate: dateOnly(year, 1, 1),
+      finDateExclusiva: dateOnly(year + 1, 1, 1),
       periodoTitulo: `Gestión ${year}`,
-      periodoDetalle: `Del ${formatDateLong(inicio)} al ${formatDateLong(finVisible)}`,
+      periodoDetalle: `Del ${formatDateLong(inicioVisible)} al ${formatDateLong(finVisible)}`,
     };
   }
 
   const year = parseAnio(anioInput, fallbackYear);
   const month = parseMes(mesInput, fallbackMonth);
-  const inicio = new Date(Date.UTC(year, month - 1, 1));
-  const finExclusivo = new Date(Date.UTC(year, month, 1));
-  const finVisible = new Date(Date.UTC(year, month, 0));
+  const nextMonth = getNextMonth(year, month);
+  const inicioVisible = new Date(Date.UTC(year, month - 1, 1));
+  const finVisible = new Date(Date.UTC(nextMonth.year, nextMonth.month - 1, 0));
   const periodoTitulo = new Intl.DateTimeFormat("es-BO", {
     month: "long",
     year: "numeric",
     timeZone: "UTC",
-  }).format(inicio);
+  }).format(inicioVisible);
 
   return {
     modo,
     mesValue: String(month).padStart(2, "0"),
     anioValue: String(year),
-    inicioIso: inicio.toISOString(),
-    finIso: finExclusivo.toISOString(),
-    inicioDate: inicio.toISOString().split("T")[0],
-    finDateExclusiva: finExclusivo.toISOString().split("T")[0],
+    inicioIso: boliviaDateToUtcIso(year, month, 1),
+    finIso: boliviaDateToUtcIso(nextMonth.year, nextMonth.month, 1),
+    inicioDate: dateOnly(year, month, 1),
+    finDateExclusiva: dateOnly(nextMonth.year, nextMonth.month, 1),
     periodoTitulo: periodoTitulo.charAt(0).toUpperCase() + periodoTitulo.slice(1),
-    periodoDetalle: `Del ${formatDateLong(inicio)} al ${formatDateLong(finVisible)}`,
+    periodoDetalle: `Del ${formatDateLong(inicioVisible)} al ${formatDateLong(finVisible)}`,
   };
 }
 
-// ─── Tipos ─────────────────────────────────────────────────────────────────────
+// Tipos
 
 type SearchParams = Promise<{ modo?: string; mes?: string; anio?: string }>;
 type PagoAgg = { monto_pagado: number | null };
 type GastoAgg = { monto: number | null };
 type DepartamentoRow = { id: string; numero: string };
-type CuotaEstadoRow = { departamento_id: string; estado: string };
-type ConfigRow = { saldo_inicial: number | null };
+type CuotaEstadoRow = {
+  departamento_id: string | null;
+  estado: string | null;
+  anio?: number | null;
+  mes?: number | null;
+  periodo?: string | null;
+  fecha_vencimiento?: string | null;
+  created_at?: string | null;
+};
+type ConfigRow = {
+  saldo_inicial: number | null;
+  dia_vencimiento?: number | null;
+  valor_mora?: number | null;
+};
 
-// ─── Página principal ──────────────────────────────────────────────────────────
+// Página principal
 
 export default async function ReportesPage({
   searchParams,
@@ -113,6 +137,16 @@ export default async function ReportesPage({
   const params = await searchParams;
   const supabase = await createClient();
   const bloqueId = usuario.perfil.bloque_id;
+  if (!bloqueId) {
+    return (
+      <main className="space-y-4 overflow-x-hidden print:space-y-6">
+        <section className="rounded-[20px] border border-amber-300/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
+          No hay un bloque asignado para mostrar reportes.
+        </section>
+      </main>
+    );
+  }
+
   const now = new Date();
   const { year: currentYear } = getCurrentBoliviaYearMonth(now);
   const availableYears = Array.from(
@@ -135,8 +169,8 @@ export default async function ReportesPage({
     supabase.from("pagos").select("monto_pagado").eq("bloque_id", bloqueId).gte("fecha_pago", rango.inicioIso).lt("fecha_pago", rango.finIso),
     supabase.from("gastos").select("monto").eq("bloque_id", bloqueId).gte("fecha_gasto", rango.inicioDate).lt("fecha_gasto", rango.finDateExclusiva),
     supabase.from("departamentos").select("id, numero").eq("bloque_id", bloqueId),
-    supabase.from("cuotas").select("departamento_id, estado").eq("bloque_id", bloqueId),
-    supabase.from("configuracion_bloque").select("saldo_inicial").eq("bloque_id", bloqueId).maybeSingle(),
+    supabase.from("cuotas").select("departamento_id, estado, anio, mes, periodo, fecha_vencimiento, created_at").eq("bloque_id", bloqueId),
+    supabase.from("configuracion_bloque").select("saldo_inicial, dia_vencimiento, valor_mora").eq("bloque_id", bloqueId).maybeSingle(),
     supabase.from("pagos").select("monto_pagado").eq("bloque_id", bloqueId).lt("fecha_pago", rango.finIso),
     supabase.from("gastos").select("monto").eq("bloque_id", bloqueId).lt("fecha_gasto", rango.finDateExclusiva),
   ]);
@@ -146,6 +180,10 @@ export default async function ReportesPage({
   const departamentos = (departamentosRes.data ?? []) as DepartamentoRow[];
   const cuotas = (cuotasRes.data ?? []) as CuotaEstadoRow[];
   const config = (configRes.data ?? null) as ConfigRow | null;
+  const cuotasConEstadoVigente = cuotas.map((cuota) => ({
+    ...cuota,
+    estado: getCuotaEstadoVigente(cuota, config, now),
+  }));
   const pagosAcumulados = (pagosAcumuladosRes.data ?? []) as PagoAgg[];
   const gastosAcumuladosRows = (gastosAcumuladosRes.data ?? []) as GastoAgg[];
 
@@ -163,7 +201,7 @@ export default async function ReportesPage({
   let departamentosAlDia = 0;
   let morosos = 0;
   for (const depto of departamentos) {
-    const tieneDeuda = cuotas.some(
+    const tieneDeuda = cuotasConEstadoVigente.some(
       (c) => c.departamento_id === depto.id && estadosDeuda.has(String(c.estado || "").toLowerCase())
     );
     if (tieneDeuda) morosos++;
@@ -183,14 +221,14 @@ export default async function ReportesPage({
   }).format(now);
 
   return (
-    <main className="space-y-4 print:space-y-6">
+    <main className="space-y-4 overflow-x-hidden print:space-y-6">
 
-      {/* ── Encabezado del informe ─────────────────────────────────────────── */}
+      {/* Encabezado del informe */}
       <section className="overflow-hidden rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 print:rounded-none print:ring-0 print:bg-white">
-        <div className="grid gap-0 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-0 xl:grid-cols-[1fr_auto]">
 
           {/* Título */}
-          <div className="p-6 md:p-8 print:p-0 print:pb-4 print:border-b print:border-slate-300">
+          <div className="p-4 md:p-6 xl:p-8 print:p-0 print:pb-4 print:border-b print:border-slate-300">
             <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-cyan-400 print:text-slate-500">
               Informe Financiero · {rango.modo === "anual" ? "Gestión Anual" : "Período Mensual"}
             </p>
@@ -204,12 +242,12 @@ export default async function ReportesPage({
               {rango.periodoDetalle}
             </p>
             <p className="mt-4 text-xs text-slate-500 print:text-slate-400">
-              Emitido el {fechaEmision} · Administrador: {usuario.perfil.nombre ?? "—"}
+              Emitido el {fechaEmision} - Administrador: {usuario.perfil.nombre || "-"}
             </p>
           </div>
 
-          {/* Selector de período — solo en pantalla */}
-          <div className="border-l border-white/10 bg-[#162b42] p-5 print:hidden min-w-[260px]">
+          {/* Selector de período - solo en pantalla */}
+          <div className="border-t border-white/10 bg-[#162b42] p-4 print:hidden xl:min-w-[260px] xl:border-l xl:border-t-0 xl:p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400 mb-4">
               Seleccionar período
             </p>
@@ -262,7 +300,7 @@ export default async function ReportesPage({
         </div>
       </section>
 
-      {/* ── I. Estado de resultados del período ───────────────────────────── */}
+      {/* I. Estado de resultados */}
       <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:rounded-none print:ring-0 print:border print:border-slate-200">
         <SectionHeader
           numero="I"
@@ -342,7 +380,7 @@ export default async function ReportesPage({
         </div>
       </section>
 
-      {/* ── III. Cumplimiento de cuotas ───────────────────────────────────── */}
+      {/* III. Cumplimiento de cuotas */}
       <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:rounded-none print:ring-0 print:border print:border-slate-200">
         <SectionHeader
           numero="III"
@@ -452,7 +490,7 @@ export default async function ReportesPage({
         </ul>
       </section>
 
-      {/* ── Reportes detallados — solo en pantalla ────────────────────────── */}
+      {/* VI. Reportes detallados */}
       <section className="rounded-[20px] bg-[#0d2137] ring-1 ring-white/10 overflow-hidden print:hidden">
         <div className="border-b border-white/10 px-6 py-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-400">
@@ -462,7 +500,7 @@ export default async function ReportesPage({
             Documentos de soporte con mayor nivel de detalle.
           </p>
         </div>
-        <div className="grid gap-3 p-5 md:grid-cols-4">
+        <div className="grid gap-3 p-4 md:p-5 md:grid-cols-2 xl:grid-cols-4">
           <ReportButton
             href="/admin/auditoria"
             titulo="Auditoría simple"
@@ -502,7 +540,7 @@ function SectionHeader({
   subtitulo: string;
 }) {
   return (
-    <div className="border-b border-white/10 px-5 py-4 flex gap-4 items-start print:border-slate-200 print:px-4">
+    <div className="flex items-start gap-3 border-b border-white/10 px-4 py-4 print:border-slate-200 print:px-4 sm:gap-4 sm:px-5">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cyan-500/15 text-xs font-bold text-cyan-300 ring-1 ring-cyan-500/20 print:bg-slate-100 print:text-slate-600 print:ring-slate-300">
         {numero}
       </span>
@@ -543,7 +581,7 @@ function FilaTabla({
         </p>
         <p className="text-xs text-slate-500 print:text-slate-400">{descripcion}</p>
       </td>
-      <td className={`py-3 pl-4 text-right font-bold tabular-nums print:py-2 ${resaltado ? "text-lg" : "text-base"} ${colorMonto}`}>
+      <td className={`py-3 pl-4 text-right font-bold tabular-nums whitespace-nowrap print:py-2 ${resaltado ? "text-lg" : "text-base"} ${colorMonto}`}>
         {monto}
       </td>
     </tr>

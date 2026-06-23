@@ -1078,7 +1078,7 @@ details > summary::-webkit-details-marker {
 }
 
 details > summary::before {
-  content: "â–¸";
+  content: ">";
   position: absolute;
   left: 0.25rem;
   top: 50%;
@@ -1090,7 +1090,7 @@ details > summary::before {
 }
 
 details[open] > summary::before {
-  content: "â–¾";
+  content: "v";
 }
 
 /* RESPONSIVE COMPACT MODE (tablet + mobile) */

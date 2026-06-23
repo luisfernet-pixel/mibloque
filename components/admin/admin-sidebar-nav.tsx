@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import MenuIcon from "@/components/navigation/menu-icon";
 
 export type AdminSidebarItem = {
@@ -15,22 +16,69 @@ export type AdminSidebarItem = {
   }[];
 };
 
-function isActivePath(pathname: string, href: string) {
-  if (href === "/admin" || href === "/vecino" || href === "/superadmin") return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+function splitHref(href: string) {
+  const [path, hash = ""] = href.split("#");
+  return {
+    path: path || "/",
+    hash: hash ? `#${hash}` : "",
+  };
 }
 
-function itemHasActivePath(pathname: string, item: AdminSidebarItem) {
-  return isActivePath(pathname, item.href) || Boolean(item.children?.some((child) => isActivePath(pathname, child.href)));
+function isActiveHref(pathname: string, currentHash: string, href: string) {
+  const { path, hash } = splitHref(href);
+  const pathActive =
+    path === "/admin" || path === "/vecino" || path === "/superadmin"
+      ? pathname === path
+      : pathname === path || pathname.startsWith(`${path}/`);
+
+  if (!pathActive) return false;
+  if (!hash) return true;
+  return currentHash === hash;
+}
+
+function isActiveChildHref(
+  pathname: string,
+  currentHash: string,
+  childHref: string,
+  siblings: { href: string }[]
+) {
+  const { path, hash } = splitHref(childHref);
+  const siblingPaths = siblings
+    .map((item) => splitHref(item.href).path)
+    .filter((item) => item && item !== path);
+
+  const matchesPath = pathname === path || pathname.startsWith(`${path}/`);
+  const blockedBySibling = siblingPaths.some(
+    (siblingPath) => pathname === siblingPath || pathname.startsWith(`${siblingPath}/`)
+  );
+
+  if (!matchesPath || blockedBySibling) return false;
+  if (!hash) return true;
+  return currentHash === hash;
+}
+
+function itemHasActivePath(pathname: string, currentHash: string, item: AdminSidebarItem) {
+  return (
+    isActiveHref(pathname, currentHash, item.href) ||
+    Boolean(item.children?.some((child) => isActiveChildHref(pathname, currentHash, child.href, item.children || [])))
+  );
 }
 
 export default function AdminSidebarNav({ items }: { items: AdminSidebarItem[] }) {
   const pathname = usePathname();
+  const [currentHash, setCurrentHash] = useState("");
+
+  useEffect(() => {
+    const syncHash = () => setCurrentHash(window.location.hash || "");
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, []);
 
   return (
     <nav className="space-y-0.5">
       {items.map((item) => {
-        const active = itemHasActivePath(pathname, item);
+        const active = itemHasActivePath(pathname, currentHash, item);
         return (
           <div key={item.href} className="space-y-0.5">
             <Link
@@ -66,7 +114,7 @@ export default function AdminSidebarNav({ items }: { items: AdminSidebarItem[] }
             {item.children?.length ? (
               <div className={active ? "ml-4 space-y-0.5 border-l border-white/10 pl-2.5 pt-1" : "hidden"}>
                 {item.children.map((child) => {
-                  const childActive = isActivePath(pathname, child.href);
+                  const childActive = isActiveChildHref(pathname, currentHash, child.href, item.children || []);
                   return (
                     <Link
                       key={child.href}

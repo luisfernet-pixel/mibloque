@@ -160,11 +160,11 @@ export default async function AdminPage() {
 
   return (
     <main className="space-y-4 md:space-y-5">
-      <section className="space-y-2">
-        <h1 className="text-3xl font-bold leading-tight text-white md:text-5xl">
+      <section className="space-y-1.5 md:space-y-2">
+        <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl md:text-5xl">
           Hola, {primerNombre}
         </h1>
-        <p className="text-lg text-slate-300 md:text-xl">
+        <p className="text-base text-slate-300 md:text-xl">
           Que quieres hacer ahora?
         </p>
       </section>
@@ -200,8 +200,8 @@ export default async function AdminPage() {
         />
       </section>
 
-      <section className="rounded-[22px] bg-[#213b59] p-3.5 shadow-xl ring-1 ring-white/10 md:p-4">
-        <div className="flex items-start justify-between gap-4">
+      <section className="rounded-[22px] bg-[#213b59] p-3 shadow-xl ring-1 ring-white/10 md:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-0.5">
             <p className="text-xl font-bold text-white md:text-2xl">
               Resumen del mes
@@ -213,7 +213,7 @@ export default async function AdminPage() {
 
           <Link
             href="/admin/reportes"
-            className="mt-0.5 whitespace-nowrap rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition duration-200 hover:border-sky-400/30 hover:bg-white/20 hover:text-white active:scale-[0.98] md:rounded-2xl md:px-4 md:py-2 md:text-sm"
+            className="inline-flex min-h-[38px] w-full items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition duration-200 hover:border-sky-400/30 hover:bg-white/20 hover:text-white active:scale-[0.98] sm:mt-0.5 sm:w-auto md:rounded-2xl md:px-4 md:py-2 md:text-sm"
           >
             Ver reportes
           </Link>
@@ -239,8 +239,8 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <section className="rounded-[22px] bg-[#213b59] p-3.5 shadow-xl ring-1 ring-white/10 md:p-4">
-        <div className="flex items-start justify-between gap-4">
+      <section className="rounded-[22px] bg-[#213b59] p-3 shadow-xl ring-1 ring-white/10 md:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex flex-col gap-1">
             <p className="text-xl font-bold text-white md:text-2xl">Vecinos</p>
             <p className="text-sm text-slate-300 md:text-base">
@@ -250,7 +250,7 @@ export default async function AdminPage() {
 
           <Link
             href="/admin/pagos/deudas"
-            className="mt-0.5 whitespace-nowrap rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition duration-200 hover:border-sky-400/30 hover:bg-white/20 hover:text-white active:scale-[0.98] md:rounded-2xl md:px-4 md:py-2 md:text-sm"
+            className="inline-flex min-h-[38px] w-full items-center justify-center rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition duration-200 hover:border-sky-400/30 hover:bg-white/20 hover:text-white active:scale-[0.98] sm:mt-0.5 sm:w-auto md:rounded-2xl md:px-4 md:py-2 md:text-sm"
           >
             Ver detalles
           </Link>
@@ -296,15 +296,15 @@ function ActionCard({
   return (
     <Link
       href={href}
-      className={`rounded-[24px] border bg-[#213b59] p-4 shadow-xl transition hover:bg-[#29425f] md:p-5 ${tones[tone]}`}
+      className={`rounded-[24px] border bg-[#213b59] p-3.5 shadow-xl transition hover:bg-[#29425f] md:p-5 ${tones[tone]}`}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 shadow-inner">
           {icon}
         </span>
         <div className="min-w-0">
-          <p className="text-xl font-bold text-white md:text-2xl">{title}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-200 md:mt-1.5 md:text-base">
+          <p className="text-lg font-bold text-white md:text-2xl">{title}</p>
+          <p className="mt-1 text-sm leading-5 text-slate-200 md:mt-1.5 md:text-base">
             {description}
           </p>
         </div>

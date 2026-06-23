@@ -90,11 +90,11 @@ function firstName(value: string | null | undefined) {
 
 function detailForError(error: string, detalle: string) {
   if (error === "datos") return "Completa todos los datos del formulario.";
-  if (error === "cuota") return "El mes seleccionado ya no esta pendiente.";
-  if (error === "orden") return "Debes pagar primero el mes mas antiguo pendiente.";
+  if (error === "cuota") return "Ese mes ya no esta pendiente.";
+  if (error === "orden") return "Primero debes pagar el mes mas antiguo pendiente.";
   if (error === "enrevision") return "Ese mes ya tiene un comprobante en revision.";
   if (error === "upload") return `No se pudo subir el archivo${detalle ? `: ${detalle}` : "."}`;
-  if (error === "confirmacion") return "No se pudo registrar la confirmacion.";
+  if (error === "confirmacion") return "No se pudo registrar el comprobante.";
   if (error === "servicio_suspendido") return "El servicio de este edificio se encuentra temporalmente suspendido por estado de facturacion.";
   return "No se pudo completar el envio.";
 }
@@ -382,7 +382,7 @@ export default async function VecinoPage({
 
       {sent ? (
         <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
-          Se subio el comprobante con exito. El admin lo revisara antes de aprobarlo.
+          Tu pago quedo pendiente de revisi?n. El administrador lo aprobara cuando revise el comprobante.
         </section>
       ) : null}
 
@@ -416,7 +416,7 @@ export default async function VecinoPage({
                   Avisos para ti
                 </p>
                 <p className="mt-1 text-sm font-semibold text-orange-50">
-                  Tienes novedades de anuncios o mensajes para revisar.
+                  Tienes avisos o mensajes nuevos para revisar.
                 </p>
               </div>
               <span className="rounded-full border border-orange-200/50 bg-orange-500/20 px-2.5 py-1 text-[10px] font-bold text-orange-50 md:text-[11px]">
@@ -434,7 +434,7 @@ export default async function VecinoPage({
           </div>
         </div>
 
-        <div className="p-4 md:p-4">
+        <div className="overflow-x-auto p-4 md:p-4">
           {filas.length === 0 ? (
             <div className="rounded-[24px] border border-dashed border-white/20 bg-[#2b4768] px-5 py-10 text-center">
               <p className="text-lg font-bold text-white">No hay cuotas registradas</p>
@@ -455,7 +455,7 @@ export default async function VecinoPage({
             <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-200 md:text-[11px] md:tracking-[0.28em]">
               Pago rapido
             </p>
-            <h2 className="mt-1.5 text-lg font-bold text-white md:mt-2 md:text-3xl">QR de pago del admin</h2>
+            <h2 className="mt-1.5 text-lg font-bold text-white md:mt-2 md:text-3xl">QR de pago del administrador</h2>
             <p className="mt-2 text-xs text-slate-100 md:mt-3 md:text-base">
               Escanea este QR para copiar los datos de pago. Asegurate de transferir el monto del
               mes habilitado.
@@ -504,15 +504,20 @@ export default async function VecinoPage({
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-300 md:text-xs md:tracking-[0.3em]">
             Comprobante
           </p>
-          <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Subir pago</h2>
+          <h2 className="mt-1 text-lg font-bold text-white md:mt-2 md:text-2xl">Subir comprobante</h2>
         </div>
 
-        <div className="p-3 md:p-4">
+        <div className="space-y-3 p-3 md:p-4">
           {sent ? (
             <div className="mb-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 ring-1 ring-white/10">
-              Se subio el comprobante con exito. El admin lo revisara antes de aprobarlo.
+              Tu pago quedo pendiente de revisi?n. El administrador lo aprobara cuando revise el comprobante.
             </div>
           ) : null}
+
+          <div className="rounded-2xl border border-white/10 bg-[#2b4768] p-3 text-sm text-slate-100">
+            <p className="font-semibold text-white">Sube una foto o PDF de tu pago.</p>
+            <p className="mt-1 text-xs text-slate-200">Tu pago quedara pendiente de revision. El administrador lo aprobara cuando revise el comprobante.</p>
+          </div>
 
           {filasPendientes.length === 0 ? (
             <div className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-8 text-center">
@@ -520,7 +525,7 @@ export default async function VecinoPage({
                 No tienes meses pendientes para pagar
               </p>
               <p className="mt-2 text-sm text-cyan-50">
-                Cuando todo este aprobado, no aparece opcion para subir comprobante.
+                Cuando no tengas cuotas pendientes, aqui ya no veras esta opcion.
               </p>
             </div>
           ) : (

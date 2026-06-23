@@ -17,11 +17,11 @@ export default function NuevoBloquePage() {
           Crear nuevo bloque
         </h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Añade un bloque para luego crear sus administradores y departamentos.
+          Crea un bloque nuevo para luego asignar su administrador y sus departamentos.
         </p>
       </section>
 
-      <section className="theme-panel rounded-[24px] p-6 shadow-xl ring-1 ring-white/10">
+      <section className="theme-panel rounded-[24px] p-4 shadow-xl ring-1 ring-white/10 md:p-6">
         <BlockCreateForm action={createBlockAction} />
       </section>
     </main>

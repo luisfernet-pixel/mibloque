@@ -173,20 +173,20 @@ export default async function VecinoComunicacionPage({
           <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Comunicacion</p>
             <h1 className="mt-2 text-lg font-bold leading-tight text-white md:text-3xl">
-              Anuncios/Mensajes
+              Avisos y mensajes
             </h1>
             <p className="mt-2.5 max-w-2xl text-sm leading-6 text-slate-200 md:text-base">
-              Revisa avisos del bloque y envia reclamos/sugerencias en una sola pantalla.
+              Aqui ves los avisos del administrador y puedes enviar un mensaje cuando lo necesites.
             </p>
           </div>
 
           <div className="rounded-[24px] border border-white/15 bg-[#2f4b6c] p-3 md:p-4">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-300">Resumen</p>
             <div className="mt-4 space-y-2 text-sm text-slate-200">
-              <p>Avisos visibles: <span className="font-bold text-white">{avisos.length}</span></p>
-              <p>Mensajes enviados: <span className="font-bold text-white">{buzon.length}</span></p>
+              <p>Avisos: <span className="font-bold text-white">{avisos.length}</span></p>
+              <p>Mensajes: <span className="font-bold text-white">{buzon.length}</span></p>
             </div>
-            {params.sent === "1" ? <p className="mt-4 text-sm font-semibold text-cyan-200">Mensaje enviado.</p> : null}
+            {params.sent === "1" ? <p className="mt-4 text-sm font-semibold text-cyan-200">Tu mensaje fue enviado.</p> : null}
             {params.error ? (
               <p className="mt-2 text-sm font-semibold text-red-200">No se pudo procesar la acción. Intenta nuevamente.</p>
             ) : null}
@@ -197,8 +197,8 @@ export default async function VecinoComunicacionPage({
       <section className="grid gap-3 xl:grid-cols-2">
         <div className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
           <div className="border-b border-white/10 px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-bold text-white">Avisos del bloque</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-bold text-white">Avisos del administrador</h2>
               <span className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-100">
                 {avisos.length} aviso(s)
               </span>
@@ -208,7 +208,7 @@ export default async function VecinoComunicacionPage({
                 type="submit"
                 className="inline-flex min-h-[34px] items-center justify-center rounded-lg bg-cyan-600 px-3 text-xs font-bold text-white transition hover:brightness-110"
               >
-                Marcar todo como leido
+Marcar como leido
               </button>
             </form>
           </div>
@@ -216,7 +216,7 @@ export default async function VecinoComunicacionPage({
           <div className="space-y-3 p-4">
             {avisos.length === 0 ? (
               <div className="rounded-xl border border-dashed border-white/20 bg-[#2b4768] p-4 text-sm text-slate-300">
-                No hay avisos publicados.
+                Sin avisos todavia.
               </div>
             ) : null}
 
@@ -252,10 +252,11 @@ export default async function VecinoComunicacionPage({
 
         <div className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
           <div className="border-b border-white/10 px-4 py-3">
-            <h2 className="text-xl font-bold text-white">Sugerencias y reclamos</h2>
+            <h2 className="text-xl font-bold text-white">Enviar mensaje al administrador</h2>
           </div>
           <div className="space-y-3 p-4">
             <form action={enviarBuzon} className="space-y-2 rounded-2xl border border-white/15 bg-[#2d4a6c] p-3">
+              <p className="text-sm text-slate-200">Usa este espacio para consultas, sugerencias o reclamos.</p>
               <div className="grid gap-2 md:grid-cols-[160px_1fr]">
                 <select
                   name="tipo"
@@ -276,7 +277,7 @@ export default async function VecinoComunicacionPage({
                 name="mensaje"
                 rows={2}
                 required
-                placeholder="Describe claramente tu mensaje."
+                placeholder="Escribe tu mensaje."
                 className="min-h-[68px] w-full rounded-xl border border-white/10 bg-[#173454] px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/40"
               />
               <div>
@@ -325,13 +326,13 @@ export default async function VecinoComunicacionPage({
               )}
               {buzonPendiente.length === 0 && buzon.length > 0 ? (
                 <div className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3 text-sm text-slate-200">
-                  No tienes mensajes pendientes de respuesta.
+                  No tienes mensajes pendientes.
                 </div>
               ) : null}
               {buzonHistorial.length > 0 ? (
                 <details className="rounded-xl border border-white/15 bg-[#2d4a6c] p-3">
                   <summary className="cursor-pointer text-sm font-semibold text-cyan-100">
-                    Historial de mensajes ({buzonHistorial.length})
+                    Mensajes anteriores ({buzonHistorial.length})
                   </summary>
                   <div className="mt-3 space-y-2">
                     {buzonHistorial.map((item) => (

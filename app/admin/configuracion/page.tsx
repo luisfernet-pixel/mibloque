@@ -105,7 +105,7 @@ export default async function ConfiguracionPage({
       ) : null}
 
       <section className="overflow-hidden rounded-[24px] bg-[#213b59] shadow-xl ring-1 ring-white/10">
-        <div className="grid gap-3 p-4 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid gap-3 p-3 md:p-4 xl:grid-cols-[1.15fr_0.85fr]">
           <div className="rounded-[24px] bg-gradient-to-br from-[#031a38] via-[#032247] to-[#0a2f4b] p-4 shadow-2xl ring-1 ring-white/10 md:p-5">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
               Ajustes del sistema
@@ -152,12 +152,12 @@ export default async function ConfiguracionPage({
           </p>
         </div>
 
-        <div className="p-4 md:p-5">
+        <div className="p-3 md:p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 
             <Link
               href="/admin/departamentos"
-              className="inline-flex items-center justify-center rounded-2xl border border-orange-300/30 bg-orange-500/15 px-4 py-2.5 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/25 hover:text-white"
+              className="inline-flex min-h-[42px] w-full items-center justify-center rounded-2xl border border-orange-300/30 bg-orange-500/15 px-4 py-2.5 text-sm font-semibold text-orange-100 transition hover:bg-orange-500/25 hover:text-white sm:w-auto"
             >
               Abrir carga de deuda
             </Link>
@@ -238,7 +238,7 @@ export default async function ConfiguracionPage({
 
             <button
               type="submit"
-              className="btn-primary inline-flex min-h-[48px] items-center justify-center rounded-2xl px-5 font-bold"
+              className="btn-primary inline-flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 font-bold sm:w-auto"
             >
               Guardar configuracion
             </button>

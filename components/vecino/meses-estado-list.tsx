@@ -87,6 +87,7 @@ export default function MesesEstadoList({
   return (
     <>
       <div className="space-y-2 md:hidden">
+        <p className="px-1 text-xs text-slate-300">En celular puedes revisar tus cuotas una por una.</p>
         {filasVisibles.map((item) => (
           <article key={item.id} className="rounded-xl border border-white/10 bg-[#2d4a6c] p-3">
             <div className="flex items-start justify-between gap-3">
@@ -126,7 +127,7 @@ export default function MesesEstadoList({
 
               {item.status === "en_revision" ? (
                 <span className="text-xs font-semibold text-yellow-100">
-                  Esperando validacion admin
+                  Pendiente de revision
                 </span>
               ) : null}
 
@@ -198,7 +199,7 @@ export default function MesesEstadoList({
 
                   {item.status === "en_revision" ? (
                     <span className="text-sm font-semibold text-yellow-100">
-                      Esperando validacion admin
+                      Pendiente de revisi?n
                     </span>
                   ) : null}
 

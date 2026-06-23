@@ -30,9 +30,9 @@ export default async function AdminsPage() {
         <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Superadmin</p>
         <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Administradores</h1>
         <p className="mt-4 max-w-2xl text-slate-200">
-          Edita, borra o crea nuevas cuentas de administrador.
+          Aqui puedes revisar, editar o crear administradores.
         </p>
-        <div className="mt-6">
+        <div className="mt-4">
           <Link
             href="/superadmin/admins/nuevo"
             className="btn-primary inline-flex rounded-2xl px-3.5 py-2 text-sm font-bold"
@@ -42,7 +42,7 @@ export default async function AdminsPage() {
         </div>
       </section>
 
-      <section className="theme-panel rounded-[24px] p-6 shadow-xl ring-1 ring-white/10">
+      <section className="theme-panel rounded-[24px] p-4 shadow-xl ring-1 ring-white/10 md:p-6">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-white/10 text-left text-slate-200">

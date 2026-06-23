@@ -9,14 +9,6 @@ import AdminSidebarNav, { type AdminSidebarItem } from "@/components/admin/admin
 const navItems: AdminSidebarItem[] = [
   { href: "/superadmin", label: "Inicio" },
   {
-    href: "/superadmin/bloques",
-    label: "Bloques",
-    children: [
-      { href: "/superadmin/bloques", label: "Lista de bloques" },
-      { href: "/superadmin/bloques/nuevo", label: "Nuevo bloque" },
-    ],
-  },
-  {
     href: "/superadmin/admins",
     label: "Administradores",
     children: [
@@ -79,12 +71,12 @@ export default async function SuperadminLayout({
                 <p className="mt-2 text-lg font-bold tracking-tight text-white md:text-2xl">KUBO Superadmin</p>
               </div>
 
-              <div className="flex flex-col items-start gap-3 lg:items-end">
+              <div className="flex flex-col items-start gap-2 lg:items-end">
                 <div className="flex shrink-0 items-center gap-2">
                   <LogoutButton />
                 </div>
 
-                <ActiveNav className="hide-scrollbar mt-2 flex gap-2 overflow-x-auto pb-1 lg:justify-end" items={navItems.map(({ href, label, badge }) => ({ href, label, badge }))} />
+                <ActiveNav className="hide-scrollbar mt-1 flex gap-2 overflow-x-auto pb-1 lg:justify-end" items={navItems.map(({ href, label, badge }) => ({ href, label, badge }))} />
               </div>
             </div>
           </div>
