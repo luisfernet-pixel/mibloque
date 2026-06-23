@@ -8,3 +8,7 @@ node_modules
 *.cdr
 tmp-*.txt
 dev-server.log
+kubo_*.sql
+*.dump
+*.backup
+*.bak

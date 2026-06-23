@@ -49,3 +49,7 @@ supabase/.temp/
 supabase.exe
 supabase-go.exe
 *.cdr
+kubo_*.sql
+*.dump
+*.backup
+*.bak
