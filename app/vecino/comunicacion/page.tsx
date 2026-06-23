@@ -106,6 +106,8 @@ async function limpiarAvisosNuevos() {
   await supabase
     .from("buzon_sugerencias")
     .update({ respuesta_leida: true })
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("departamento_id", usuario.perfil.departamento_id)
     .eq("vecino_id", usuario.perfil.id)
     .eq("estado", "respondido")
     .eq("respuesta_leida", false);
@@ -129,6 +131,8 @@ export default async function VecinoComunicacionPage({
   await supabase
     .from("buzon_sugerencias")
     .update({ respuesta_leida: true })
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("departamento_id", usuario.perfil.departamento_id)
     .eq("vecino_id", usuario.perfil.id)
     .eq("estado", "respondido")
     .eq("respuesta_leida", false);
@@ -144,6 +148,8 @@ export default async function VecinoComunicacionPage({
     supabase
       .from("buzon_sugerencias")
       .select("id, tipo, asunto, mensaje, estado, respuesta, created_at, respondido_at, respuesta_leida")
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .eq("departamento_id", usuario.perfil.departamento_id)
       .eq("vecino_id", usuario.perfil.id)
       .order("created_at", { ascending: false })
       .limit(20),

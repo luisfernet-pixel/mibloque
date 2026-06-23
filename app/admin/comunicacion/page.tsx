@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { isBloqueActivo, requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireBlockAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -51,7 +51,7 @@ function isCurrentMonth(value: string | null | undefined) {
 async function crearAviso(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
 
@@ -84,7 +84,7 @@ async function crearAviso(formData: FormData) {
 async function responderBuzon(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
 
@@ -129,7 +129,7 @@ async function responderBuzon(formData: FormData) {
 
 async function editarAviso(formData: FormData) {
   "use server";
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
   const id = String(formData.get("id") || "").trim();
@@ -146,7 +146,7 @@ async function editarAviso(formData: FormData) {
 
 async function eliminarAviso(formData: FormData) {
   "use server";
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
   const id = String(formData.get("id") || "").trim();
@@ -159,42 +159,12 @@ async function eliminarAviso(formData: FormData) {
   redirect("/admin/comunicacion?ok=aviso_eliminado");
 }
 
-async function editarBuzon(formData: FormData) {
-  "use server";
-  const usuario = await requireAdmin();
-  if (!usuario) redirect("/login");
-  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
-  const id = String(formData.get("id") || "").trim();
-  const asunto = String(formData.get("asunto") || "").trim();
-  const mensaje = String(formData.get("mensaje") || "").trim();
-  if (!id || !asunto || !mensaje) redirect("/admin/comunicacion?error=editar_buzon_datos");
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("buzon_sugerencias").update({ asunto, mensaje }).eq("id", id).eq("bloque_id", usuario.perfil.bloque_id);
-  if (error) redirect("/admin/comunicacion?error=editar_buzon");
-  revalidatePath("/admin/comunicacion");
-  redirect("/admin/comunicacion?ok=buzon_editado");
-}
-
-async function eliminarBuzon(formData: FormData) {
-  "use server";
-  const usuario = await requireAdmin();
-  if (!usuario) redirect("/login");
-  if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
-  const id = String(formData.get("id") || "").trim();
-  if (!id) redirect("/admin/comunicacion?error=eliminar_buzon_datos");
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("buzon_sugerencias").delete().eq("id", id).eq("bloque_id", usuario.perfil.bloque_id);
-  if (error) redirect("/admin/comunicacion?error=eliminar_buzon");
-  revalidatePath("/admin/comunicacion");
-  redirect("/admin/comunicacion?ok=buzon_eliminado");
-}
-
 export default async function AdminComunicacionPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/comunicacion?error=servicio_suspendido");
 
@@ -425,15 +395,6 @@ export default async function AdminComunicacionPage({
                   <div className="mb-1 ml-auto max-w-[94%] rounded-xl bg-[#173454] px-2 py-1 text-sm text-slate-100">
                     <p className="whitespace-pre-line">{item.mensaje}</p>
                   </div>
-                  <form action={editarBuzon} className="mt-1 space-y-1">
-                    <input type="hidden" name="id" value={item.id} />
-                    <input name="asunto" defaultValue={item.asunto} required className="h-8 w-full rounded-lg border border-white/10 bg-[#173454] px-2 text-sm text-white" />
-                    <textarea name="mensaje" defaultValue={item.mensaje} rows={1} required className="h-8 min-h-[32px] w-full rounded-lg border border-white/10 bg-[#173454] px-2 py-1 text-sm text-white" />
-                    <div className="flex justify-end gap-2">
-                      <button type="submit" className="h-7 rounded-lg bg-cyan-600 px-3 text-xs font-bold text-white">Guardar</button>
-                      <button formAction={eliminarBuzon} className="h-7 rounded-lg bg-red-600 px-3 text-xs font-bold text-white">Eliminar</button>
-                    </div>
-                  </form>
 
                   {!item.respuesta ? (
                     <form action={responderBuzon} className="mb-1 space-y-1">
@@ -492,15 +453,6 @@ export default async function AdminComunicacionPage({
                       <div className="mt-1.5 ml-auto max-w-[94%] rounded-xl bg-[#173454] px-2 py-1 text-sm text-slate-100">
                         <p className="line-clamp-2">{item.mensaje}</p>
                       </div>
-                      <form action={editarBuzon} className="mt-1.5 space-y-1.5">
-                        <input type="hidden" name="id" value={item.id} />
-                        <input name="asunto" defaultValue={item.asunto} required className="h-8 w-full rounded-lg border border-white/10 bg-[#173454] px-2 text-sm text-white" />
-                        <textarea name="mensaje" defaultValue={item.mensaje} rows={2} required className="w-full rounded-lg border border-white/10 bg-[#173454] px-2 py-1.5 text-sm text-white" />
-                        <div className="flex justify-end gap-2">
-                          <button type="submit" className="h-8 rounded-lg bg-cyan-600 px-3 text-xs font-bold text-white">Guardar</button>
-                          <button formAction={eliminarBuzon} className="h-8 rounded-lg bg-red-600 px-3 text-xs font-bold text-white">Eliminar</button>
-                        </div>
-                      </form>
                       </div>
                     </details>
                   ))}
