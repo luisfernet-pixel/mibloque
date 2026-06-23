@@ -103,7 +103,7 @@ export default async function AdminLayout({
         { href: "/admin/pagos/historial", label: "Historial" },
         { href: "/admin/validar-pagos", label: "Validar pagos" },
         { href: "/admin/vecinos-pagos", label: "Vecinos y pagos" },
-        { href: "/admin/recibos", label: "Recibos" },
+        { href: "/admin/pagos/historial", label: "Recibos" },
         { href: "/admin/cuotas", label: "Cuotas" },
       ],
     },
