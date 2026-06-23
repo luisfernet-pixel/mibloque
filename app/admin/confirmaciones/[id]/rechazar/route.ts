@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireBlockAdmin } from "@/lib/auth";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) {
     return NextResponse.redirect(new URL("/login", req.url), 303);
   }

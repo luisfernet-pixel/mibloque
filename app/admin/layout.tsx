@@ -1,5 +1,5 @@
 ﻿import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { getUsuarioActual } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LogoutButton from "@/app/logout-button";
 import CuboLogo from "@/components/branding/cubo-logo";
@@ -19,9 +19,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const usuario = await requireAdmin();
+  const usuario = await getUsuarioActual();
 
   if (!usuario) redirect("/login");
+  if (usuario.perfil.rol === "superadmin") redirect("/superadmin");
+  if (usuario.perfil.rol !== "admin") redirect("/login");
 
   const supabase = createAdminClient();
   const [pendientesRes, bloqueRes, sugerenciasRes, sugerenciasEstadoRes, auditoriaRes] = await Promise.all([

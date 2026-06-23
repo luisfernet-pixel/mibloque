@@ -155,17 +155,20 @@ export default async function VecinoPage({
       supabase
         .from("cuotas")
         .select("id, periodo, monto_base, mora_acumulada, monto_total, estado, anio, mes, fecha_vencimiento, created_at")
+        .eq("bloque_id", perfil.bloque_id)
         .eq("departamento_id", perfil.departamento_id)
         .order("anio", { ascending: false })
         .order("mes", { ascending: false }),
       supabase
         .from("confirmaciones_pago")
         .select("id, cuota_id, estado, created_at, revisado_at")
+        .eq("bloque_id", perfil.bloque_id)
         .eq("departamento_id", perfil.departamento_id)
         .order("created_at", { ascending: false }),
       supabase
         .from("pagos")
         .select("id, cuota_id")
+        .eq("bloque_id", perfil.bloque_id)
         .eq("departamento_id", perfil.departamento_id)
         .order("fecha_pago", { ascending: false }),
       adminSupabase

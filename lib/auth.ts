@@ -56,9 +56,20 @@ export async function requireAdmin() {
   return null;
 }
 
-export async function requireVecino() {
+export async function requireBlockAdmin() {
   const usuario = await getUsuarioActual();
 
+  if (!usuario) return null;
+
+  if (usuario.perfil.rol === "admin") {
+    return usuario;
+  }
+
+  return null;
+}
+
+export async function requireVecino() {
+  const usuario = await getUsuarioActual();
   if (!usuario) return null;
 
   if (usuario.perfil.rol === "vecino") {
