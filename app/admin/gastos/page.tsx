@@ -31,6 +31,9 @@ type CategoriaRow = {
   nombre: string;
 };
 
+const MAX_COMPROBANTE_BYTES = 5 * 1024 * 1024;
+const TIPOS_COMPROBANTE_PERMITIDOS = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 function money(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO")}`;
 }
@@ -113,6 +116,11 @@ function resolverCategoria(formData: FormData) {
   return categoriaManual || categoriaSeleccionada;
 }
 
+function comprobanteEsValido(archivo: File | null) {
+  if (!archivo || archivo.size <= 0) return true;
+  return archivo.size <= MAX_COMPROBANTE_BYTES && TIPOS_COMPROBANTE_PERMITIDOS.has(archivo.type);
+}
+
 async function editarGasto(formData: FormData) {
   "use server";
 
@@ -129,7 +137,11 @@ async function editarGasto(formData: FormData) {
   const guardarCategoria = String(formData.get("guardar_categoria") || "") === "on";
 
   if (!id || !fecha_gasto || !categoria || !concepto || monto <= 0) {
-    redirect("/admin/gastos");
+    redirect("/admin/gastos?notice=datos_invalidos");
+  }
+
+  if (!comprobanteEsValido(archivo)) {
+    redirect("/admin/gastos?notice=archivo_invalido");
   }
 
   const supabase = await createClient();
@@ -173,9 +185,11 @@ async function editarGasto(formData: FormData) {
         upsert: false,
       });
 
-    if (!uploadError) {
-      comprobantePath = fileName;
+    if (uploadError) {
+      redirect("/admin/gastos?notice=error_guardar");
     }
+
+    comprobantePath = fileName;
   }
 
   const payloadBase = {
@@ -204,7 +218,7 @@ async function editarGasto(formData: FormData) {
         .from("comprobantes")
         .getPublicUrl(comprobantePath);
       comprobanteUrl = publicFile.publicUrl;
-      await supabase
+      const { error: fallbackUpdateError } = await supabase
         .from("gastos")
         .update({
           ...payloadBase,
@@ -212,15 +226,20 @@ async function editarGasto(formData: FormData) {
         })
         .eq("id", id)
         .eq("bloque_id", usuario.perfil.bloque_id);
+      if (fallbackUpdateError) redirect("/admin/gastos?notice=error_guardar");
     } else if (updateError && String(updateError.message || "").includes("comprobante_url")) {
-      await supabase
+      const { error: baseUpdateError } = await supabase
         .from("gastos")
         .update(payloadBase)
         .eq("id", id)
         .eq("bloque_id", usuario.perfil.bloque_id);
+      if (baseUpdateError) redirect("/admin/gastos?notice=error_guardar");
+    } else if (updateError) {
+      redirect("/admin/gastos?notice=error_guardar");
     }
   } else {
-    await updateBuilder;
+    const { error: updateError } = await updateBuilder;
+    if (updateError) redirect("/admin/gastos?notice=error_guardar");
   }
 
   redirect("/admin/gastos");
@@ -290,7 +309,7 @@ async function toggleMesBloqueado(formData: FormData) {
   if (lockReadError) redirect("/admin/gastos");
 
   if (existente) {
-    await adminSupabase.from("gastos_cierres_mensuales").delete().eq("id", existente.id);
+    await adminSupabase.from("gastos_cierres_mensuales").delete().eq("id", existente.id).eq("bloque_id", usuario.perfil.bloque_id);
   } else {
     await adminSupabase.from("gastos_cierres_mensuales").insert({
       bloque_id: usuario.perfil.bloque_id,
@@ -415,6 +434,16 @@ export default async function GastosPage({
       {params.notice === "mes_distinto" ? (
         <section className="rounded-[24px] border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
           Gasto registrado en un mes distinto al actual.
+        </section>
+      ) : null}
+      {params.notice === "archivo_invalido" ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          El comprobante debe ser JPG, PNG o WEBP y pesar maximo 5 MB.
+        </section>
+      ) : null}
+      {params.notice === "datos_invalidos" || params.notice === "error_guardar" ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          No se pudo guardar el gasto. Revisa los datos e intentalo nuevamente.
         </section>
       ) : null}
 

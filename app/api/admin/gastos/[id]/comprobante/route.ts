@@ -1,32 +1,29 @@
-import { requireAdmin } from "@/lib/auth";
+import { requireBlockAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirectToComprobantesSignedUrl, resolveStoragePath } from "@/lib/storage-paths";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) return new Response("No autorizado.", { status: 401 });
 
   const { id } = await params;
   const supabase = createAdminClient();
-  const isSuperadmin = usuario.perfil.rol === "superadmin";
 
-  let query = supabase
+  const { data, error } = await supabase
     .from("gastos")
     .select("id, bloque_id, comprobante_path, comprobante_url")
-    .eq("id", id);
-
-  if (!isSuperadmin) query = query.eq("bloque_id", usuario.perfil.bloque_id);
-
-  const { data, error } = await query.maybeSingle();
+    .eq("id", id)
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .maybeSingle();
   let row = data as { comprobante_path?: string | null; comprobante_url?: string | null } | null;
 
   if (error && String(error.message || "").includes("comprobante_path")) {
-    let fallbackQuery = supabase
+    const fallback = await supabase
       .from("gastos")
       .select("id, bloque_id, comprobante_url")
-      .eq("id", id);
-    if (!isSuperadmin) fallbackQuery = fallbackQuery.eq("bloque_id", usuario.perfil.bloque_id);
-    const fallback = await fallbackQuery.maybeSingle();
+      .eq("id", id)
+      .eq("bloque_id", usuario.perfil.bloque_id)
+      .maybeSingle();
     row = fallback.data as { comprobante_url?: string | null } | null;
   }
 

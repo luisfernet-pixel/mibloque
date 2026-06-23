@@ -11,6 +11,9 @@ type CategoriaRow = {
   nombre: string;
 };
 
+const MAX_COMPROBANTE_BYTES = 5 * 1024 * 1024;
+const TIPOS_COMPROBANTE_PERMITIDOS = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 async function guardarCategoriaSiCorresponde(
   supabase: Awaited<ReturnType<typeof createClient>>,
   bloqueId: string,
@@ -38,6 +41,11 @@ function resolverCategoria(formData: FormData) {
   const categoriaSeleccionada = String(formData.get("categoria") || "").trim();
   const categoriaManual = String(formData.get("categoria_manual") || "").trim();
   return categoriaManual || categoriaSeleccionada;
+}
+
+function comprobanteEsValido(archivo: File | null) {
+  if (!archivo || archivo.size <= 0) return true;
+  return archivo.size <= MAX_COMPROBANTE_BYTES && TIPOS_COMPROBANTE_PERMITIDOS.has(archivo.type);
 }
 
 function monthKey(fecha: string) {
@@ -74,6 +82,10 @@ async function crearGasto(formData: FormData) {
 
   if (!fecha || !categoria || !concepto || monto <= 0) {
     redirect("/admin/gastos/nuevo?error=datos");
+  }
+
+  if (!comprobanteEsValido(archivo)) {
+    redirect("/admin/gastos/nuevo?error=archivo");
   }
 
   await guardarCategoriaSiCorresponde(
@@ -115,9 +127,11 @@ async function crearGasto(formData: FormData) {
         upsert: false,
       });
 
-    if (!uploadError) {
-      comprobantePath = fileName;
+    if (uploadError) {
+      redirect("/admin/gastos/nuevo?error=guardar");
     }
+
+    comprobantePath = fileName;
   }
 
   const payloadBase = {
@@ -151,10 +165,16 @@ async function crearGasto(formData: FormData) {
       });
 
       if (fallbackError && String(fallbackError.message || "").includes("comprobante_url")) {
-        await supabase.from("gastos").insert(payloadBase);
+        const { error: baseError } = await supabase.from("gastos").insert(payloadBase);
+        if (baseError) redirect("/admin/gastos/nuevo?error=guardar");
+      } else if (fallbackError) {
+        redirect("/admin/gastos/nuevo?error=guardar");
       }
     } else if (message.includes("comprobante_url")) {
-      await supabase.from("gastos").insert(payloadBase);
+      const { error: baseError } = await supabase.from("gastos").insert(payloadBase);
+      if (baseError) redirect("/admin/gastos/nuevo?error=guardar");
+    } else {
+      redirect("/admin/gastos/nuevo?error=guardar");
     }
   }
 
@@ -247,6 +267,16 @@ export default async function NuevoGastoPage({
       {params.error === "datos" ? (
         <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
           Completa fecha, categoria (o otra categoria), concepto y monto valido.
+        </section>
+      ) : null}
+      {params.error === "archivo" ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          El comprobante debe ser JPG, PNG o WEBP y pesar maximo 5 MB.
+        </section>
+      ) : null}
+      {params.error === "guardar" ? (
+        <section className="rounded-[24px] border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          No se pudo guardar el gasto. Intentalo nuevamente.
         </section>
       ) : null}
 
