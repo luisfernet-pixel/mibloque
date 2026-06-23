@@ -7,7 +7,7 @@ import { getAuthUserSafe } from "@/lib/auth";
 import MesesEstadoList from "@/components/vecino/meses-estado-list";
 import ComprobanteUploadForm from "@/components/vecino/comprobante-upload-form";
 import { getCuotaEstadoVigente, getCuotaMontoVigente } from "@/lib/cuotas";
-import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 import { formatPeriodoLabel } from "@/lib/periodo";
 import { parseAdminPaymentDetails } from "@/lib/admin-payment";
 
@@ -126,7 +126,6 @@ export default async function VecinoPage({
   const avisosVistosIso = avisosVistosDate && !Number.isNaN(avisosVistosDate.getTime()) ? avisosVistosDate.toISOString() : "1970-01-01T00:00:00.000Z";
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-  await ensureCurrentMonthCuotas(adminSupabase);
   const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
@@ -140,6 +139,10 @@ export default async function VecinoPage({
   if (!perfil || perfil.rol !== "vecino" || !perfil.departamento_id) {
     redirect("/login");
   }
+
+  const bloqueId = perfil.bloque_id;
+  if (!bloqueId) redirect("/login");
+  await ensureCurrentMonthCuotasForBlock(adminSupabase, bloqueId);
 
   const [
     { data: cuotas },

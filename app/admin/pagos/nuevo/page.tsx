@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { getAuthUserSafe, isBloqueActivo } from "@/lib/auth";
 import PagoDepartamentoSelector from "@/components/admin/pago-departamento-selector";
-import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 import { formatPeriodoLabel } from "@/lib/periodo";
 import {
   getCuotaEstadoVigente,
@@ -235,7 +235,6 @@ export default async function NuevoPagoPage({
 
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-  await ensureCurrentMonthCuotas(adminSupabase);
   const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
@@ -252,6 +251,7 @@ export default async function NuevoPagoPage({
 
   const bloqueId = perfil.bloque_id;
   if (!bloqueId) redirect("/login");
+  await ensureCurrentMonthCuotasForBlock(adminSupabase, bloqueId);
 
   const [{ data, error }, { data: config }] = await Promise.all([
     supabase

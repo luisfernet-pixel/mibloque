@@ -139,6 +139,72 @@ export async function ensureCurrentMonthCuotas(supabase: any) {
   }
 }
 
+
+export async function ensureCurrentMonthCuotasForBlock(supabase: any, bloqueId: string) {
+  const safeBloqueId = String(bloqueId || "").trim();
+  if (!safeBloqueId) return;
+
+  const today = getCurrentBoliviaDateParts();
+  const anio = today.year;
+  const mes = today.month;
+  const periodo = `${anio}-${pad2(mes)}`;
+
+  const deptosRes = await Promise.resolve(
+    supabase
+      .from("departamentos")
+      .select("id, bloque_id, activo")
+      .eq("bloque_id", safeBloqueId)
+  );
+  const deptos = (deptosRes?.data ?? []) as DepartamentoRow[];
+  if (!deptos.length) return;
+
+  const configRes = await Promise.resolve(
+    supabase
+      .from("configuracion_bloque")
+      .select("bloque_id, cuota_mensual, dia_vencimiento")
+      .eq("bloque_id", safeBloqueId)
+      .maybeSingle()
+  );
+  const config = configRes?.data as ConfigRow | null | undefined;
+
+  const cuotasRes = await Promise.resolve(
+    supabase
+      .from("cuotas")
+      .select("bloque_id, departamento_id, anio, mes")
+      .eq("bloque_id", safeBloqueId)
+      .eq("anio", anio)
+      .eq("mes", mes)
+  );
+  const existentes = new Set(
+    ((cuotasRes?.data ?? []) as CuotaExistenteRow[]).map(
+      (c) => `${String(c.bloque_id || "")}:${String(c.departamento_id || "")}:${anio}:${mes}`
+    )
+  );
+
+  const cuotaMensual = Number(config?.cuota_mensual || 0);
+  const dueDay = clampDueDay(config?.dia_vencimiento);
+  const insertRows = deptos
+    .filter((depto) => {
+      const key = `${safeBloqueId}:${String(depto.id || "")}:${anio}:${mes}`;
+      return !existentes.has(key);
+    })
+    .map((depto) => ({
+      bloque_id: safeBloqueId,
+      departamento_id: String(depto.id || ""),
+      anio,
+      mes,
+      periodo,
+      monto_base: cuotaMensual,
+      mora_acumulada: 0,
+      monto_total: cuotaMensual,
+      fecha_generacion: `${anio}-${pad2(mes)}-01`,
+      fecha_vencimiento: `${anio}-${pad2(mes)}-${pad2(dueDay)}`,
+      estado: "pendiente",
+    }));
+
+  if (!insertRows.length) return;
+  await Promise.resolve(supabase.from("cuotas").insert(insertRows));
+}
 export async function ensureHistoricalDebtCuotas(
   supabase: any,
   options: HistoricalDebtOptions

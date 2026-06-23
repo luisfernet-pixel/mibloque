@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth";
 import { getCuotaEstadoVigente, getCuotaMontoVigente } from "@/lib/cuotas";
-import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 import { formatPeriodoLabel } from "@/lib/periodo";
 import CuotasMesesInteractivos, { type MesPagoItem } from "@/components/admin/cuotas-meses-interactivos";
 
@@ -44,8 +44,9 @@ export default async function CuotasPage() {
   if (!usuario) redirect("/login");
 
   const supabase = createAdminClient();
-  await ensureCurrentMonthCuotas(supabase);
   const bloqueId = usuario.perfil.bloque_id;
+  if (!bloqueId) redirect("/login");
+  await ensureCurrentMonthCuotasForBlock(supabase, bloqueId);
 
   const [{ data: departamentosData }, { data }, { data: config }] = await Promise.all([
     supabase

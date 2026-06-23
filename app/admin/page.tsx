@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUserSafe } from "@/lib/auth";
-import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 import {
   compareYearMonth,
   getBoliviaDateParts,
@@ -47,7 +47,6 @@ type AdminDepartamentoRow = {
 export default async function AdminPage() {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-  await ensureCurrentMonthCuotas(adminSupabase);
   const user = await getAuthUserSafe(supabase);
 
   if (!user) redirect("/login");
@@ -64,6 +63,7 @@ export default async function AdminPage() {
 
   const bloqueId = perfil.bloque_id;
   if (!bloqueId) redirect("/login");
+  await ensureCurrentMonthCuotasForBlock(adminSupabase, bloqueId);
 
   const [cuotasRes, gastosRes, confirmacionesRes, pagosRes, departamentosRes] =
     await Promise.all([

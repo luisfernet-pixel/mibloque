@@ -5,7 +5,7 @@ import { getCurrentBoliviaYearMonth } from "@/lib/bolivia-time";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCuotaMontoVigente } from "@/lib/cuotas";
-import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 
 type SearchParams = Promise<{ anio?: string }>;
 type PagoRow = { monto_pagado: number | null; fecha_pago: string | null };
@@ -64,8 +64,9 @@ export default async function AuditoriaPage({ searchParams }: { searchParams: Se
 
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
-  await ensureCurrentMonthCuotas(adminSupabase);
   const bloqueId = usuario.perfil.bloque_id;
+  if (!bloqueId) redirect("/login");
+  await ensureCurrentMonthCuotasForBlock(adminSupabase, bloqueId);
 
   const [pagosRes, gastosRes, cuotasRes, configRes] = await Promise.all([
     supabase

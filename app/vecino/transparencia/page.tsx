@@ -11,7 +11,7 @@ import {
   isDateInBoliviaMonth,
 } from "@/lib/bolivia-time";
 import { getCuotaMontoVigente } from "@/lib/cuotas";
-import { ensureCurrentMonthCuotas } from "@/lib/cuotas-sync";
+import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 
 function money(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO")}`;
@@ -74,7 +74,7 @@ export default async function TransparenciaPage() {
   if (!bloqueId) redirect("/login");
 
   const supabase = createAdminClient();
-  await ensureCurrentMonthCuotas(supabase);
+  await ensureCurrentMonthCuotasForBlock(supabase, bloqueId);
   const periodoActual = getCurrentBoliviaYearMonth();
 
   const [pagosRes, gastosRes, cuotasRes, configRes] = await Promise.all([
