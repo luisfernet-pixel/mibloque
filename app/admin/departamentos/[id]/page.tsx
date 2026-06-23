@@ -2,7 +2,7 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireBlockAdmin } from "@/lib/auth";
 import { ensureHistoricalDebtCuotas } from "@/lib/cuotas-sync";
 
 type Props = {
@@ -32,7 +32,7 @@ export default async function DepartamentoDeudaPage({ params, searchParams }: Pr
   async function guardarDeudaInicial(formData: FormData) {
     "use server";
 
-    const auth = await requireAdmin();
+    const auth = await requireBlockAdmin();
     if (!auth) redirect("/login");
 
     const deptoId = String(formData.get("departamento_id") || "").trim();

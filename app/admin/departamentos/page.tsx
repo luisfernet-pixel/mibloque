@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireBlockAdmin } from "@/lib/auth";
 import { ensureHistoricalDebtCuotas } from "@/lib/cuotas-sync";
 import DeudaInicialInput from "@/components/admin/deuda-inicial-input";
 import { compareYearMonth, getCurrentBoliviaYearMonth } from "@/lib/bolivia-time";
@@ -100,7 +100,7 @@ export default async function DepartamentosPage({
   async function guardarDeudaInicial(formData: FormData) {
     "use server";
 
-    const auth = await requireAdmin();
+    const auth = await requireBlockAdmin();
     if (!auth) redirect("/login");
 
     const deptoId = String(formData.get("departamento_id") || "").trim();

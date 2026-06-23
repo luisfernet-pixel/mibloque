@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { isBloqueActivo, requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin, requireBlockAdmin } from "@/lib/auth";
 
 async function crearCategoria(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 
@@ -35,7 +35,7 @@ async function crearCategoria(formData: FormData) {
 async function editarCategoria(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 
@@ -61,7 +61,7 @@ async function editarCategoria(formData: FormData) {
 async function eliminarCategoria(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/categorias");
 

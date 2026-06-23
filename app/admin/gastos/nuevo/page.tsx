@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { extname } from "node:path";
-import { isBloqueActivo, requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin, requireBlockAdmin } from "@/lib/auth";
 import ComprobanteImageInput from "../_components/comprobante-image-input";
 
 type CategoriaRow = {
@@ -66,7 +66,7 @@ function parseMonthKey(key: string) {
 async function crearGasto(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos/nuevo?error=servicio_suspendido");
 

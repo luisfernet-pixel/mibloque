@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { isBloqueActivo, requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin, requireBlockAdmin } from "@/lib/auth";
 
 function money(value: number) {
   return `Bs ${Number(value || 0).toLocaleString("es-BO", {
@@ -23,7 +23,7 @@ function parseNumericInput(value: FormDataEntryValue | null, fallback = 0) {
 async function guardarConfiguracion(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
 
   const supabase = await createClient();

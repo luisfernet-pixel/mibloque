@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import { isBloqueActivo, requireAdmin } from "@/lib/auth";
+import { isBloqueActivo, requireAdmin, requireBlockAdmin } from "@/lib/auth";
 import {
   formatBoliviaDate,
   formatBoliviaMonthLabel,
@@ -123,7 +123,7 @@ function comprobanteEsValido(archivo: File | null) {
 async function editarGasto(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
@@ -219,7 +219,7 @@ async function editarGasto(formData: FormData) {
 async function eliminarGasto(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
@@ -260,7 +260,7 @@ async function eliminarGasto(formData: FormData) {
 async function toggleMesBloqueado(formData: FormData) {
   "use server";
 
-  const usuario = await requireAdmin();
+  const usuario = await requireBlockAdmin();
   if (!usuario) redirect("/login");
   if (!(await isBloqueActivo(usuario.perfil.bloque_id))) redirect("/admin/gastos?notice=servicio_suspendido");
 
