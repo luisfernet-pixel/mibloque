@@ -58,6 +58,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     .single();
   if (!pago) return NextResponse.redirect(new URL("/admin/pagos/historial", req.url), 303);
 
+  const { data: vecino } = await adminSupabase
+    .from("usuarios")
+    .select("nombre")
+    .eq("bloque_id", pago.bloque_id)
+    .eq("departamento_id", pago.departamento_id)
+    .eq("rol", "vecino")
+    .eq("activo", true)
+    .limit(1)
+    .maybeSingle();
   const { data: confirmacion } = await adminSupabase
     .from("confirmaciones_pago")
     .select("revisado_por, revisado_at")
@@ -74,7 +83,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const pdf = buildReceiptPdf({
     receiptNumber: String((pago as { numero_recibo?: string | null }).numero_recibo || pago.id.slice(0, 8).toUpperCase()),
-    vecinoName: "Vecino",
+    vecinoName: vecino?.nombre || "Vecino",
     bloqueName: bloque?.nombre || "Bloque",
     bloqueCode: bloque?.codigo || perfil.bloque_id || "-",
     departamentoLabel: String(pickDepartamentoNumero(pago.departamentos)),
