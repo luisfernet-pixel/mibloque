@@ -254,7 +254,7 @@ export default async function TransparenciaPage() {
                               {grupo.monthLabel}
                             </p>
                             <p className="mt-1 text-xs text-slate-300">
-                              {grupo.gastos.length} gasto(s) Â· Total {money(grupo.total)}
+                              {grupo.gastos.length} gasto(s) · Total {money(grupo.total)}
                             </p>
                           </div>
                           <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-bold text-cyan-100">
@@ -311,7 +311,7 @@ export default async function TransparenciaPage() {
                             {grupo.monthLabel}
                           </p>
                           <p className="mt-1 text-xs text-slate-300">
-                            {grupo.gastos.length} gasto(s) Â· Total {money(grupo.total)}
+                            {grupo.gastos.length} gasto(s) · Total {money(grupo.total)}
                           </p>
                         </div>
 

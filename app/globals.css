@@ -504,7 +504,7 @@ a[class*="from-orange-500"] {
   color: inherit;
 }
 
-/* TEXTOS SEMÃNTICOS */
+/* TEXTOS SEMÁNTICOS */
 .title-dark {
   color: var(--text-on-dark);
 }
@@ -806,7 +806,7 @@ tbody tr:hover {
   color: #e11d48;
 }
 
-/* TARJETAS MÃS LIMPIAS */
+/* TARJETAS MÁS LIMPIAS */
 .rounded-3xl.bg-white,
 .rounded-2xl.bg-white,
 [class*="ring-slate-200"].bg-white,
@@ -814,7 +814,7 @@ tbody tr:hover {
   box-shadow: var(--shadow-card);
 }
 
-/* CONTENEDORES OSCUROS MÃS PRO */
+/* CONTENEDORES OSCUROS MÁS PRO */
 .bg-\[\#071426\] {
   background:
     radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%),
@@ -851,7 +851,7 @@ tbody tr:hover {
   border-color: rgba(203, 213, 225, 0.78);
 }
 
-/* IMPRESIÃ“N */
+/* IMPRESIÓN */
 @media print {
   @page {
     size: A4 landscape;

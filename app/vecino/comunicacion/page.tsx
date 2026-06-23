@@ -188,7 +188,7 @@ export default async function VecinoComunicacionPage({
             </div>
             {params.sent === "1" ? <p className="mt-4 text-sm font-semibold text-cyan-200">Mensaje enviado.</p> : null}
             {params.error ? (
-              <p className="mt-2 text-sm font-semibold text-red-200">No se pudo procesar la accion ({params.error}).</p>
+              <p className="mt-2 text-sm font-semibold text-red-200">No se pudo procesar la acción. Intenta nuevamente.</p>
             ) : null}
           </div>
         </div>

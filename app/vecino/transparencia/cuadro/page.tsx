@@ -161,7 +161,7 @@ export default async function VecinoCuadroTransparenciaPage({
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">Cuentas del bloque</p>
             <h1 className="mt-2 text-lg font-bold text-white md:text-3xl">Cuadro general de cuotas</h1>
             <p className="mt-3 text-sm text-slate-200">
-              {nombreBloque} Â· Gestion {anio}
+              {nombreBloque} · Gestión {anio}
             </p>
           </div>
 
