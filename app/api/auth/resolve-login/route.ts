@@ -3,8 +3,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 
 const MAX_IDENTIFIER_LENGTH = 120;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_ATTEMPTS = 20;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+const rateLimitBuckets = new Map<string, { count: number; resetAt: number }>();
 
 function normalizeIdentifier(value: unknown) {
   return String(value ?? "").trim();
@@ -16,6 +20,26 @@ function normalizeEmail(value: string) {
 
 function fallbackInternalEmail(identifier: string) {
   return `${identifier.toLowerCase()}@${INTERNAL_EMAIL_DOMAIN}`;
+}
+
+function getClientKey(req: Request) {
+  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  return forwardedFor || realIp || "unknown";
+}
+
+function isRateLimited(req: Request) {
+  const now = Date.now();
+  const key = getClientKey(req);
+  const current = rateLimitBuckets.get(key);
+
+  if (!current || current.resetAt <= now) {
+    rateLimitBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  current.count += 1;
+  return current.count > RATE_LIMIT_MAX_ATTEMPTS;
 }
 
 export async function POST(req: Request) {
@@ -32,6 +56,10 @@ export async function POST(req: Request) {
 
   if (identifier.includes("@") || !USERNAME_PATTERN.test(identifier)) {
     return NextResponse.json({ error: "invalid_identifier" }, { status: 400 });
+  }
+
+  if (isRateLimited(req)) {
+    return NextResponse.json({ email: fallbackInternalEmail(identifier) });
   }
 
   try {
