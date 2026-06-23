@@ -23,7 +23,6 @@ type GastoRow = {
   concepto: string;
   monto: number;
   comprobante_path: string | null;
-  comprobante_url: string | null;
 };
 
 type CategoriaRow = {
@@ -165,7 +164,6 @@ async function editarGasto(formData: FormData) {
     guardarCategoria
   );
 
-  let comprobanteUrl: string | null | undefined = undefined;
   let comprobantePath: string | null | undefined = undefined;
 
   if (archivo && archivo.size > 0) {
@@ -202,7 +200,6 @@ async function editarGasto(formData: FormData) {
   const payloadConComprobante = {
     ...payloadBase,
     ...(comprobantePath ? { comprobante_path: comprobantePath } : {}),
-    ...(comprobanteUrl ? { comprobante_url: comprobanteUrl } : {}),
   };
 
   const updateBuilder = supabase
@@ -211,36 +208,10 @@ async function editarGasto(formData: FormData) {
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id);
 
-  if (comprobantePath) {
-    const { error: updateError } = await updateBuilder.select("id").single();
-    if (updateError && String(updateError.message || "").includes("comprobante_path")) {
-      const { data: publicFile } = adminSupabase.storage
-        .from("comprobantes")
-        .getPublicUrl(comprobantePath);
-      comprobanteUrl = publicFile.publicUrl;
-      const { error: fallbackUpdateError } = await supabase
-        .from("gastos")
-        .update({
-          ...payloadBase,
-          ...(comprobanteUrl ? { comprobante_url: comprobanteUrl } : {}),
-        })
-        .eq("id", id)
-        .eq("bloque_id", usuario.perfil.bloque_id);
-      if (fallbackUpdateError) redirect("/admin/gastos?notice=error_guardar");
-    } else if (updateError && String(updateError.message || "").includes("comprobante_url")) {
-      const { error: baseUpdateError } = await supabase
-        .from("gastos")
-        .update(payloadBase)
-        .eq("id", id)
-        .eq("bloque_id", usuario.perfil.bloque_id);
-      if (baseUpdateError) redirect("/admin/gastos?notice=error_guardar");
-    } else if (updateError) {
-      redirect("/admin/gastos?notice=error_guardar");
-    }
-  } else {
-    const { error: updateError } = await updateBuilder;
-    if (updateError) redirect("/admin/gastos?notice=error_guardar");
-  }
+  const { error: updateError } = comprobantePath
+    ? await updateBuilder.select("id").single()
+    : await updateBuilder;
+  if (updateError) redirect("/admin/gastos?notice=error_guardar");
 
   redirect("/admin/gastos");
 }
@@ -339,7 +310,7 @@ export default async function GastosPage({
   const [{ data: gastos, error }, { data: categorias }, { data: cierres }] = await Promise.all([
     supabase
       .from("gastos")
-      .select("id, bloque_id, fecha_gasto, categoria, concepto, monto, comprobante_path, comprobante_url")
+      .select("id, bloque_id, fecha_gasto, categoria, concepto, monto, comprobante_path")
       .eq("bloque_id", usuario.perfil.bloque_id)
       .order("fecha_gasto", { ascending: false }),
     supabase
@@ -636,7 +607,7 @@ export default async function GastosPage({
                             Nuevo recibo / factura
                           </label>
                           <ComprobanteImageInput name="comprobante" />
-                          {item.comprobante_path || item.comprobante_url ? (
+                          {item.comprobante_path ? (
                             <a
                               href={`/api/admin/gastos/${item.id}/comprobante`}
                               target="_blank"
@@ -691,7 +662,7 @@ export default async function GastosPage({
                               <p className="text-sm font-bold text-white">{money(item.monto)}</p>
 
                               <div className="flex flex-nowrap justify-end gap-2">
-                                {item.comprobante_path || item.comprobante_url ? (
+                                {item.comprobante_path ? (
                                   <a
                                     href={`/api/admin/gastos/${item.id}/comprobante`}
                                     target="_blank"

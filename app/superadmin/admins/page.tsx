@@ -96,7 +96,7 @@ export default async function AdminsPage() {
                   </td>
                   <td className="px-5 py-4">
                     <Link href={`/superadmin/admins/${item.id}`} className="block w-full py-1">
-                      {payment.qrUrl ? "Si" : "No"}
+                      {payment.qrPath ? "Si" : "No"}
                     </Link>
                   </td>
                   <td className="px-5 py-4">

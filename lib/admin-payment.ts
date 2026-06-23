@@ -1,7 +1,6 @@
 export type AdminPaymentDetails = {
   banco: string;
   numeroCuenta: string;
-  qrUrl: string;
   qrPath: string;
 };
 
@@ -10,7 +9,7 @@ const ADMIN_PAYMENT_PREFIX = "kubo-admin-payment:";
 export function parseAdminPaymentDetails(value: string | null | undefined): AdminPaymentDetails {
   const raw = String(value || "").trim();
   if (!raw.startsWith(ADMIN_PAYMENT_PREFIX)) {
-    return { banco: "", numeroCuenta: "", qrUrl: "", qrPath: "" };
+    return { banco: "", numeroCuenta: "", qrPath: "" };
   }
 
   try {
@@ -18,11 +17,10 @@ export function parseAdminPaymentDetails(value: string | null | undefined): Admi
     return {
       banco: String(parsed.banco || ""),
       numeroCuenta: String(parsed.numeroCuenta || ""),
-      qrUrl: String(parsed.qrUrl || ""),
       qrPath: String(parsed.qrPath || ""),
     };
   } catch {
-    return { banco: "", numeroCuenta: "", qrUrl: "", qrPath: "" };
+    return { banco: "", numeroCuenta: "", qrPath: "" };
   }
 }
 
@@ -30,7 +28,6 @@ export function serializeAdminPaymentDetails(details: AdminPaymentDetails) {
   return `${ADMIN_PAYMENT_PREFIX}${JSON.stringify({
     banco: details.banco,
     numeroCuenta: details.numeroCuenta,
-    qrUrl: details.qrUrl,
     qrPath: details.qrPath,
   })}`;
 }

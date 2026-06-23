@@ -107,7 +107,6 @@ async function crearGasto(formData: FormData) {
     if (cierre) redirect("/admin/gastos/nuevo?error=mes_bloqueado");
   }
 
-  let comprobanteUrl: string | null = null;
   let comprobantePath: string | null = null;
 
   if (archivo && archivo.size > 0) {
@@ -145,37 +144,12 @@ async function crearGasto(formData: FormData) {
   const payloadConComprobante = {
     ...payloadBase,
     comprobante_path: comprobantePath,
-    comprobante_url: comprobanteUrl,
   };
 
   const { error: insertError } = await supabase.from("gastos").insert(payloadConComprobante);
 
   if (insertError) {
-    const message = String(insertError.message || "");
-    if (message.includes("comprobante_path")) {
-      if (comprobantePath) {
-        const { data: publicFile } = adminSupabase.storage
-          .from("comprobantes")
-          .getPublicUrl(comprobantePath);
-        comprobanteUrl = publicFile.publicUrl;
-      }
-      const { error: fallbackError } = await supabase.from("gastos").insert({
-        ...payloadBase,
-        comprobante_url: comprobanteUrl,
-      });
-
-      if (fallbackError && String(fallbackError.message || "").includes("comprobante_url")) {
-        const { error: baseError } = await supabase.from("gastos").insert(payloadBase);
-        if (baseError) redirect("/admin/gastos/nuevo?error=guardar");
-      } else if (fallbackError) {
-        redirect("/admin/gastos/nuevo?error=guardar");
-      }
-    } else if (message.includes("comprobante_url")) {
-      const { error: baseError } = await supabase.from("gastos").insert(payloadBase);
-      if (baseError) redirect("/admin/gastos/nuevo?error=guardar");
-    } else {
-      redirect("/admin/gastos/nuevo?error=guardar");
-    }
+    redirect("/admin/gastos/nuevo?error=guardar");
   }
 
   const mesActual = monthKey(new Date().toISOString());

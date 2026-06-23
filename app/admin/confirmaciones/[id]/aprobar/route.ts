@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireBlockAdmin } from "@/lib/auth";
-import { resolveStoragePath } from "@/lib/storage-paths";
 
 function buildReceiptNumber(prefix: string, seq: number) {
   const safePrefix = String(prefix || "BLK")
@@ -76,32 +75,13 @@ export async function POST(
       monto_reportado,
       referencia,
       comprobante_path,
-      comprobante_url,
       estado
     `)
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id)
     .single();
 
-  let confirmacionRow = confirmacion;
-  if (confirmacionError && String(confirmacionError.message || "").includes("comprobante_path")) {
-    const fallback = await supabase
-      .from("confirmaciones_pago")
-      .select(`
-        id,
-        bloque_id,
-        departamento_id,
-        cuota_id,
-        monto_reportado,
-        referencia,
-        comprobante_url,
-        estado
-      `)
-      .eq("id", id)
-      .eq("bloque_id", usuario.perfil.bloque_id)
-      .single();
-    confirmacionRow = fallback.data as typeof confirmacion;
-  }
+  const confirmacionRow = confirmacion;
 
   if (!confirmacionRow) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
@@ -169,8 +149,7 @@ export async function POST(
       fecha_pago: ahora,
       metodo_pago: "transferencia",
       referencia: confirmacionRow.referencia,
-      comprobante_path: resolveStoragePath((confirmacionRow as { comprobante_path?: string | null }).comprobante_path, confirmacionRow.comprobante_url),
-      comprobante_url: confirmacionRow.comprobante_url,
+      comprobante_path: confirmacionRow.comprobante_path,
       numero_recibo: numeroRecibo,
       observaciones: "Pago aprobado desde confirmaciones",
     };
@@ -180,19 +159,7 @@ export async function POST(
     .insert(pagoPayload);
 
   if (insertPagoError) {
-    if (String(insertPagoError.message || "").includes("comprobante_path")) {
-      const fallbackPagoPayload = { ...pagoPayload };
-      delete (fallbackPagoPayload as { comprobante_path?: unknown }).comprobante_path;
-      const { error: fallbackPagoError } = await supabase
-        .from("pagos")
-        .insert(fallbackPagoPayload);
-
-      if (fallbackPagoError) {
-        return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
-      }
-    } else {
-      return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
-    }
+    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
   revalidatePath("/admin/confirmaciones");
   revalidatePath("/admin");

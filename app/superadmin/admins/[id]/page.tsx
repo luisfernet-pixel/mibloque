@@ -60,7 +60,7 @@ export default async function EditAdminPage({ params }: Props) {
             bloque_id: admin.bloque_id,
             banco: payment.banco,
             numero_cuenta: payment.numeroCuenta,
-            qr_url: payment.qrUrl,
+            qr_url: payment.qrPath ? `/api/storage/qr-pago?bloque_id=${admin.bloque_id}` : "",
             activo: admin.activo,
           }}
           showActive

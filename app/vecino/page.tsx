@@ -225,7 +225,6 @@ export default async function VecinoPage({
     String(
       bloquePagoRow?.pago_qr_path ||
         paymentFromAdmin.qrPath ||
-        paymentFromAdmin.qrUrl ||
         perfil.bloque_id ||
         "fallback"
     )

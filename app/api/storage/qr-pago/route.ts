@@ -1,7 +1,7 @@
 import { requireAdmin, requireVecino } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseAdminPaymentDetails } from "@/lib/admin-payment";
-import { createComprobantesSignedUrl, resolveStoragePath } from "@/lib/storage-paths";
+import { createComprobantesSignedUrl } from "@/lib/storage-paths";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,9 +25,6 @@ function noStoreRedirect(url: string | URL) {
     },
   });
 }
-function isPublicHttpUrl(value: string | null | undefined) {
-  return /^https?:\/\//i.test(String(value || "").trim());
-}
 
 export async function GET(req: Request) {
   const adminUsuario = await requireAdmin();
@@ -42,17 +39,13 @@ export async function GET(req: Request) {
   if (!bloqueId) return noStoreResponse("QR no disponible.", 404);
 
   const supabase = createAdminClient();
-  const { data: bloque, error } = await supabase
+  const { data: bloque } = await supabase
     .from("bloques")
     .select("id, pago_qr_path")
     .eq("id", bloqueId)
     .maybeSingle();
 
-  let bloqueRow = bloque as { pago_qr_path?: string | null } | null;
-
-  if (error && String(error.message || "").includes("pago_qr_path")) {
-    bloqueRow = null;
-  }
+  const bloqueRow = bloque as { pago_qr_path?: string | null } | null;
 
   const { data: adminPerfil } = await supabase
     .from("usuarios")
@@ -65,19 +58,13 @@ export async function GET(req: Request) {
     .maybeSingle();
 
   const paymentDetails = parseAdminPaymentDetails(adminPerfil?.username);
-  const path = resolveStoragePath(
-    bloqueRow?.pago_qr_path || paymentDetails.qrPath,
-    paymentDetails.qrUrl
-  );
+  const path = bloqueRow?.pago_qr_path || paymentDetails.qrPath;
 
   if (path) {
     const signedUrl = await createComprobantesSignedUrl(path);
     if (!signedUrl) return noStoreResponse("Archivo no disponible.", 404);
     return noStoreRedirect(signedUrl);
   }
-
-  const legacyUrl = paymentDetails.qrUrl;
-  if (isPublicHttpUrl(legacyUrl)) return noStoreRedirect(String(legacyUrl));
 
   return noStoreRedirect(new URL("/qr-pago-admin.png", req.url));
 }

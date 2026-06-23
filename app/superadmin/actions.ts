@@ -963,7 +963,6 @@ export async function createAdminAction(
     const telefono = safeString(formData.get("telefono"));
     const banco = safeString(formData.get("banco"));
     const numeroCuenta = safeString(formData.get("numero_cuenta"));
-    const qrUrl = safeString(formData.get("qr_url"));
     const qrFile = formData.get("qr_file");
 
     if (!nombre) {
@@ -995,18 +994,15 @@ export async function createAdminAction(
 
     const generatedEmail = adminEmailFromBlockCode(bloque.codigo);
 
-    let finalQrUrl = qrUrl;
     let finalQrPath = "";
     if (qrFile instanceof File && qrFile.size > 0) {
       const uploadedQr = await uploadAdminQrImage(qrFile, canonicalBloqueId);
-      finalQrUrl = "";
       finalQrPath = uploadedQr.path;
     }
 
     const paymentDetails = serializeAdminPaymentDetails({
       banco,
       numeroCuenta,
-      qrUrl: finalQrUrl,
       qrPath: finalQrPath,
     });
 
@@ -1094,7 +1090,6 @@ export async function updateAdminAction(
     const telefono = safeString(formData.get("telefono"));
     const banco = safeString(formData.get("banco"));
     const numeroCuenta = safeString(formData.get("numero_cuenta"));
-    const qrUrl = safeString(formData.get("qr_url"));
     const qrFile = formData.get("qr_file");
     const activo = formData.get("activo") === "on";
 
@@ -1119,11 +1114,9 @@ export async function updateAdminAction(
       .maybeSingle();
     const previousPaymentDetails = parseAdminPaymentDetails(currentAdmin?.username);
 
-    let finalQrUrl = qrUrl;
     let finalQrPath = previousPaymentDetails.qrPath;
     if (qrFile instanceof File && qrFile.size > 0) {
       const uploadedQr = await uploadAdminQrImage(qrFile, canonicalBloqueId);
-      finalQrUrl = "";
       finalQrPath = uploadedQr.path;
     }
 
@@ -1149,7 +1142,7 @@ export async function updateAdminAction(
       rol: "admin",
       bloque_id: canonicalBloqueId,
       departamento_id: null,
-      username: serializeAdminPaymentDetails({ banco, numeroCuenta, qrUrl: finalQrUrl, qrPath: finalQrPath }),
+      username: serializeAdminPaymentDetails({ banco, numeroCuenta, qrPath: finalQrPath }),
       activo,
     };
 

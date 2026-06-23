@@ -1,6 +1,6 @@
 import { requireVecino } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { redirectToComprobantesSignedUrl, resolveStoragePath } from "@/lib/storage-paths";
+import { redirectToComprobantesSignedUrl } from "@/lib/storage-paths";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const usuario = await requireVecino();
@@ -9,28 +9,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   const supabase = createAdminClient();
 
-  const baseQuery = supabase
+  const { data } = await supabase
     .from("pagos")
-    .select("id, bloque_id, departamento_id, comprobante_path, comprobante_url")
+    .select("id, bloque_id, departamento_id, comprobante_path")
     .eq("id", id)
     .eq("bloque_id", usuario.perfil.bloque_id)
-    .eq("departamento_id", usuario.perfil.departamento_id);
+    .eq("departamento_id", usuario.perfil.departamento_id)
+    .maybeSingle();
+  const row = data as { comprobante_path?: string | null } | null;
 
-  const { data, error } = await baseQuery.maybeSingle();
-  let row = data as { comprobante_path?: string | null; comprobante_url?: string | null } | null;
-
-  if (error && String(error.message || "").includes("comprobante_path")) {
-    const fallback = await supabase
-      .from("pagos")
-      .select("id, bloque_id, departamento_id, comprobante_url")
-      .eq("id", id)
-      .eq("bloque_id", usuario.perfil.bloque_id)
-      .eq("departamento_id", usuario.perfil.departamento_id)
-      .maybeSingle();
-    row = fallback.data as { comprobante_url?: string | null } | null;
-  }
-
-  const path = resolveStoragePath(row?.comprobante_path, row?.comprobante_url);
-  if (!path) return new Response("Archivo no disponible.", { status: 404 });
-  return redirectToComprobantesSignedUrl(path);
+  if (!row?.comprobante_path) return new Response("Archivo no disponible.", { status: 404 });
+  return redirectToComprobantesSignedUrl(row.comprobante_path);
 }
