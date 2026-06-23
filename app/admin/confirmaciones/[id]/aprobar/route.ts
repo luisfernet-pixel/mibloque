@@ -107,7 +107,8 @@ export async function POST(
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
-  if (confirmacionRow.estado === "aprobado") {
+  const estadoActual = String(confirmacionRow.estado || "").toLowerCase();
+  if (estadoActual !== "pendiente") {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
@@ -123,9 +124,22 @@ export async function POST(
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 
+  const { data: pagoExistente } = await supabase
+    .from("pagos")
+    .select("id")
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("departamento_id", confirmacionRow.departamento_id)
+    .eq("cuota_id", confirmacionRow.cuota_id)
+    .limit(1)
+    .maybeSingle();
+
+  if (pagoExistente) {
+    return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
+  }
+
   const ahora = new Date().toISOString();
 
-  const { error: updateConfirmacionError } = await supabase
+  const { data: confirmacionActualizada, error: updateConfirmacionError } = await supabase
     .from("confirmaciones_pago")
     .update({
       estado: "aprobado",
@@ -133,9 +147,12 @@ export async function POST(
       revisado_por: usuario.perfil.id,
     })
     .eq("id", id)
-    .eq("bloque_id", usuario.perfil.bloque_id);
+    .eq("bloque_id", usuario.perfil.bloque_id)
+    .eq("estado", "pendiente")
+    .select("id")
+    .maybeSingle();
 
-  if (updateConfirmacionError) {
+  if (updateConfirmacionError || !confirmacionActualizada) {
     return NextResponse.redirect(new URL("/admin/confirmaciones", req.url), 303);
   }
 

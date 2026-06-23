@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { requireBlockAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatPeriodoLabel } from "@/lib/periodo";
 
@@ -52,10 +54,17 @@ function monthGroupLabel(key: string) {
 }
 
 export default async function PagosHistorialPage() {
+  const usuario = await requireBlockAdmin();
+  if (!usuario) redirect("/login");
+
+  const bloqueId = usuario.perfil.bloque_id;
+  if (!bloqueId) redirect("/login");
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("pagos")
     .select(`id, fecha_pago, monto_pagado, metodo_pago, referencia, cuotas:cuota_id (periodo), departamentos:departamento_id (numero)`)
+    .eq("bloque_id", bloqueId)
     .order("fecha_pago", { ascending: false });
 
   const pagos = (data ?? []) as PagoRow[];
