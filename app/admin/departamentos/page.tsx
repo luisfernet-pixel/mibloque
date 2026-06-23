@@ -1,10 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireBlockAdmin } from "@/lib/auth";
 import { ensureHistoricalDebtCuotas } from "@/lib/cuotas-sync";
 import DeudaInicialInput from "@/components/admin/deuda-inicial-input";
 import { compareYearMonth, getCurrentBoliviaYearMonth } from "@/lib/bolivia-time";
+import { getDeudaInicialState } from "@/lib/deuda-inicial";
 
 function parseMonths(value: FormDataEntryValue | null) {
   const normalized = String(value ?? "").trim().replace(",", ".");
@@ -29,12 +30,17 @@ type CuotaRow = {
   departamento_id: string | null;
   anio: number | null;
   mes: number | null;
+  estado: string | null;
+};
+
+type DepartamentoRelacionRow = {
+  departamento_id: string | null;
 };
 
 export default async function DepartamentosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ confirm?: string; ok?: string }>;
+  searchParams?: Promise<{ confirm?: string; ok?: string; error?: string }>;
 }) {
   const usuario = await requireAdmin();
   if (!usuario) redirect("/login");
@@ -119,6 +125,10 @@ export default async function DepartamentosPage({
       throw new Error("No tienes acceso a ese departamento.");
     }
 
+    const deudaState = await getDeudaInicialState(supabaseAdmin, departamento.bloque_id, departamento.id);
+    if (deudaState.tienePagos) redirect("/admin/departamentos?confirm=1&error=pagos");
+    if (mesesAdeudadosIniciales < deudaState.mesesActuales) redirect("/admin/departamentos?confirm=1&error=reducir");
+
     await ensureHistoricalDebtCuotas(supabaseAdmin, {
       bloqueId: departamento.bloque_id,
       departamentoId: departamento.id,
@@ -131,7 +141,13 @@ export default async function DepartamentosPage({
   const supabase = createAdminClient();
   const current = getCurrentBoliviaYearMonth();
 
-  const [{ data: departamentos, error }, { data: vecinos }, { data: cuotas }] = await Promise.all([
+  const [
+    { data: departamentos, error },
+    { data: vecinos },
+    { data: cuotas },
+    { data: pagos },
+    { data: comprobantesAprobados },
+  ] = await Promise.all([
     supabase
       .from("departamentos")
       .select("id, numero, estado_ocupacion, activo")
@@ -145,13 +161,24 @@ export default async function DepartamentosPage({
       .eq("activo", true),
     supabase
       .from("cuotas")
-      .select("departamento_id, anio, mes")
+      .select("departamento_id, anio, mes, estado")
       .eq("bloque_id", bloqueId),
+    supabase
+      .from("pagos")
+      .select("departamento_id")
+      .eq("bloque_id", bloqueId),
+    supabase
+      .from("confirmaciones_pago")
+      .select("departamento_id")
+      .eq("bloque_id", bloqueId)
+      .eq("estado", "aprobado"),
   ]);
 
   const departamentosRows = (departamentos ?? []) as DepartamentoRow[];
   const vecinosRows = (vecinos ?? []) as VecinoRow[];
   const cuotasRows = (cuotas ?? []) as CuotaRow[];
+  const pagosRows = (pagos ?? []) as DepartamentoRelacionRow[];
+  const comprobantesAprobadosRows = (comprobantesAprobados ?? []) as DepartamentoRelacionRow[];
 
   const vecinoPorDepto = new Map<string, string>();
   for (const vecino of vecinosRows) {
@@ -161,13 +188,25 @@ export default async function DepartamentosPage({
   }
 
   const deudaInicialPorDepto = new Map<string, number>();
+  const departamentosConPagos = new Set<string>();
   for (const cuota of cuotasRows) {
     const deptoId = String(cuota.departamento_id || "");
     const anio = Number(cuota.anio || 0);
     const mes = Number(cuota.mes || 0);
     if (!deptoId || !anio || !mes) continue;
+    if (String(cuota.estado || "").toLowerCase() === "pagado") {
+      departamentosConPagos.add(deptoId);
+    }
     if (compareYearMonth(anio, mes, current.year, current.month) !== -1) continue;
     deudaInicialPorDepto.set(deptoId, (deudaInicialPorDepto.get(deptoId) || 0) + 1);
+  }
+  for (const pago of pagosRows) {
+    const deptoId = String(pago.departamento_id || "");
+    if (deptoId) departamentosConPagos.add(deptoId);
+  }
+  for (const comprobante of comprobantesAprobadosRows) {
+    const deptoId = String(comprobante.departamento_id || "");
+    if (deptoId) departamentosConPagos.add(deptoId);
   }
 
   return (
@@ -183,8 +222,8 @@ export default async function DepartamentosPage({
                 Deudas antiguas de departamentos
               </h1>
               <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-300">
-                Usa esta pantalla solo al comenzar con un bloque o para corregir un caso puntual.
-                Aqui defines cuantos meses arrastra cada departamento.
+                Usar solo al cargar el departamento por primera vez. Después de registrar pagos,
+                no edites este valor.
               </p>
             </div>
 
@@ -208,6 +247,9 @@ export default async function DepartamentosPage({
             </div>
           </div>
         </section>
+
+        {params.error === "reducir" ? <section className="rounded-2xl border border-orange-300/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">La deuda inicial no se puede reducir desde aquí. Corrige manualmente las cuotas o consulta soporte.</section> : null}
+        {params.error === "pagos" ? <section className="rounded-2xl border border-orange-300/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">Este departamento ya tiene pagos registrados. No edites la deuda inicial desde aquí.</section> : null}
 
         <section className="overflow-hidden rounded-[24px] border border-white/10 bg-[#213b59] shadow-xl">
           <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2 md:px-5">
@@ -235,7 +277,9 @@ export default async function DepartamentosPage({
                 </thead>
 
                 <tbody>
-                  {departamentosRows.map((item) => (
+                  {departamentosRows.map((item) => {
+                    const deudaBloqueada = departamentosConPagos.has(item.id);
+                    return (
                     <tr key={item.id} className="border-t border-white/10 transition hover:bg-white/5">
                       <td className="px-3 py-2 font-semibold text-white">{item.numero}</td>
                       <td className="px-3 py-2 text-slate-200">
@@ -249,17 +293,25 @@ export default async function DepartamentosPage({
                           <DeudaInicialInput
                             name="meses_adeudados_iniciales"
                             defaultValue={deudaInicialPorDepto.get(item.id) ?? 0}
+                            disabled={deudaBloqueada}
                           />
                           <button
                             type="submit"
-                            className="rounded-xl border border-cyan-400/30 bg-cyan-500/15 px-3 py-1 text-[10px] font-semibold text-cyan-100 transition hover:bg-cyan-500/25"
+                            disabled={deudaBloqueada}
+                            className="rounded-xl border border-cyan-400/30 bg-cyan-500/15 px-3 py-1 text-[10px] font-semibold text-cyan-100 transition hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             Guardar
                           </button>
+                          {deudaBloqueada ? (
+                            <span className="text-[10px] font-semibold text-orange-100">
+                              Bloqueado porque ya tiene pagos registrados.
+                            </span>
+                          ) : null}
                         </form>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

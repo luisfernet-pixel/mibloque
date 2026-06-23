@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import type { ActionState } from "@/app/superadmin/actions";
@@ -177,7 +177,7 @@ export default function UserCreateForm({
         </div>
       )}
 
-      <form action={formAction} encType="multipart/form-data" className="space-y-4">
+      <form action={formAction} className="space-y-4">
         {initialValues?.id ? <input type="hidden" name="id" value={initialValues.id} /> : null}
 
         {mode === "admin" ? (

@@ -293,6 +293,7 @@ export default async function SuperadminPage({
                             <input type="hidden" name="return_to" value="/superadmin" />
                             <ConfirmActionButton
                               confirmText="Eliminar este bloque y borrar todos sus datos (vecinos, admins, departamentos, cuotas, pagos y avisos). Esta accion no se puede deshacer. Continuar?"
+                              secondConfirmText="Confirmacion final: se eliminara todo el edificio y toda su informacion. Deseas borrarlo definitivamente?"
                               className="rounded-xl border border-red-200/30 bg-[#ff5a3d]/10 px-3 py-2 text-sm font-semibold text-red-100 transition hover:bg-[#ff5a3d]/20"
                             >
                               Eliminar

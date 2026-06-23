@@ -1,13 +1,14 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin, requireBlockAdmin } from "@/lib/auth";
 import { ensureHistoricalDebtCuotas } from "@/lib/cuotas-sync";
+import { getDeudaInicialState } from "@/lib/deuda-inicial";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ ok?: string }>;
+  searchParams?: Promise<{ ok?: string; error?: string }>;
 };
 
 function parseMonths(value: FormDataEntryValue | null) {
@@ -61,6 +62,10 @@ export default async function DepartamentoDeudaPage({ params, searchParams }: Pr
       throw new Error("Primero debe existir un vecino asignado a este departamento.");
     }
 
+    const deudaState = await getDeudaInicialState(supabaseAdmin, departamento.bloque_id, departamento.id);
+    if (deudaState.tienePagos) redirect(`/admin/departamentos/${deptoId}?error=pagos`);
+    if (mesesAdeudadosIniciales < deudaState.mesesActuales) redirect(`/admin/departamentos/${deptoId}?error=reducir`);
+
     const { error: updateError } = await supabaseAdmin
       .from("usuarios")
       .update({ meses_adeudados_iniciales: mesesAdeudadosIniciales })
@@ -95,6 +100,7 @@ export default async function DepartamentoDeudaPage({ params, searchParams }: Pr
   ]);
 
   if (!departamento) notFound();
+  const deudaState = await getDeudaInicialState(adminSupabase, bloqueId, id);
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -102,7 +108,7 @@ export default async function DepartamentoDeudaPage({ params, searchParams }: Pr
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Departamento {departamento.numero}</h1>
-            <p className="text-gray-600">Carga la deuda inicial del vecino desde aqui.</p>
+            <p className="text-gray-600">Usar solo al cargar el departamento por primera vez.</p>
           </div>
           <Link href="/admin/departamentos" className="rounded-xl border px-4 py-2 font-medium text-gray-700">
             Volver
@@ -114,6 +120,9 @@ export default async function DepartamentoDeudaPage({ params, searchParams }: Pr
             Deuda inicial guardada.
           </div>
         ) : null}
+
+        {query.error === "reducir" ? <div className="rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-800">La deuda inicial no se puede reducir desde aquí. Corrige manualmente las cuotas o consulta soporte.</div> : null}
+        {query.error === "pagos" ? <div className="rounded-2xl border border-orange-300 bg-orange-50 px-4 py-3 text-orange-800">Este departamento ya tiene pagos registrados. No edites la deuda inicial desde aquí.</div> : null}
 
         <section className="rounded-2xl border bg-white p-5 shadow-sm space-y-4">
           <div className="space-y-1">
@@ -132,11 +141,13 @@ export default async function DepartamentoDeudaPage({ params, searchParams }: Pr
                   name="meses_adeudados_iniciales"
                   min={0}
                   step={1}
-                  defaultValue={vecino.meses_adeudados_iniciales ?? 0}
-                  className="w-full rounded-xl border px-3 py-2"
+                  defaultValue={deudaState.mesesActuales}
+                  disabled={deudaState.tienePagos}
+                  className="w-full rounded-xl border px-3 py-2 disabled:cursor-not-allowed disabled:bg-gray-100"
                 />
               </label>
-              <button type="submit" className="rounded-xl bg-black px-4 py-2 font-medium text-white">
+              <p className="text-sm text-gray-600">Después de registrar pagos, no edites este valor.</p>
+              <button type="submit" disabled={deudaState.tienePagos} className="rounded-xl bg-black px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50">
                 Guardar deuda inicial
               </button>
             </form>

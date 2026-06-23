@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { INTERNAL_EMAIL_DOMAIN } from "@/lib/email-domain";
 import { getAuthUserSafe } from "@/lib/auth";
 import { parseAdminPaymentDetails, serializeAdminPaymentDetails } from "@/lib/admin-payment";
+import { resolveStoragePath } from "@/lib/storage-paths";
 
 export type ActionState = {
   ok: boolean;
@@ -802,6 +803,87 @@ export async function duplicateBlockActionForm(formData: FormData) {
   redirect(withFeedbackUrl(returnTo, result));
 }
 
+async function collectStoragePathsForBlock(
+  supabase: ReturnType<typeof createAdminClient>,
+  bloqueId: string
+) {
+  const paths = new Set<string>();
+
+  const addPath = (value: string | null | undefined) => {
+    const path = resolveStoragePath(value);
+    if (path) paths.add(path);
+  };
+
+  const collectTablePaths = async (table: string, column = "comprobante_path") => {
+    const { data, error } = await supabase
+      .from(table)
+      .select(column)
+      .eq("bloque_id", bloqueId);
+
+    if (error) {
+      const message = String(error.message || "").toLowerCase();
+      const code = String(error.code || "");
+      if (
+        code === "42P01" ||
+        code === "42703" ||
+        code === "PGRST204" ||
+        message.includes("does not exist") ||
+        message.includes("no existe") ||
+        message.includes("schema cache")
+      ) {
+        return;
+      }
+      throw error;
+    }
+
+    for (const row of data ?? []) {
+      addPath((row as unknown as Record<string, string | null>)[column]);
+    }
+  };
+
+  const { data: bloque, error: bloqueError } = await supabase
+    .from("bloques")
+    .select("pago_qr_path, pago_qr_url")
+    .eq("id", bloqueId)
+    .maybeSingle();
+
+  if (!bloqueError && bloque) {
+    const row = bloque as { pago_qr_path?: string | null; pago_qr_url?: string | null };
+    addPath(row.pago_qr_path);
+    addPath(row.pago_qr_url);
+  }
+
+  const { data: users, error: usersError } = await supabase
+    .from("usuarios")
+    .select("username")
+    .eq("bloque_id", bloqueId)
+    .eq("rol", "admin");
+
+  if (usersError) throw usersError;
+
+  for (const user of users ?? []) {
+    const payment = parseAdminPaymentDetails(String((user as { username?: string | null }).username || ""));
+    addPath(payment.qrPath);
+  }
+
+  await collectTablePaths("confirmaciones_pago");
+  await collectTablePaths("pagos");
+  await collectTablePaths("gastos");
+
+  return [...paths];
+}
+
+async function removeStoragePaths(supabase: ReturnType<typeof createAdminClient>, paths: string[]) {
+  const uniquePaths = [...new Set(paths)].filter(Boolean);
+  if (uniquePaths.length === 0) return;
+
+  const chunkSize = 100;
+  for (let index = 0; index < uniquePaths.length; index += chunkSize) {
+    const chunk = uniquePaths.slice(index, index + chunkSize);
+    const { error } = await supabase.storage.from("comprobantes").remove(chunk);
+    if (error) throw error;
+  }
+}
 export async function purgeBlockAction(
   state: ActionState = initialState,
   formData: FormData
@@ -839,6 +921,7 @@ export async function purgeBlockAction(
     }
 
     const userIds = (usersInBlock ?? []).map((item) => item.id);
+    const storagePaths = await collectStoragePathsForBlock(supabase, id);
 
     const isMissingTableError = (error: unknown) => {
       if (!error || typeof error !== "object") return false;
@@ -921,6 +1004,8 @@ export async function purgeBlockAction(
     if (stillExists) {
       throw new Error("No se pudo eliminar el bloque despues de varios intentos.");
     }
+
+    await removeStoragePaths(supabase, storagePaths);
 
     for (const userId of userIds) {
       await deleteAuthUserIfNeeded(userId);

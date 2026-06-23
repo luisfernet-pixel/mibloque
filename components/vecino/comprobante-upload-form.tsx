@@ -5,10 +5,16 @@ import { useMemo, useState } from "react";
 export default function ComprobanteUploadForm({
   cuotaId,
   periodoLabel,
+  cuotaBaseLabel,
+  moraDetalle,
+  totalMoraLabel,
   montoLabel,
 }: {
   cuotaId: string;
   periodoLabel: string;
+  cuotaBaseLabel: string;
+  moraDetalle: { periodoLabel: string; montoLabel: string }[];
+  totalMoraLabel: string;
   montoLabel: string;
 }) {
   const [status, setStatus] = useState<"idle" | "submitting" | "ok" | "error">(
@@ -67,7 +73,7 @@ export default function ComprobanteUploadForm({
       onSubmit={onSubmit}
       className="grid gap-3 xl:grid-cols-[1fr_1fr] md:gap-3"
     >
-      <div className="xl:col-span-2 rounded-2xl border border-white/10 bg-[#2b4768] p-3 text-sm text-slate-100">
+      <div className="xl:col-span-2 text-sm text-slate-100">
         <p className="font-semibold text-white">Sube una foto o PDF de tu pago.</p>
         <p className="mt-1 text-xs text-slate-200">Tu pago quedara pendiente de revision y el administrador lo aprobara cuando revise el comprobante.</p>
       </div>
@@ -91,12 +97,32 @@ export default function ComprobanteUploadForm({
       ) : null}
 
       <div className="space-y-2 xl:col-span-2">
-        <label className="text-sm font-semibold text-white">
+        <p className="text-sm font-semibold text-white">
           Mes habilitado para pagar
-        </label>
-        <div className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2">
-          <p className="text-sm font-bold text-cyan-100">{periodoLabel}</p>
-          <p className="mt-1 text-xs text-cyan-50">Monto a pagar: {montoLabel}</p>
+        </p>
+        <div className="px-0.5 py-0.5">
+          <p className="text-sm font-semibold text-slate-100">{periodoLabel}</p>
+          <div className="mt-2 space-y-1 text-xs text-slate-300">
+            <p>Cuota del mes: <span className="font-semibold text-white">{cuotaBaseLabel}</span></p>
+            <p className="pt-1 font-semibold text-slate-100">Mora acumulada:</p>
+            {moraDetalle.length > 0 ? (
+              <ul className="space-y-0.5">
+                {moraDetalle.map((item) => (
+                  <li key={item.periodoLabel} className="flex max-w-xs justify-between gap-4">
+                    <span>{item.periodoLabel}</span>
+                    <span className="font-semibold text-white">{item.montoLabel}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Sin mora</p>
+            )}
+            <p className="pt-1">Total mora: <span className="font-semibold text-white">{totalMoraLabel}</span></p>
+            <p className="text-sm font-bold text-white">Total a pagar: {montoLabel}</p>
+          </div>
+          <p className="mt-2 max-w-xl text-xs leading-5 text-slate-300">
+            Este monto corresponde al mes más antiguo pendiente. Cuando sea aprobado, podrás pagar el siguiente mes.
+          </p>
         </div>
         <input type="hidden" name="cuota_id" value={cuotaId} />
         <input type="hidden" name="referencia" value="" />
@@ -106,7 +132,7 @@ export default function ComprobanteUploadForm({
         <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
           <label
             htmlFor="archivo-comprobante"
-            className="inline-flex min-h-[38px] cursor-pointer items-center justify-center rounded-xl border border-white/20 bg-white/10 px-4 text-xs font-semibold text-white transition hover:bg-white/15"
+            className="inline-flex min-h-[44px] cursor-pointer items-center justify-center rounded-xl bg-[#ff5a3d] px-5 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition hover:brightness-110"
           >
             Elegir foto o PDF
           </label>

@@ -199,7 +199,7 @@ export default function MesesEstadoList({
 
                   {item.status === "en_revision" ? (
                     <span className="text-sm font-semibold text-yellow-100">
-                      Pendiente de revisi?n
+                      Pendiente de revisión
                     </span>
                   ) : null}
 

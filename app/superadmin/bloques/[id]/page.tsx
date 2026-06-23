@@ -196,6 +196,7 @@ export default async function BlockDetailPage({ params, searchParams }: Props) {
               <input type="hidden" name="return_to" value={`/superadmin/bloques/${bloque.id}`} />
               <ConfirmActionButton
                 confirmText="Eliminar este bloque y borrar todos sus datos (vecinos, admins, departamentos, cuotas, pagos y avisos). Esta accion no se puede deshacer. Continuar?"
+                secondConfirmText="Confirmacion final: se eliminara todo el edificio y toda su informacion. Deseas borrarlo definitivamente?"
                 className="rounded-2xl bg-[#ff5a3d] px-3.5 py-2 text-sm font-bold text-white transition hover:brightness-110"
               >
                 Eliminar bloque

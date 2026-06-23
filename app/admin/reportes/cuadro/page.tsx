@@ -4,11 +4,21 @@ import CuadroVitrina, { type CuadroRow } from "@/components/cuotas/cuadro-vitrin
 import PrintButton from "@/components/print-button";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCuotaEstadoVigente } from "@/lib/cuotas";
 
 type SearchParams = Promise<{ anio?: string }>;
 type DepartamentoRow = { id: string; numero: string | null };
 type VecinoRow = { departamento_id: string | null; nombre: string | null; activo: boolean | null };
-type CuotaRow = { departamento_id: string; anio: number; mes: number; estado: string | null };
+type CuotaRow = {
+  departamento_id: string;
+  anio: number;
+  mes: number;
+  estado: string | null;
+  periodo: string | null;
+  fecha_vencimiento: string | null;
+  created_at: string | null;
+};
+type ConfigRow = { dia_vencimiento: number | null; valor_mora: number | null };
 
 function parseYear(value: string | undefined) {
   const nowYear = new Date().getUTCFullYear();
@@ -57,13 +67,27 @@ export default async function ReporteCuadroPage({
   const supabase = createAdminClient();
   const bloqueId = usuario.perfil.bloque_id;
 
-  const [{ data: bloque }, { data: departamentosData }, { data: vecinosData }, { data: cuotasData }] =
-    await Promise.all([
-      supabase.from("bloques").select("nombre, codigo").eq("id", bloqueId).maybeSingle(),
-      supabase.from("departamentos").select("id, numero").eq("bloque_id", bloqueId),
-      supabase.from("usuarios").select("departamento_id, nombre, activo").eq("bloque_id", bloqueId).eq("rol", "vecino"),
-      supabase.from("cuotas").select("departamento_id, anio, mes, estado").eq("bloque_id", bloqueId).lte("anio", anio),
-    ]);
+  const [
+    { data: bloque },
+    { data: departamentosData },
+    { data: vecinosData },
+    { data: cuotasData },
+    { data: config },
+  ] = await Promise.all([
+    supabase.from("bloques").select("nombre, codigo").eq("id", bloqueId).maybeSingle(),
+    supabase.from("departamentos").select("id, numero").eq("bloque_id", bloqueId),
+    supabase.from("usuarios").select("departamento_id, nombre, activo").eq("bloque_id", bloqueId).eq("rol", "vecino"),
+    supabase
+      .from("cuotas")
+      .select("departamento_id, anio, mes, estado, periodo, fecha_vencimiento, created_at")
+      .eq("bloque_id", bloqueId)
+      .lte("anio", anio),
+    supabase
+      .from("configuracion_bloque")
+      .select("dia_vencimiento, valor_mora")
+      .eq("bloque_id", bloqueId)
+      .maybeSingle(),
+  ]);
 
   const departamentos = (departamentosData ?? []) as DepartamentoRow[];
   const vecinos = (vecinosData ?? []) as VecinoRow[];
@@ -84,7 +108,7 @@ export default async function ReporteCuadroPage({
   for (const cuota of cuotas) {
     const deptoId = String(cuota.departamento_id || "");
     if (!deptoId) continue;
-    const estado = String(cuota.estado || "");
+    const estado = getCuotaEstadoVigente(cuota, config as ConfigRow | null);
 
     if (Number(cuota.anio) < anio && (estado === "pendiente" || estado === "vencido")) {
       deudaAnterior.add(deptoId);

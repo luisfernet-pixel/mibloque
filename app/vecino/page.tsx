@@ -6,7 +6,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthUserSafe } from "@/lib/auth";
 import MesesEstadoList from "@/components/vecino/meses-estado-list";
 import ComprobanteUploadForm from "@/components/vecino/comprobante-upload-form";
-import { getCuotaEstadoVigente, getCuotaMontoVigente } from "@/lib/cuotas";
+import {
+  getCuotaEstadoVigente,
+  getCuotaMontoVigente,
+  getCuotaMoraDetalle,
+} from "@/lib/cuotas";
 import { ensureCurrentMonthCuotasForBlock } from "@/lib/cuotas-sync";
 import { formatPeriodoLabel } from "@/lib/periodo";
 import { parseAdminPaymentDetails } from "@/lib/admin-payment";
@@ -309,6 +313,16 @@ export default async function VecinoPage({
     return Number(a.mes || 0) - Number(b.mes || 0);
   });
   const cuotaHabilitada = filasPendientesOrdenadas[0] ?? null;
+  const cuotaHabilitadaMoraDetalle = cuotaHabilitada
+    ? getCuotaMoraDetalle(cuotaHabilitada, configRow)
+    : [];
+  const cuotaHabilitadaMontoBase = Number(
+    cuotaHabilitada?.monto_base ?? cuotaHabilitada?.monto_total ?? 0
+  );
+  const cuotaHabilitadaTotalMora = cuotaHabilitadaMoraDetalle.reduce(
+    (total, item) => total + item.monto,
+    0
+  );
 
   const sent =
     sentValue === "1" ||
@@ -382,7 +396,7 @@ export default async function VecinoPage({
 
       {sent ? (
         <section className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 ring-1 ring-white/10 md:rounded-[24px] md:px-5 md:py-4">
-          Tu pago quedo pendiente de revisi?n. El administrador lo aprobara cuando revise el comprobante.
+          Tu pago quedó pendiente de revisión. El administrador lo aprobará cuando revise el comprobante.
         </section>
       ) : null}
 
@@ -510,14 +524,10 @@ export default async function VecinoPage({
         <div className="space-y-3 p-3 md:p-4">
           {sent ? (
             <div className="mb-3 rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 ring-1 ring-white/10">
-              Tu pago quedo pendiente de revisi?n. El administrador lo aprobara cuando revise el comprobante.
+              Tu pago quedó pendiente de revisión. El administrador lo aprobará cuando revise el comprobante.
             </div>
           ) : null}
 
-          <div className="rounded-2xl border border-white/10 bg-[#2b4768] p-3 text-sm text-slate-100">
-            <p className="font-semibold text-white">Sube una foto o PDF de tu pago.</p>
-            <p className="mt-1 text-xs text-slate-200">Tu pago quedara pendiente de revision. El administrador lo aprobara cuando revise el comprobante.</p>
-          </div>
 
           {filasPendientes.length === 0 ? (
             <div className="rounded-[24px] border border-cyan-400/30 bg-cyan-500/10 px-5 py-8 text-center">
@@ -532,6 +542,14 @@ export default async function VecinoPage({
             <ComprobanteUploadForm
               cuotaId={cuotaHabilitada?.id || ""}
               periodoLabel={formatPeriodoLabel(cuotaHabilitada?.periodo)}
+              cuotaBaseLabel={money(cuotaHabilitadaMontoBase)}
+              moraDetalle={cuotaHabilitadaMoraDetalle.map((item) => ({
+                periodoLabel: formatPeriodoLabel(
+                  `${item.anio}-${String(item.mes).padStart(2, "0")}`
+                ),
+                montoLabel: money(item.monto),
+              }))}
+              totalMoraLabel={money(cuotaHabilitadaTotalMora)}
               montoLabel={money(cuotaHabilitada?.monto_total)}
             />
           )}

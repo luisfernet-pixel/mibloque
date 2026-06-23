@@ -17,6 +17,12 @@ type ConfiguracionMoraLike = {
   valor_mora?: number | null;
 };
 
+export type CuotaMoraDetalle = {
+  anio: number;
+  mes: number;
+  monto: number;
+};
+
 function clampDueDay(value: number | null | undefined) {
   const day = Number(value || 15);
   if (!Number.isFinite(day)) return 15;
@@ -88,6 +94,29 @@ export function getCuotaMoraVigente(
   if (!Number.isFinite(moraMensual) || moraMensual <= 0) return 0;
 
   return getCuotaMesesDeMora(cuota, config, now) * moraMensual;
+}
+
+export function getCuotaMoraDetalle(
+  cuota: CuotaLike,
+  config: ConfiguracionMoraLike | null | undefined,
+  now: Date = new Date()
+): CuotaMoraDetalle[] {
+  const periodo = resolvePeriodo(cuota);
+  const mesesDeMora = getCuotaMesesDeMora(cuota, config, now);
+  const moraMensual = Number(config?.valor_mora || 0);
+
+  if (!periodo || mesesDeMora <= 0 || !Number.isFinite(moraMensual) || moraMensual <= 0) {
+    return [];
+  }
+
+  return Array.from({ length: mesesDeMora }, (_, index) => {
+    const totalMeses = periodo.year * 12 + (periodo.month - 1) + index + 1;
+    return {
+      anio: Math.floor(totalMeses / 12),
+      mes: (totalMeses % 12) + 1,
+      monto: moraMensual,
+    };
+  });
 }
 
 export function getCuotaMontoVigente(
