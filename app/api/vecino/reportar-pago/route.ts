@@ -6,6 +6,27 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUserSafe } from "@/lib/auth";
 import { getCuotaMontoVigente } from "@/lib/cuotas";
 
+const uploadLocks = new Map<string, Promise<void>>();
+
+async function withUploadLock<T>(key: string, action: () => Promise<T>): Promise<T> {
+  const previous = uploadLocks.get(key) ?? Promise.resolve();
+  let release = () => {};
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queued = previous.then(() => current);
+
+  uploadLocks.set(key, queued);
+  await previous;
+
+  try {
+    return await action();
+  } finally {
+    release();
+    if (uploadLocks.get(key) === queued) uploadLocks.delete(key);
+  }
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const formData = await req.formData();
@@ -42,6 +63,9 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL("/vecino?error=servicio_suspendido", req.url), 303);
   }
 
+  const uploadKey = `${perfil.bloque_id}:${perfil.departamento_id}:${cuotaId}`;
+
+  return withUploadLock(uploadKey, async () => {
   const [{ data: cuotasPendientes }, { data: confirmacionesPendientes }, { data: pagosExistentes }] =
     await Promise.all([
       adminSupabase
@@ -57,7 +81,7 @@ export async function POST(req: Request) {
         .select("cuota_id")
         .eq("departamento_id", perfil.departamento_id)
         .eq("bloque_id", perfil.bloque_id)
-        .eq("estado", "pendiente"),
+        .in("estado", ["pendiente", "aprobado"]),
       adminSupabase
         .from("pagos")
         .select("cuota_id")
@@ -65,7 +89,7 @@ export async function POST(req: Request) {
         .eq("bloque_id", perfil.bloque_id),
     ]);
 
-  const cuotasConConfirmacionPendiente = new Set(
+  const cuotasConConfirmacion = new Set(
     (confirmacionesPendientes ?? [])
       .map((item) => String(item.cuota_id || ""))
       .filter(Boolean)
@@ -80,7 +104,7 @@ export async function POST(req: Request) {
   const cuotaMasAntiguaPendiente = (cuotasPendientes ?? []).find((item) => {
     const cuotaIdActual = String(item.id || "");
     if (!cuotaIdActual) return false;
-    if (cuotasConConfirmacionPendiente.has(cuotaIdActual)) return false;
+    if (cuotasConConfirmacion.has(cuotaIdActual)) return false;
     if (cuotasConPago.has(cuotaIdActual)) return false;
     return true;
   });
@@ -111,17 +135,32 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL("/vecino?error=cuota", req.url), 303);
   }
 
-  const { data: confirmacionPendiente } = await adminSupabase
+  const cuotaPeriodo = String(cuota.periodo || "").trim();
+  const { data: cuotasMismoPeriodo } = cuotaPeriodo
+    ? await adminSupabase
+        .from("cuotas")
+        .select("id")
+        .eq("departamento_id", perfil.departamento_id)
+        .eq("bloque_id", perfil.bloque_id)
+        .eq("periodo", cuotaPeriodo)
+    : { data: [{ id: cuotaId }] };
+  const cuotaIdsMismoPeriodo = (cuotasMismoPeriodo ?? [])
+    .map((item) => String(item.id || ""))
+    .filter(Boolean);
+
+  if (!cuotaIdsMismoPeriodo.includes(cuotaId)) cuotaIdsMismoPeriodo.push(cuotaId);
+
+  const { data: confirmacionExistente } = await adminSupabase
     .from("confirmaciones_pago")
     .select("id")
     .eq("departamento_id", perfil.departamento_id)
     .eq("bloque_id", perfil.bloque_id)
-    .eq("cuota_id", cuotaId)
-    .eq("estado", "pendiente")
+    .in("cuota_id", cuotaIdsMismoPeriodo)
+    .in("estado", ["pendiente", "aprobado"])
     .limit(1)
     .maybeSingle();
 
-  if (confirmacionPendiente) {
+  if (confirmacionExistente) {
     return NextResponse.redirect(new URL("/vecino?error=enrevision", req.url), 303);
   }
 
@@ -130,7 +169,7 @@ export async function POST(req: Request) {
     .select("id")
     .eq("departamento_id", perfil.departamento_id)
     .eq("bloque_id", perfil.bloque_id)
-    .eq("cuota_id", cuotaId)
+    .in("cuota_id", cuotaIdsMismoPeriodo)
     .limit(1)
     .maybeSingle();
 
@@ -196,4 +235,5 @@ export async function POST(req: Request) {
     sameSite: "lax",
   });
   return res;
+  });
 }
